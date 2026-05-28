@@ -1,0 +1,19 @@
+{
+  "name": "pi-stef",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Custom package collection for the pi coding agent.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b",
+    "install:all:global": "./scripts/install-all.sh",
+    "install:all:project": "./scripts/install-all.sh --project"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.0"
+  }
+}
