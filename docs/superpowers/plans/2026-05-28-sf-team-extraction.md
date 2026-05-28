@@ -8,6 +8,13 @@
 
 **Tech Stack:** TypeScript, pnpm workspaces, vitest, pi extension API (`@earendil-works/pi-*`)
 
+**Breaking Changes:**
+- Config paths change: `~/.pi/fh-team/` → `~/.pi/sf-team/`, `.fh-team.json` → `.sf-team.json`, `.fh-team-locks/` → `.sf-team-locks/`. Existing fh-agent users on the same machine will need to migrate their config or keep both directories.
+- Tool names change: `fh_team_plan` → `sf_team_plan` (and all other tools). Any existing scripts or aliases referencing the old names must be updated.
+- The `firsthorizon.atlassian.net` URLs in test files are functional Jira/Confluence endpoints used in test assertions — they must NOT be altered by the First Horizon sweep.
+
+**Test Risk:** sf-team has ~130+ test files including e2e and integration tests in `tests/e2e/` and `tests/integration/` that may require `@earendil-works/pi-*` packages installed locally, subprocess access, or network connectivity. The initial `pnpm test` run may have failures in these suites that require per-case triage.
+
 ---
 
 ## Milestone M0: Pre-flight Verification
@@ -27,7 +34,15 @@ pnpm info @earendil-works/pi-coding-agent version 2>/dev/null || \
 
 If the packages aren't in a public registry, they must be available locally or via a configured private registry. The user must confirm this before proceeding.
 
-- [ ] **Step 2: Verify codex CLI is functional (optional, for later review rounds)**
+- [ ] **Step 2: Verify fh-agent source packages exist**
+
+```bash
+test -d /Users/stefano/Projects/fh-agent/packages/fh-team && echo "OK: fh-team source found" || echo "MISSING: fh-agent source not found"
+```
+
+If this fails, the fh-agent repo must be cloned or the path corrected.
+
+- [ ] **Step 3: Verify codex CLI is functional (optional, for later review rounds)**
 
 ```bash
 codex --version
@@ -359,9 +374,20 @@ grep -rn -i 'first horizon\|firsthorizon\|FirstHorizon' packages/sf-team/ | head
 
 If matches found, replace "First Horizon " with empty string or "agent" as contextually appropriate. The `agent-workflows` package description says "First Horizon agent extensions" — change to "agent extensions".
 
+**IMPORTANT: Do NOT blindly replace `firsthorizon` in `.atlassian.net` URLs.** These are functional Jira/Confluence hostnames used in test assertions (e.g., `firsthorizon.atlassian.net/browse/DIGENG-17720`). They must be preserved.
+
 ```bash
+# First, audit what would be affected:
+grep -rn -i 'firsthorizon' packages/ --include="*.ts" --include="*.json" --include="*.md" --include="*.yaml" | grep -v 'atlassian\.net'
+```
+
+Review remaining matches. Only replace branding strings (like package descriptions), not functional URLs. For URL-containing lines, leave them unchanged or substitute a generic hostname if tests allow it.
+
+```bash
+# Safe replacements (non-URL context only) — run on a per-file basis after review:
+# For package descriptions and comments:
 find packages/ -type f \( -name '*.md' -o -name '*.json' \) \
-  -exec sed -i '' 's/First Horizon //g; s/First Horizon//g; s/first horizon//g' {} +
+  -exec sed -i '' '/atlassian\.net/!s/First Horizon //g; /atlassian\.net/!s/First Horizon//g; /atlassian\.net/!s/first horizon//g' {} +
 ```
 
 - [ ] **Step 3: Verify**
@@ -601,17 +627,17 @@ git commit -m "chore: fix tsconfig extends and composite settings for new packag
 - Modify: `packages/sf-team/package.json`
 - Modify: `packages/atlassian/package.json`
 
-The fh-agent packages use `"typebox": "^1.1.35"` (standalone package), while superpowers-adapter uses `"@sinclair/typebox": "*"` (scoped package). These resolve to the same upstream library but via different npm names, creating a runtime fork risk for `instanceof` checks or cross-package schema passing.
+The fh-agent packages use `"typebox": "^1.1.35"` (standalone package), while superpowers-adapter uses `"@sinclair/typebox": "*"` (scoped package). These resolve to the same upstream library but via different npm names, creating a runtime fork risk for `instanceof` checks or cross-package schema passing. Affected packages: sf-team, atlassian, web-access (direct dep), and figma (peer dep).
 
 - [ ] **Step 1: Replace `typebox` with `@sinclair/typebox` in all new package.json files**
 
 ```bash
 cd /Users/stefano/Projects/pi-stef
-for pkg in sf-team atlassian; do
+for pkg in sf-team atlassian web-access figma; do
   if grep -q '"typebox"' packages/$pkg/package.json; then
-    sed -i '' 's/"typebox": "\^1.1.35"/"@sinclair\/typebox": "*"/g' packages/$pkg/package.json
+    sed -i '' 's/"typebox": "\^[0-9.]*"/"@sinclair\/typebox": "*"/g; s/"typebox": "\*"/"@sinclair\/typebox": "*"/g' packages/$pkg/package.json
     echo "=== $pkg ==="
-    grep -A1 'typebox' packages/$pkg/package.json
+    grep 'typebox' packages/$pkg/package.json
   fi
 done
 ```
@@ -620,14 +646,14 @@ done
 
 ```bash
 # Replace bare `typebox` imports with `@sinclair/typebox`
-find packages/sf-team packages/atlassian -name '*.ts' -exec sed -i '' \
+find packages/sf-team packages/atlassian packages/web-access packages/figma -name '*.ts' -exec sed -i '' \
   's/from "typebox"/from "@sinclair\/typebox"/g' {} +
 ```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add packages/sf-team/ packages/atlassian/
+git add packages/sf-team/ packages/atlassian/ packages/web-access/ packages/figma/
 git commit -m "refactor: unify typebox dependency to @sinclair/typebox"
 ```
 
