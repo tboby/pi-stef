@@ -68,6 +68,7 @@ Copy all 5 packages from fh-agent into pi-stef. Remove fh-agent-specific artifac
 cd /Users/stefano/Projects/pi-stef
 for pkg in agent-workflows atlassian figma web-access; do
   rsync -a --exclude='node_modules' --exclude='package-lock.json' \
+    --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' --exclude='.cache' \
     /Users/stefano/Projects/fh-agent/packages/$pkg/ packages/$pkg/
 done
 ```
@@ -96,6 +97,7 @@ git commit -m "chore: copy agent-workflows, atlassian, figma, web-access from fh
 
 ```bash
 rsync -a --exclude='node_modules' --exclude='package-lock.json' \
+  --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' --exclude='.cache' \
   /Users/stefano/Projects/fh-agent/packages/fh-team/ packages/sf-team/
 ```
 
@@ -284,7 +286,7 @@ This covers all case variants: `FH_TEAM_*` env vars, `FhTeam` PascalCase, `fhTea
 - [ ] **Step 2: Verify — check for remaining fh references (case-insensitive)**
 
 ```bash
-grep -rni 'fh[_-]\|fhTeam\|FhTeam\|FH_TEAM' packages/sf-team/ --include="*.ts"
+grep -rnE 'fh[_-]|fhTeam|FhTeam|FH_TEAM' packages/sf-team/ --include="*.ts"
 ```
 
 Expected: 0 matches.
@@ -361,12 +363,13 @@ git commit -m "refactor: rename fh→sf in sf-team docs, config, and scripts"
 
 **Files:**
 - Modify: `packages/sf-team/src/config/load.ts`
+- Modify: `packages/sf-team/src/config/resolve.ts`
 
-The config loader must check the old `~/.pi/fh-team/` path as a fallback when the new `~/.pi/sf-team/` path doesn't exist, so existing fh-agent users don't silently lose their configuration.
+The config loader must check the old `~/.pi/fh-team/` path as a fallback when the new `~/.pi/sf-team/` path doesn't exist, so existing fh-agent users don't silently lose their configuration. Both `load.ts` and `resolve.ts` reference the config directory — audit both.
 
 - [ ] **Step 1: Add backward-compat fallback to config loader**
 
-In `packages/sf-team/src/config/load.ts`, after the logic that resolves `~/.pi/sf-team/config.json`, add a fallback: if the new path doesn't exist, check `~/.pi/fh-team/config.json`. If the old path exists, copy it to the new location and log a migration notice. The exact implementation depends on the current loader structure — read the file first, then add the fallback at the appropriate point.
+In `packages/sf-team/src/config/load.ts`, after the logic that resolves `~/.pi/sf-team/config.json`, add a fallback: if the new path doesn't exist, check `~/.pi/fh-team/config.json`. If the old path exists, copy it to the new location and log a migration notice.
 
 - [ ] **Step 2: Verify the change compiles**
 
@@ -622,9 +625,11 @@ done
 - [ ] **Step 2: Update TypeScript imports to match**
 
 ```bash
-# Replace bare `typebox` imports with `@sinclair/typebox`
+# Replace bare `typebox` imports with `@sinclair/typebox` (both single and double quotes)
 find packages/sf-team packages/atlassian packages/web-access packages/figma -name '*.ts' -exec sed -i '' \
-  's/from "typebox"/from "@sinclair\/typebox"/g' {} +
+  -e 's/from "typebox"/from "@sinclair\/typebox"/g' \
+  -e "s/from 'typebox'/from '@sinclair\/typebox'/g" \
+  {} +
 ```
 
 - [ ] **Step 3: Verify the typebox imports resolve**
@@ -812,12 +817,17 @@ git commit -m "fix: resolve typecheck errors after package extraction"
 pnpm test
 ```
 
-Note: sf-team has ~130+ test files. Some may fail due to:
+Note: sf-team has ~184 test files. Some may fail due to:
 - Import path mismatches
 - Mock references to `fh-team` that were renamed
 - Config path changes (`~/.pi/fh-team/` → `~/.pi/sf-team/`)
 
-Expected: tests for superpowers-adapter pass (API namespace fix only). sf-team tests may need targeted fixes.
+**Test triage approach:**
+1. **Unit tests** (`tests/*.test.ts` except `e2e/` and `integration/`) — these MUST pass. Fix any failures.
+2. **Integration tests** (`tests/integration/`) — may require local pi runtime or git. Fix if straightforward; skip with `test.skip` if they need external tooling.
+3. **E2E tests** (`tests/e2e/`) — likely require tmux, running pi instance, or network access. Mark as `test.skip` with a TODO comment if they can't run locally. Do NOT delete them.
+
+Acceptance criteria: all non-skipped tests pass. Skipped tests have a clear reason in the skip comment.
 
 - [ ] **Step 2: Fix any test failures**
 
