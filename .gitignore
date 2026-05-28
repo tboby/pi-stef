@@ -6,3 +6,6 @@ dist/
 *.log
 .DS_Store
 /ai_plan/
+**/worktrees/
+.claude/
+**/tsconfig.tsbuildinfo
