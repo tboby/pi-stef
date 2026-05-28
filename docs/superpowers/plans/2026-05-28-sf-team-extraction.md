@@ -261,67 +261,17 @@ git add -A packages/sf-team/extensions/
 git commit -m "refactor: rename extensions/fh-team.ts to sf-team.ts"
 ```
 
-### Task M3-S2: Rename fh→sf in sf-team TypeScript source files
+### Task M3-S2: Rename fh→sf in all sf-team TypeScript files
 
 **Files:**
 - Modify: all `.ts` files in `packages/sf-team/src/`, `packages/sf-team/extensions/`, `packages/sf-team/tests/`
 
-- [ ] **Step 1: Replace PascalCase FhTeam → SfTeam**
+- [ ] **Step 1: Apply all case-variant replacements in a single pass**
 
 ```bash
 cd /Users/stefano/Projects/pi-stef
-find packages/sf-team -name '*.ts' -exec sed -i '' 's/FhTeam/SfTeam/g' {} +
-```
-
-- [ ] **Step 2: Replace camelCase fhTeam → sfTeam**
-
-```bash
-find packages/sf-team -name '*.ts' -exec sed -i '' 's/fhTeam/sfTeam/g' {} +
-```
-
-- [ ] **Step 3: Replace snake_case fh_team → sf_team**
-
-```bash
-find packages/sf-team -name '*.ts' -exec sed -i '' 's/fh_team/sf_team/g' {} +
-```
-
-- [ ] **Step 4: Replace kebab-case fh-team → sf-team**
-
-```bash
-find packages/sf-team -name '*.ts' -exec sed -i '' 's/fh-team/sf-team/g' {} +
-```
-
-- [ ] **Step 5: Verify — check for remaining fh references in TS files**
-
-```bash
-grep -rn 'fh[_-]' packages/sf-team/src/ packages/sf-team/extensions/ --include="*.ts"
-```
-
-Expected: 0 matches (all fh_team and fh-team replaced).
-
-```bash
-grep -rn 'fhTeam\|FhTeam' packages/sf-team/src/ packages/sf-team/extensions/ --include="*.ts"
-```
-
-Expected: 0 matches.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add packages/sf-team/
-git commit -m "refactor: rename fh→sf in sf-team TypeScript source"
-```
-
-### Task M3-S3: Rename fh→sf in sf-team test files
-
-**Files:**
-- Modify: all `.ts` files in `packages/sf-team/tests/`
-
-- [ ] **Step 1: Apply same replacements in test files**
-
-```bash
-cd /Users/stefano/Projects/pi-stef
-find packages/sf-team/tests -name '*.ts' -exec sed -i '' \
+find packages/sf-team -name '*.ts' -exec sed -i '' \
+  -e 's/FH_TEAM/SF_TEAM/g' \
   -e 's/FhTeam/SfTeam/g' \
   -e 's/fhTeam/sfTeam/g' \
   -e 's/fh_team/sf_team/g' \
@@ -329,10 +279,12 @@ find packages/sf-team/tests -name '*.ts' -exec sed -i '' \
   {} +
 ```
 
-- [ ] **Step 2: Verify**
+This covers all case variants: `FH_TEAM_*` env vars, `FhTeam` PascalCase, `fhTeam` camelCase, `fh_team` snake_case, and `fh-team` kebab-case.
+
+- [ ] **Step 2: Verify — check for remaining fh references (case-insensitive)**
 
 ```bash
-grep -rn 'fh[_-]\|fhTeam\|FhTeam' packages/sf-team/tests/ --include="*.ts" | head -20
+grep -rni 'fh[_-]\|fhTeam\|FhTeam\|FH_TEAM' packages/sf-team/ --include="*.ts"
 ```
 
 Expected: 0 matches.
@@ -340,11 +292,11 @@ Expected: 0 matches.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add packages/sf-team/tests/
-git commit -m "refactor: rename fh→sf in sf-team test files"
+git add packages/sf-team/
+git commit -m "refactor: rename fh→sf in sf-team TypeScript source and tests"
 ```
 
-### Task M3-S4: Rename fh→sf in sf-team docs, config, YAML, scripts, and templates
+### Task M3-S3: Rename fh→sf in sf-team docs, config, YAML, scripts, and templates
 
 **Files:**
 - Modify: `packages/sf-team/README.md`
@@ -403,6 +355,31 @@ Expected: 0 matches.
 ```bash
 git add packages/sf-team/
 git commit -m "refactor: rename fh→sf in sf-team docs, config, and scripts"
+```
+
+### Task M3-S4: Add config migration fallback
+
+**Files:**
+- Modify: `packages/sf-team/src/config/load.ts`
+
+The config loader must check the old `~/.pi/fh-team/` path as a fallback when the new `~/.pi/sf-team/` path doesn't exist, so existing fh-agent users don't silently lose their configuration.
+
+- [ ] **Step 1: Add backward-compat fallback to config loader**
+
+In `packages/sf-team/src/config/load.ts`, after the logic that resolves `~/.pi/sf-team/config.json`, add a fallback: if the new path doesn't exist, check `~/.pi/fh-team/config.json`. If the old path exists, copy it to the new location and log a migration notice. The exact implementation depends on the current loader structure — read the file first, then add the fallback at the appropriate point.
+
+- [ ] **Step 2: Verify the change compiles**
+
+```bash
+cd /Users/stefano/Projects/pi-stef
+npx tsc --noEmit -p packages/sf-team/tsconfig.json
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add packages/sf-team/src/config/load.ts
+git commit -m "feat: add backward-compat config migration from fh-team to sf-team paths"
 ```
 
 ### Task M3-S5: Rename test files containing fh in their filename
@@ -650,7 +627,17 @@ find packages/sf-team packages/atlassian packages/web-access packages/figma -nam
   's/from "typebox"/from "@sinclair\/typebox"/g' {} +
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Verify the typebox imports resolve**
+
+```bash
+cd /Users/stefano/Projects/pi-stef
+# Quick check that no bare 'from "typebox"' imports remain
+grep -rn 'from "typebox"' packages/sf-team packages/atlassian packages/web-access packages/figma --include="*.ts"
+```
+
+Expected: 0 matches (all replaced).
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add packages/sf-team/ packages/atlassian/ packages/web-access/ packages/figma/
