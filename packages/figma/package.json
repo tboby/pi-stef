@@ -15,7 +15,7 @@
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
     "@earendil-works/pi-coding-agent": "*",
-    "typebox": "*"
+    "@sinclair/typebox": "*"
   },
   "pi": {
     "extensions": ["./extensions"]

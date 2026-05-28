@@ -1,6 +1,11 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/superpowers-adapter" }
+    { "path": "packages/superpowers-adapter" },
+    { "path": "packages/agent-workflows" },
+    { "path": "packages/atlassian" },
+    { "path": "packages/figma" },
+    { "path": "packages/sf-team" },
+    { "path": "packages/web-access" }
   ]
 }

@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
+import { Type } from "@sinclair/typebox";
 
 import { createCloakBrowserFetchAdapter, createCloakBrowserRuntime, createCloakBrowserSearchAdapter } from "./browser/cloak";
 import { parseFlowSteps, runWebFlow, type FlowStepInput } from "./browser/flow";

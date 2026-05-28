@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { Value } from "typebox/value";
+import { Value } from "@sinclair/typebox/value";
 
 import { ConfigSchema, DEFAULT_CONFIG, type SfTeamConfig, type ResolvedDefaults } from "./schema";
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="git:github.com/<USER>/pi-stef"
-PACKAGES=("superpowers-adapter")
+PACKAGES=("superpowers-adapter" "agent-workflows" "atlassian" "figma" "sf-team" "web-access")
 SCOPE="global"
 
 if [[ "${1:-}" == "--project" ]]; then

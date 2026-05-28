@@ -1,4 +1,4 @@
-import { Type, type Static } from "typebox";
+import { Type, type Static } from "@sinclair/typebox";
 
 /**
  * TypeBox schema for the JSON the researcher subprocess emits on stdout.

@@ -11,7 +11,7 @@
   "keywords": ["pi-package", "pi-extension", "atlassian", "jira", "confluence"],
   "dependencies": {
     "@pi-stef/figma": "file:../figma",
-    "typebox": "^1.1.35",
+    "@sinclair/typebox": "*",
     "zod": "^3.25.62"
   },
   "peerDependencies": {

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 
-import { Value } from "typebox/value";
+import { Value } from "@sinclair/typebox/value";
 import { ConfigSchema, DEFAULT_CONFIG, type ResolvedDefaults } from "../src/config/schema";
 import { createSfTeamImplement } from "../src/tools/implement";
 import { createSfTeamAuto } from "../src/tools/auto";

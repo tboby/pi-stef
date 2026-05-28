@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { StringEnum } from '@earendil-works/pi-ai';
-import { Type } from 'typebox';
+import { Type } from '@sinclair/typebox';
 import { FigmaAuthorization } from '../src/auth/FigmaAuthorization';
 import { FigmaCache } from '../src/cache/FigmaCache';
 import { FigmaClient } from '../src/client/FigmaClient';

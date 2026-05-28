@@ -25,7 +25,7 @@
     "@pi-stef/web-access": "file:../web-access",
     "marked": "^15.0.12",
     "marked-terminal": "^7.3.0",
-    "typebox": "^1.1.35"
+    "@sinclair/typebox": "*"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",

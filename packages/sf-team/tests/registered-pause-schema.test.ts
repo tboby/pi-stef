@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { Value } from "typebox/value";
+import { Value } from "@sinclair/typebox/value";
 
 import sfTeamExtension from "../extensions/sf-team";
 import { planFolderPath } from "../src/plan/paths";

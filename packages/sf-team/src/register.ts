@@ -1,5 +1,5 @@
 import type { ExtensionAPI, ExtensionUIContext } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
+import { Type } from "@sinclair/typebox";
 
 import { loadAndResolveDefaults } from "./config/load";
 import { resolveRuntime } from "./config/resolve-runtime";

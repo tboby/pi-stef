@@ -1,4 +1,4 @@
-import { Value } from "typebox/value";
+import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
 import { ResearchAnalysisSchema } from "../src/research/schema";

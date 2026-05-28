@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { Value } from "typebox/value";
+import { Value } from "@sinclair/typebox/value";
 
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
 

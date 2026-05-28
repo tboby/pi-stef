@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
+import { Type } from "@sinclair/typebox";
 
 import { ConfluenceClient } from "../confluence/ConfluenceClient";
 import { buildStoryContext, renderStoryContextMarkdown } from "../context/AtlassianContextWalker";

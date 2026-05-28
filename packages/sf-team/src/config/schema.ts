@@ -1,4 +1,4 @@
-import { Type, type Static } from "typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import {
   VERIFICATION_CACHE_MODES,
   VERIFICATION_MODES,
