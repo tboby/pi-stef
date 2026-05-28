@@ -209,7 +209,7 @@ describe("buildPiArgv: cursor-provider conditional --extension load", () => {
     expect(argv).not.toContain("--extension");
   });
 
-  it("default resolver (no opts) returns the workspace cursor-provider path when present", () => {
+  it.skip("default resolver (no opts) returns the workspace cursor-provider path when present — skipped: cursor-provider package not in pi-stef monorepo", () => {
     // The workspace ships a cursor-provider package at
     // packages/cursor-provider/extensions/cursor-provider.ts. The default
     // probe should find it, so a real cursor/* model build should append
@@ -531,7 +531,7 @@ describe("buildPiArgv: azure-foundry-provider conditional --extension load", () 
   });
 
   describe("defaultResolveAzureFoundryProvider", () => {
-    it("returns the workspace azure-foundry-provider path in the monorepo", () => {
+    it.skip("returns the workspace azure-foundry-provider path in the monorepo — skipped: azure-foundry-provider not in pi-stef monorepo", () => {
       const resolved = defaultResolveAzureFoundryProvider();
       expect(resolved).toBeTypeOf("string");
       expect(resolved).toMatch(/azure-foundry-provider[\\/]extensions[\\/]azure-foundry-provider\.ts$/);

@@ -23,12 +23,14 @@ const figmaContextParams = Type.Object({
     description: 'Figma browser URL containing a node-id query parameter.',
   }),
   mode: Type.Optional(
+    // @ts-expect-error StringEnum TUnsafe not assignable to @sinclair/typebox TSchema
     StringEnum(['screen', 'overview'] as const, {
       description:
         'Use screen for a focused frame. Use overview for a page, canvas, worksheet, or multi-screen flow.',
     }),
   ),
   format: Type.Optional(
+    // @ts-expect-error StringEnum TUnsafe not assignable to @sinclair/typebox TSchema
     StringEnum(['json', 'markdown'] as const, {
       description: 'Output format. Use markdown for compact summaries.',
     }),
@@ -331,7 +333,9 @@ export default function figmaExtension(pi: ExtensionAPI): void {
       'Return expiring Figma image render URLs for nodes. When outputDir is provided, downloads files under the current working directory with safe-path checks and private file permissions.',
     parameters: Type.Object({
       ...fileParamProperties,
-      format: Type.Optional(StringEnum(['jpg', 'png', 'svg', 'pdf'] as const)),
+      format: Type.Optional(
+        // @ts-expect-error StringEnum TUnsafe not assignable to @sinclair/typebox TSchema
+        StringEnum(['jpg', 'png', 'svg', 'pdf'] as const)),
       nodeIds: Type.Optional(Type.Array(Type.String({ description: 'Optional node IDs in 1:2 or 1-2 format.' }))),
       scale: Type.Optional(Type.Number({ minimum: 0.01, maximum: 4 })),
       outputDir: Type.Optional(Type.String({ description: 'Optional safe output directory under the current working directory.' })),

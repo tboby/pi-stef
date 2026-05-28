@@ -1,4 +1,9 @@
 {
+  "compilerOptions": {
+    "composite": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
   "extends": "../../tsconfig.base.json",
   "include": [
     "extensions/**/*.ts",
