@@ -65,7 +65,7 @@ export interface SfTeamFollowupInput {
  * → optional push → pr-description). The only follow-up-specific piece
  * is parent-plan resolution: we look up the parent's milestone-plan and
  * thread it into the planner brief, and we persist the parent slug in
- * `.fh-workflow/workflow.json` for resume.
+ * `.sf-workflow/workflow.json` for resume.
  *
  * Differences vs the previous implementation:
  *   - Followup writes a **new** plan folder under

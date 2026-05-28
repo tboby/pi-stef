@@ -12,11 +12,11 @@ let root = "";
 
 beforeEach(async () => {
   root = await mkdtemp(path.join(tmpdir(), "fh-web-command-test-"));
-  process.env.FH_WEB_PROFILES_DIR = path.join(root, "profiles");
+  process.env.SF_WEB_PROFILES_DIR = path.join(root, "profiles");
 });
 
 afterEach(async () => {
-  delete process.env.FH_WEB_PROFILES_DIR;
+  delete process.env.SF_WEB_PROFILES_DIR;
   await rm(root, { force: true, recursive: true });
 });
 

@@ -21,8 +21,8 @@ This package is implemented against the current Atlassian Cloud REST APIs:
 After credentials are configured, ask the agent for Jira or Confluence context in plain language:
 
 ```text
-fh-agent "Use the Atlassian tools to summarize Jira issue ABC-123 and any linked Confluence requirements before planning."
-fh-agent "Read this Confluence page and list implementation constraints before touching code: https://your-site.atlassian.net/wiki/..."
+pi "Use the Atlassian tools to summarize Jira issue ABC-123 and any linked Confluence requirements before planning."
+pi "Read this Confluence page and list implementation constraints before touching code: https://your-site.atlassian.net/wiki/..."
 ```
 
 For exact local reads during development, use the CLI:

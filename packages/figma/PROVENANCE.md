@@ -1,6 +1,6 @@
 # Figma Package Provenance
 
-This package is first-party fh-agent code.
+This package is extracted from fh-agent.
 
 ## Internal Migration
 

@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import webAccessExtension from "../extensions/web-access";
 
-const maybeDescribe = process.env.FH_WEB_RUN_BROWSER_TESTS === "1" ? describe : describe.skip;
+const maybeDescribe = process.env.SF_WEB_RUN_BROWSER_TESTS === "1" ? describe : describe.skip;
 
 class FakePi {
   commands = new Map<string, unknown>();
@@ -31,9 +31,9 @@ maybeDescribe("web-access registered tools e2e", () => {
 
   beforeAll(async () => {
     previousEnv = {
-      FH_WEB_CONFIG: process.env.FH_WEB_CONFIG,
-      FH_WEB_PASSWORD: process.env.FH_WEB_PASSWORD,
-      FH_WEB_USERNAME: process.env.FH_WEB_USERNAME,
+      SF_WEB_CONFIG: process.env.SF_WEB_CONFIG,
+      SF_WEB_PASSWORD: process.env.SF_WEB_PASSWORD,
+      SF_WEB_USERNAME: process.env.SF_WEB_USERNAME,
     };
     tmp = await mkdtemp(path.join(tmpdir(), "fh-web-tools-e2e-"));
     const server = createServer(handleRequest);
@@ -57,15 +57,15 @@ maybeDescribe("web-access registered tools e2e", () => {
         2,
       )}\n`,
     );
-    process.env.FH_WEB_CONFIG = configPath;
-    process.env.FH_WEB_USERNAME = "tool-user@example.com";
-    process.env.FH_WEB_PASSWORD = "tool-password";
+    process.env.SF_WEB_CONFIG = configPath;
+    process.env.SF_WEB_USERNAME = "tool-user@example.com";
+    process.env.SF_WEB_PASSWORD = "tool-password";
   }, 60_000);
 
   afterAll(async () => {
-    process.env.FH_WEB_CONFIG = previousEnv.FH_WEB_CONFIG;
-    process.env.FH_WEB_USERNAME = previousEnv.FH_WEB_USERNAME;
-    process.env.FH_WEB_PASSWORD = previousEnv.FH_WEB_PASSWORD;
+    process.env.SF_WEB_CONFIG = previousEnv.SF_WEB_CONFIG;
+    process.env.SF_WEB_USERNAME = previousEnv.SF_WEB_USERNAME;
+    process.env.SF_WEB_PASSWORD = previousEnv.SF_WEB_PASSWORD;
     await closeServer?.();
     await rm(tmp, { force: true, recursive: true });
   });

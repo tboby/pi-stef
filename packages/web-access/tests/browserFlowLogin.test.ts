@@ -102,13 +102,13 @@ describe("browser flow and login helpers", () => {
 
     const result = await runWebLogin({
       env: {
-        FH_WEB_PASSWORD: "secret",
-        FH_WEB_USERNAME: "user@example.com",
+        SF_WEB_PASSWORD: "secret",
+        SF_WEB_USERNAME: "user@example.com",
       },
-      passwordEnv: "FH_WEB_PASSWORD",
+      passwordEnv: "SF_WEB_PASSWORD",
       runtime: new FakeRuntime(page),
       url: "https://example.com/login",
-      usernameEnv: "FH_WEB_USERNAME",
+      usernameEnv: "SF_WEB_USERNAME",
     });
 
     expect(result.success).toBe(true);
@@ -120,13 +120,13 @@ describe("browser flow and login helpers", () => {
   it("does not report login success when the login form is still present after submit", async () => {
     const result = await runWebLogin({
       env: {
-        FH_WEB_PASSWORD: "wrong",
-        FH_WEB_USERNAME: "user@example.com",
+        SF_WEB_PASSWORD: "wrong",
+        SF_WEB_USERNAME: "user@example.com",
       },
-      passwordEnv: "FH_WEB_PASSWORD",
+      passwordEnv: "SF_WEB_PASSWORD",
       runtime: new FakeRuntime(new FakePage([], '<form><input type="password"><div class="login-error">Bad login</div></form>')),
       url: "https://example.com/login",
-      usernameEnv: "FH_WEB_USERNAME",
+      usernameEnv: "SF_WEB_USERNAME",
     });
 
     expect(result.success).toBe(false);

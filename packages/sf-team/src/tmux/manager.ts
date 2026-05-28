@@ -174,7 +174,7 @@ export function getActiveSession(opts: DetectOpts = {}): ActiveSession | null {
   //    requires refusing to claim a session that another launcher
   //    has stamped (different marker value) or that the user owns
   //    (no marker).
-  const fromEnv = env.FH_AGENT_TMUX_SESSION;
+  const fromEnv = env.SF_TEAM_TMUX_SESSION ?? env.FH_AGENT_TMUX_SESSION;
   if (fromEnv && isValidLauncherSessionName(fromEnv)) {
     if (validCurrent && fromEnv === validCurrent) {
       return { sessionName: fromEnv, isLauncherSession: true };

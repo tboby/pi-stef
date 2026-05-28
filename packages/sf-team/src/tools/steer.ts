@@ -90,7 +90,7 @@ export function createSfTeamSteer(): (params: SfTeamSteerParams, ctx: SfTeamStee
 
     const record = resolution.record;
     const recordRepoRoot = record.repoRoot || ctx.repoRoot;
-    // Derive expectedRoot from steeringRoot (steeringRoot = planFolder/.fh-workflow/steering)
+    // Derive expectedRoot from steeringRoot (steeringRoot = planFolder/.sf-workflow/steering)
     // so external aiPlanPath workflows are handled without needing the ai_plan subdir assumption.
     const expectedRoot = record.planSlug
       ? path.dirname(path.dirname(record.steeringRoot))

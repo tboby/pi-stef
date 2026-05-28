@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { loadWebAccessConfig } from "../src/config";
 import { createCloakBrowserRuntime } from "../src/browser/cloak";
 
-const maybeIt = process.env.FH_WEB_RUN_BROWSER_TESTS === "1" ? it : it.skip;
+const maybeIt = process.env.SF_WEB_RUN_BROWSER_TESTS === "1" ? it : it.skip;
 
 describe("CloakBrowser smoke", () => {
   maybeIt("launches only when explicitly enabled", async () => {

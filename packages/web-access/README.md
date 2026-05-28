@@ -5,14 +5,14 @@
 The package is optional. Install it when an agent needs web retrieval beyond the normal model context.
 
 ```bash
-fh-agent install web-access --scope project
-fh-agent install web-access --scope global
+pi install web-access --scope project
+pi install web-access --scope global
 ```
 
 Use `--dry-run` first when you want to inspect package-local dependency prep:
 
 ```bash
-fh-agent install web-access --scope project --dry-run
+pi install web-access --scope project --dry-run
 ```
 
 The package uses `runtimePostInstallCommands` so CloakBrowser binary preparation runs after package-local `npm install --omit=peer --workspaces=false` has installed `cloakbrowser` and `playwright-core`.
@@ -33,9 +33,9 @@ The package uses `runtimePostInstallCommands` so CloakBrowser binary preparation
 Use natural language when the agent needs current web context, URL extraction, rendered pages, or browser sessions:
 
 ```text
-fh-agent "Use web-access to search for current browser automation options and summarize the top sources with links."
-fh-agent "Fetch this URL as markdown with web-access, then compare it with the local README: https://example.com/docs"
-fh-agent "Use a named browser profile to open the staging login page and capture the visible error."
+pi "Use web-access to search for current browser automation options and summarize the top sources with links."
+pi "Fetch this URL as markdown with web-access, then compare it with the local README: https://example.com/docs"
+pi "Use a named browser profile to open the staging login page and capture the visible error."
 ```
 
 Use exact tools when you need deterministic parameters:
@@ -77,12 +77,12 @@ Slash commands:
 | `fh_web_search` | `query` | `maxResults`, `providers`, `searxngUrl`, `profile`, `headless` | Uses SearXNG when configured, then DuckDuckGo HTML/Lite, then CloakBrowser-backed Google/Bing providers when selected or reached by the cascade. |
 | `fh_web_fetch` | `url` | `format`, `mode`, `selector`, `screenshot`, `profile`, `headless` | `format` is `markdown`, `text`, `html`, `json`, or `raw`. `mode` is `auto`, `fast`, or `browser`. |
 | `fh_web_flow` | `instruction` or `steps` | `profile`, `headless` | Supports `goto`/`navigate`/`open`, `click`, `type`/`fill`, `press`/`keypress`/`key`, `wait`, `screenshot`, and `extract`. Host-only instructions such as `go to walmart.com and search for espresso machines` are normalized to HTTPS flow steps. |
-| `fh_web_login` | `url` | `profile`, `interactive`, `interactiveWaitMs`, `usernameEnv`, `passwordEnv`, `headless` | Does not accept raw passwords. Defaults to `FH_WEB_USERNAME` and `FH_WEB_PASSWORD`. |
+| `fh_web_login` | `url` | `profile`, `interactive`, `interactiveWaitMs`, `usernameEnv`, `passwordEnv`, `headless` | Does not accept raw passwords. Defaults to `SF_WEB_USERNAME` and `SF_WEB_PASSWORD`. |
 | `fh_web_session` | None | `action`, `profile`, `yes` | `action` is `list`, `inspect`, `locate`, or `clear`. `clear` requires `yes: true`. |
 
 ### Fetch Limits
 
-`FH_WEB_MAX_BYTES` controls returned tool output size and temp-file spillover. `FH_WEB_FETCH_MAX_BYTES` controls the larger network body cap used before extraction. The default fetch cap is 2 MB so normal news pages can be extracted while agent output remains bounded.
+`SF_WEB_MAX_BYTES` controls returned tool output size and temp-file spillover. `SF_WEB_FETCH_MAX_BYTES` controls the larger network body cap used before extraction. The default fetch cap is 2 MB so normal news pages can be extracted while agent output remains bounded.
 
 ### Runtime Checks
 
@@ -105,7 +105,7 @@ npm run install-browser
 Search works without API keys by default. Configure a SearXNG instance when you have one:
 
 ```bash
-export FH_WEB_SEARXNG_URL="https://search.example.com"
+export SF_WEB_SEARXNG_URL="https://search.example.com"
 ```
 
 The provider cascade is:
@@ -118,7 +118,7 @@ Public search pages can throttle or block automation. Google and Bing scraping a
 
 ## Browser Identity
 
-Browser mode lets CloakBrowser manage the browser user agent and fingerprint by default. `FH_WEB_USER_AGENT` is used only by the fast HTTP fetch path; forcing it into CloakBrowser can create inconsistent browser signals.
+Browser mode lets CloakBrowser manage the browser user agent and fingerprint by default. `SF_WEB_USER_AGENT` is used only by the fast HTTP fetch path; forcing it into CloakBrowser can create inconsistent browser signals.
 
 Named profiles get a stable derived fingerprint seed so repeat visits look like the same returning browser. Use site-specific profiles for sensitive sites:
 
@@ -135,12 +135,12 @@ Config-only browser hardening knobs:
 
 | Env var | Config key | Notes |
 |---|---|---|
-| `FH_WEB_BROWSER_FINGERPRINT_SEED` | `browserFingerprintSeed` | Optional positive integer. If omitted, fh-agent derives a stable seed from the profile name. |
-| `FH_WEB_BROWSER_HUMAN_PRESET` | `browserHumanPreset` | `default` or `careful`. |
-| `FH_WEB_BROWSER_LOCALE` | `browserLocale` | Example: `en-US`. |
-| `FH_WEB_BROWSER_TIMEZONE` | `browserTimezone` | Example: `America/New_York`. |
-| `FH_WEB_BROWSER_PROXY` | `browserProxy` | `http:`, `https:`, or `socks5:` proxy URL. This is intentionally config-only, not a tool parameter. |
-| `FH_WEB_BROWSER_GEOIP` | `browserGeoip` | `true` or `false`; requires CloakBrowser's optional GeoIP support. |
+| `SF_WEB_BROWSER_FINGERPRINT_SEED` | `browserFingerprintSeed` | Optional positive integer. If omitted, pi derives a stable seed from the profile name. |
+| `SF_WEB_BROWSER_HUMAN_PRESET` | `browserHumanPreset` | `default` or `careful`. |
+| `SF_WEB_BROWSER_LOCALE` | `browserLocale` | Example: `en-US`. |
+| `SF_WEB_BROWSER_TIMEZONE` | `browserTimezone` | Example: `America/New_York`. |
+| `SF_WEB_BROWSER_PROXY` | `browserProxy` | `http:`, `https:`, or `socks5:` proxy URL. This is intentionally config-only, not a tool parameter. |
+| `SF_WEB_BROWSER_GEOIP` | `browserGeoip` | `true` or `false`; requires CloakBrowser's optional GeoIP support. |
 
 ## CloakBrowser Footprint
 
@@ -200,6 +200,6 @@ Runtime dependencies:
 The real browser tests are skipped by default. Run them only when you intentionally want to launch CloakBrowser:
 
 ```bash
-FH_WEB_RUN_BROWSER_TESTS=1 pnpm test -- --run packages/web-access/tests/browserSmoke.test.ts
-FH_WEB_RUN_BROWSER_TESTS=1 pnpm test -- --run packages/web-access/tests/tools.e2e.test.ts
+SF_WEB_RUN_BROWSER_TESTS=1 pnpm test -- --run packages/web-access/tests/browserSmoke.test.ts
+SF_WEB_RUN_BROWSER_TESTS=1 pnpm test -- --run packages/web-access/tests/tools.e2e.test.ts
 ```

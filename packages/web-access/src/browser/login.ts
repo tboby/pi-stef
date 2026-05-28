@@ -79,8 +79,8 @@ function looksLikeLoginPage(html: string): boolean {
 
 function credentialsFromEnv(
   env: Record<string, string | undefined>,
-  usernameEnv = "FH_WEB_USERNAME",
-  passwordEnv = "FH_WEB_PASSWORD",
+  usernameEnv = "SF_WEB_USERNAME",
+  passwordEnv = "SF_WEB_PASSWORD",
 ): { password: string; username: string } {
   const username = env[usernameEnv];
   const password = env[passwordEnv];

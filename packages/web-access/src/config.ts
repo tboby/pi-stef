@@ -29,7 +29,7 @@ export async function loadWebAccessConfig(
   homeDir = process.env.HOME ?? process.cwd(),
 ): Promise<WebAccessConfig> {
   const defaults = defaultConfig(homeDir);
-  const fileConfig = await readConfigFile(env.FH_WEB_CONFIG ?? path.join(homeDir, ".pi", "web-access", "config.json"));
+  const fileConfig = await readConfigFile(env.SF_WEB_CONFIG ?? path.join(homeDir, ".pi", "web-access", "config.json"));
   const envConfig = configFromEnv(env);
   const paramConfig = sanitizeConfig(params);
   const merged = mergeConfig(defaults, fileConfig, envConfig, paramConfig);
@@ -76,24 +76,24 @@ async function readConfigFile(configPath: string): Promise<WebAccessConfigParams
 
 function configFromEnv(env: Record<string, string | undefined>): WebAccessConfigParams {
   return sanitizeConfig({
-    allowPrivateNetworks: parseBoolean(env.FH_WEB_ALLOW_PRIVATE_NETWORKS),
-    browserFingerprintSeed: parseFingerprintSeed(env.FH_WEB_BROWSER_FINGERPRINT_SEED),
-    browserGeoip: parseBoolean(env.FH_WEB_BROWSER_GEOIP),
-    browserHumanPreset: parseHumanPreset(env.FH_WEB_BROWSER_HUMAN_PRESET),
-    browserLocale: env.FH_WEB_BROWSER_LOCALE,
-    browserProxy: parseBrowserProxy(env.FH_WEB_BROWSER_PROXY),
-    browserTimezone: env.FH_WEB_BROWSER_TIMEZONE,
-    fetchMaxBytes: parsePositiveInteger(env.FH_WEB_FETCH_MAX_BYTES),
-    fetchTimeoutMs: parsePositiveInteger(env.FH_WEB_FETCH_TIMEOUT_MS),
-    maxBytes: parsePositiveInteger(env.FH_WEB_MAX_BYTES),
-    maxLines: parsePositiveInteger(env.FH_WEB_MAX_LINES),
-    maxResults: parsePositiveInteger(env.FH_WEB_MAX_RESULTS),
-    outputDir: env.FH_WEB_OUTPUT_DIR,
-    profilesDir: env.FH_WEB_PROFILES_DIR,
-    searchProviders: parseProviders(env.FH_WEB_SEARCH_PROVIDERS),
-    searxngUrl: env.FH_WEB_SEARXNG_URL,
-    sensitiveQueryKeys: splitCsv(env.FH_WEB_SENSITIVE_QUERY_KEYS),
-    userAgent: env.FH_WEB_USER_AGENT,
+    allowPrivateNetworks: parseBoolean(env.SF_WEB_ALLOW_PRIVATE_NETWORKS),
+    browserFingerprintSeed: parseFingerprintSeed(env.SF_WEB_BROWSER_FINGERPRINT_SEED),
+    browserGeoip: parseBoolean(env.SF_WEB_BROWSER_GEOIP),
+    browserHumanPreset: parseHumanPreset(env.SF_WEB_BROWSER_HUMAN_PRESET),
+    browserLocale: env.SF_WEB_BROWSER_LOCALE,
+    browserProxy: parseBrowserProxy(env.SF_WEB_BROWSER_PROXY),
+    browserTimezone: env.SF_WEB_BROWSER_TIMEZONE,
+    fetchMaxBytes: parsePositiveInteger(env.SF_WEB_FETCH_MAX_BYTES),
+    fetchTimeoutMs: parsePositiveInteger(env.SF_WEB_FETCH_TIMEOUT_MS),
+    maxBytes: parsePositiveInteger(env.SF_WEB_MAX_BYTES),
+    maxLines: parsePositiveInteger(env.SF_WEB_MAX_LINES),
+    maxResults: parsePositiveInteger(env.SF_WEB_MAX_RESULTS),
+    outputDir: env.SF_WEB_OUTPUT_DIR,
+    profilesDir: env.SF_WEB_PROFILES_DIR,
+    searchProviders: parseProviders(env.SF_WEB_SEARCH_PROVIDERS),
+    searxngUrl: env.SF_WEB_SEARXNG_URL,
+    sensitiveQueryKeys: splitCsv(env.SF_WEB_SENSITIVE_QUERY_KEYS),
+    userAgent: env.SF_WEB_USER_AGENT,
   });
 }
 

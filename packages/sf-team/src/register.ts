@@ -924,7 +924,7 @@ function registerFollowupTool(pi: ExtensionAPI): void {
   registerStartResumeTools(pi, {
     base: "sf_team_followup",
     startDescription:
-      "Draft and implement a follow-up to a completed plan. Creates a new plan folder under `ai_plan/<date>-followup-<slug>/` (e.g. `ai_plan/2026-05-08-followup-better-anim/`). The parent plan is referenced in the planner brief and recorded in `.fh-workflow/workflow.json` as `parentSlug` for resume; the parent folder is not modified. Runs in the current branch (same as `sf_team_task`); switch branches before invoking if a fresh branch is required. Required: `title`.",
+      "Draft and implement a follow-up to a completed plan. Creates a new plan folder under `ai_plan/<date>-followup-<slug>/` (e.g. `ai_plan/2026-05-08-followup-better-anim/`). The parent plan is referenced in the planner brief and recorded in `.sf-workflow/workflow.json` as `parentSlug` for resume; the parent folder is not modified. Runs in the current branch (same as `sf_team_task`); switch branches before invoking if a fresh branch is required. Required: `title`.",
     resumeDescription:
       "Resume an in-progress sf_team_followup run. Required: `resume` (slug, absolute path, or relative path).",
     startSchema,

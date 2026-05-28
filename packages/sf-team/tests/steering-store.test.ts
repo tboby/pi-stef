@@ -54,7 +54,7 @@ describe("steering path safety", () => {
     const planRoot = await mkTempRoot("plan-root");
     const runtimeRoot = await mkTempRoot("runtime-root");
 
-    expect(resolvePlanSteeringRoot(planRoot)).toBe(path.join(planRoot, ".fh-workflow", "steering"));
+    expect(resolvePlanSteeringRoot(planRoot)).toBe(path.join(planRoot, ".sf-workflow", "steering"));
     expect(resolveRunSteeringRoot(runtimeRoot, "fhw_task_20260517000000_abcdef12")).toBe(
       path.join(runtimeRoot, ".sf-team", "runs", "fhw_task_20260517000000_abcdef12", "steering"),
     );

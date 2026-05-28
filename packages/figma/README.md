@@ -23,9 +23,9 @@ Use this package when implementation work starts from Figma files, frames, FigJa
 Ask the agent to inspect Figma links in normal task language:
 
 ```text
-fh-agent "Summarize this Figma flow before implementing the settings page: https://www.figma.com/file/..."
-fh-agent "Use figma to inspect the checkout screen, list text content, and extract implementation hints before coding."
-fh-agent "Read Jira ABC-123 with Atlassian context and include linked Figma context if auth is configured."
+pi "Summarize this Figma flow before implementing the settings page: https://www.figma.com/file/..."
+pi "Use figma to inspect the checkout screen, list text content, and extract implementation hints before coding."
+pi "Read Jira ABC-123 with Atlassian context and include linked Figma context if auth is configured."
 ```
 
 Use exact tool calls when you need deterministic parameters:
@@ -38,7 +38,7 @@ figma_get_implementation_context input="https://www.figma.com/design/..." maxDep
 
 ## Setup And Auth
 
-`figma` calls the Figma REST API and needs a personal access token for private or team files. fh-agent never creates token files automatically because they contain secrets.
+`figma` calls the Figma REST API and needs a personal access token for private or team files. pi never creates token files automatically because they contain secrets.
 
 Create the canonical config file:
 
@@ -55,13 +55,13 @@ chmod 600 ~/.pi/figma/config.json
 Install the package:
 
 ```bash
-fh-agent install figma --scope project
+pi install figma --scope project
 ```
 
 Use `--scope global` when you want the tools available in every Pi project. Use `--dry-run` first when you want to inspect the Pi install command:
 
 ```bash
-fh-agent install figma --scope project --dry-run
+pi install figma --scope project --dry-run
 ```
 
 Check token discovery without printing the token:
@@ -192,19 +192,19 @@ The REST client retries 429 responses using Figma's `Retry-After` header, up to 
 Cacheable responses are stored under:
 
 ```text
-$XDG_CACHE_HOME/fh-agent/figma
+$XDG_CACHE_HOME/pi/figma
 ```
 
 or, when `XDG_CACHE_HOME` is unset:
 
 ```text
-~/.cache/fh-agent/figma
+~/.cache/pi/figma
 ```
 
 Clear cached responses with:
 
 ```bash
-rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/fh-agent/figma"
+rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/pi/figma"
 ```
 
 Image render URLs and image-fill URLs are not cached because Figma treats them as expiring links.
@@ -231,7 +231,7 @@ URL parsing accepts Figma `/file`, `/design`, `/proto`, `/board`, and `/slides` 
 ## Security Notes
 
 - Tokens are read from local config or environment and are never printed by tools.
-- `fh-agent` does not scaffold secret-bearing Figma config files.
+- `pi` does not scaffold secret-bearing Figma config files.
 - Keep `~/.pi/figma/config.json` at `chmod 600` when possible.
 - Asset downloads only write when `outputDir` is explicit and resolved safely under the allowed working directory.
 - Raw tools can return large file data; prefer compact tools for normal agent work.

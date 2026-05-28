@@ -4,8 +4,8 @@ import { homedir } from 'os';
 import path from 'path';
 
 export const FIGMA_CACHE_DIR = process.env.XDG_CACHE_HOME
-  ? path.join(process.env.XDG_CACHE_HOME, 'fh-agent', 'figma')
-  : path.join(homedir(), '.cache', 'fh-agent', 'figma');
+  ? path.join(process.env.XDG_CACHE_HOME, 'pi', 'figma')
+  : path.join(homedir(), '.cache', 'pi', 'figma');
 
 export class FigmaCache {
   constructor(

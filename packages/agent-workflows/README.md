@@ -6,9 +6,9 @@ This package is maintainer-facing infrastructure. It does not register Pi tools 
 
 ## Catalog Visibility
 
-This package is internal infrastructure, not a user-facing fh-agent catalog package. Its `fh-agent.package.json` sets `"catalogVisibility": "internal"`, so it is intentionally omitted from `fh-agent packages`, `catalog/packages.json`, `packages/package-manager/catalog/packages.json`, the beginner guide package list, and web catalog package cards.
+This package is internal infrastructure, not a user-facing pi catalog package. Its `package.json` sets `"catalogVisibility": "internal"`, so it is intentionally omitted from `pi-stef packages`, `catalog/packages.json`, `packages/package-manager/catalog/packages.json`, the beginner guide package list, and web catalog package cards.
 
-Do not install, update, remove, or startup-check this library directly through fh-agent. Consuming extensions own the dependency. Today `@pi-stef/sf-team` declares `@pi-stef/agent-workflows` as `file:../agent-workflows`; fh-agent's normal package-local dependency prep for `sf-team` runs `npm install --omit=peer --workspaces=false` and installs this library as part of that extension.
+Do not install, update, remove, or startup-check this library directly through pi. Consuming extensions own the dependency. Today `@pi-stef/sf-team` declares `@pi-stef/agent-workflows` as `file:../agent-workflows`; pi normal package-local dependency prep for `sf-team` runs `npm install --omit=peer --workspaces=false` and installs this library as part of that extension.
 
 If a local Pi environment installed `agent-workflows` while a development branch briefly exposed it as a catalog package, treat that as a manual/orphan install from an unreleased catalog state. Remove the explicit Pi source or local package path directly if needed; do not reintroduce a public catalog package for cleanup.
 

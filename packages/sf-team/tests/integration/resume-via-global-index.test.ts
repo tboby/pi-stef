@@ -22,7 +22,7 @@ describe("resume-via-global-index — slug-only resume from unrelated cwd finds 
     const otherCwd = mkdtempSync(path.join(tmpdir(), "ct-idx-other-cwd-"));
     const slug = `2026-05-27-global-index-test-${Date.now()}`;
     const planFolder = path.join(planRoot, slug);
-    const fhWorkflowDir = path.join(planFolder, ".fh-workflow");
+    const fhWorkflowDir = path.join(planFolder, ".sf-workflow");
     mkdirSync(fhWorkflowDir, { recursive: true });
 
     try {

@@ -19,7 +19,7 @@ export function assertPathInsideRoot(targetPath: string, expectedRoot: string): 
 
 export function resolvePlanSteeringRoot(planFolder: string): string {
   const resolvedPlanFolder = path.resolve(planFolder);
-  const steeringRoot = path.join(resolvedPlanFolder, ".fh-workflow", "steering");
+  const steeringRoot = path.join(resolvedPlanFolder, ".sf-workflow", "steering");
   return assertPathInsideRoot(steeringRoot, resolvedPlanFolder);
 }
 
