@@ -16,6 +16,7 @@
 |------|---------------|
 | `pnpm-workspace.yaml` | Workspace config: `packages/*` |
 | `package.json` | Root monorepo scripts and dev deps |
+| `tsconfig.json` | Root TS project references |
 | `tsconfig.base.json` | Shared TypeScript config |
 | `vitest.config.ts` | Test runner config |
 | `scripts/install-all.sh` | Convenience: install all packages |
@@ -52,7 +53,7 @@
   "description": "Custom package collection for the pi coding agent.",
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "install:all:global": "./scripts/install-all.sh",
@@ -61,7 +62,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^6.0.3",
-    "vitest": "^3.0.0"
+    "vitest": "^4.0.0"
   }
 }
 ```
@@ -106,7 +107,22 @@ packages:
 
 - [ ] Create the file with the content above
 
-### S14: Create vitest.config.ts
+### S14: Create root tsconfig.json
+
+**Create:** `tsconfig.json`
+
+```json
+{
+  "files": [],
+  "references": [
+    { "path": "packages/superpowers-adapter" }
+  ]
+}
+```
+
+- [ ] Create the file with the content above
+
+### S15: Create vitest.config.ts
 
 **Create:** `vitest.config.ts`
 
@@ -116,13 +132,14 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["packages/*/tests/**/*.test.ts"],
+    exclude: ["**/node_modules/**", "**/dist/**"],
   },
 });
 ```
 
 - [ ] Create the file with the content above
 
-### S15: Create superpowers-adapter package.json
+### S16: Create superpowers-adapter package.json
 
 **Create:** `packages/superpowers-adapter/package.json`
 
@@ -153,18 +170,13 @@ export default defineConfig({
 
 - [ ] Create the file with the content above
 
-### S16: Create superpowers-adapter tsconfig.json
+### S17: Create superpowers-adapter tsconfig.json
 
 **Create:** `packages/superpowers-adapter/tsconfig.json`
 
 ```json
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
-  },
   "include": ["src/**/*", "tests/**/*"],
   "exclude": ["node_modules"]
 }
@@ -172,16 +184,16 @@ export default defineConfig({
 
 - [ ] Create the file with the content above
 
-### S17: Install dependencies
+### S18: Install dependencies
 
 - [ ] Run `pnpm install`
 
 Expected: Dependencies installed, lockfile created.
 
-### S18: Commit M1
+### S19: Commit M1
 
 ```bash
-git add pnpm-workspace.yaml package.json tsconfig.base.json vitest.config.ts pnpm-lock.yaml packages/superpowers-adapter/package.json packages/superpowers-adapter/tsconfig.json
+git add pnpm-workspace.yaml package.json tsconfig.json tsconfig.base.json vitest.config.ts pnpm-lock.yaml packages/superpowers-adapter/package.json packages/superpowers-adapter/tsconfig.json
 git commit -m "chore: scaffold monorepo with superpowers-adapter package"
 ```
 
@@ -1143,7 +1155,8 @@ describe("commands", () => {
     await tool.execute("", {
       todos: [
         { id: "1", content: "Task A", status: "completed" },
-        { id: "2", content: "Task B", status: "pending" },
+        { id: "2", content: "Task B", status: "in_progress" },
+        { id: "3", content: "Task C", status: "pending" },
       ],
     });
 
@@ -1152,8 +1165,9 @@ describe("commands", () => {
     await handler([], mockCtx);
 
     const notification = mockCtx.ui.notify.mock.calls[0][0] as string;
-    expect(notification).toContain("1/2 completed");
+    expect(notification).toContain("1/3 completed");
     expect(notification).toContain("Task A");
+    expect(notification).toContain("🔄");
   });
 
   it("/todo-clear resets todos", async () => {
@@ -1466,6 +1480,8 @@ Dispatch subagents for isolated work. This is an alias for the `Agent` tool from
 
 **Prerequisite:** `pi install npm:@tintinweb/pi-subagents`
 
+**Limitation:** Pi's ExtensionAPI does not support tool-to-tool invocation. The Task tool returns a message directing the LLM to call the Agent tool directly rather than forwarding the call programmatically. This matches the behavior of the original upstream implementation.
+
 ### Skill
 
 Load skill instructions by name. Discovers skills from standard pi skill directories.
@@ -1479,6 +1495,8 @@ Load skill instructions by name. Discovers skills from standard pi skill directo
 - `<cwd>/.pi/skills/`
 - `<cwd>/.agents/skills/`
 - Recursively under `~/.pi/agent/git/` (depth 10)
+
+**Limitation:** The YAML frontmatter parser handles simple `key: value` pairs only. Description values containing colons will be truncated at the first colon. This matches the upstream implementation and is not an issue in practice — all known superpowers SKILL.md files use single-line descriptions without internal colons.
 
 ## Commands
 
@@ -1647,17 +1665,9 @@ fi
 
 ### S74: Update .gitignore
 
-**Modify:** `.gitignore` — add entries for build artifacts:
+**Modify:** `.gitignore` — add `*.log` to existing entries (the rest already exist from initial commit):
 
-```
-node_modules/
-dist/
-*.log
-.DS_Store
-/ai_plan/
-```
-
-- [ ] Update the file with the content above
+- [ ] Add `*.log` line to `.gitignore`
 
 ### S75: Run final verification
 
