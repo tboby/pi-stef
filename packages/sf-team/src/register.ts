@@ -1,0 +1,935 @@
+import type { ExtensionAPI, ExtensionUIContext } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
+
+import { loadAndResolveDefaults } from "./config/load";
+import { resolveRuntime } from "./config/resolve-runtime";
+import { GIT_MODES, TDD_MODES, VerificationConfigSchema, type ResolvedDefaults } from "./config/schema";
+import { effectiveUi } from "./config/workflow";
+import { wrapExecute } from "./errors";
+import { formatFinalCostSentence, type CostSummary } from "./orchestrator/cost";
+import { parseStoryTracker, type ParsedMilestone } from "./plan/tracker";
+import { createFhTeamAuto } from "./tools/auto";
+import { createFhTeamFollowup } from "./tools/followup";
+import { createFhTeamImplement, type FhTeamImplementResult } from "./tools/implement";
+import { createDefaultExternalFetcher } from "./research/default-fetcher";
+import { createFhTeamPlan } from "./tools/plan";
+import { createFhTeamSteer, FhTeamSteerSchema, type FhTeamSteerParams, type FhTeamSteerResult } from "./tools/steer";
+import { createFhTeamTask } from "./tools/task";
+
+/**
+ * Resolve config (~/.pi/fh-team/config.json + repo .fh-team.json
+ * → DEFAULT_CONFIG fallback). Surface load errors via ui.notify so the
+ * user sees that their config was ignored. Called once per tool execute.
+ */
+async function resolveCtxDefaults(ui: ExtensionUIContext | undefined): Promise<ResolvedDefaults> {
+  return loadAndResolveDefaults(process.cwd(), {
+    notify: ui?.notify ? (msg, level) => ui.notify(msg, level) : undefined,
+  });
+}
+
+/**
+ * Production tool surface for the fh-team extension.
+ *
+ * Each base tool name (`fh_team_plan`, `fh_team_implement`, `fh_team_task`,
+ * `fh_team_auto`, `fh_team_followup`) registers TWO Pi tools:
+ *   - `<base>` — flat single-mode schema for new runs
+ *   - `<base>_resume` — flat single-mode schema for resuming a slug
+ *
+ * The historical M1 split that also registered a permissive `<base>`
+ * legacy alias throwing `LegacyAliasError` is removed; the start tool
+ * now lives at the bare base name. This keeps the LLM-facing tool count
+ * minimal (10 names total) and matches the names LLMs already remember
+ * from training data, while the strict per-tool schemas (no top-level
+ * `anyOf` union) preserve the M1 win against schema-validation churn.
+ */
+export const TEAM_BASE_TOOL_NAMES = [
+  "fh_team_plan",
+  "fh_team_implement",
+  "fh_team_task",
+  "fh_team_auto",
+  "fh_team_followup",
+] as const;
+
+export type TeamBaseToolName = (typeof TEAM_BASE_TOOL_NAMES)[number];
+
+export const TEAM_STEER_TOOL_NAME = "fh_team_steer" as const;
+
+/**
+ * Enumerates the FULL Pi tool surface fh-team registers (5 base + 5
+ * `_resume` + standalone steer = 11 names). Order: for each base name,
+ * the bare start tool first, then its `_resume` companion, followed by
+ * the standalone steering ingress tool.
+ */
+export const TEAM_START_RESUME_TOOL_NAMES = TEAM_BASE_TOOL_NAMES.flatMap(
+  (base) => [base, `${base}_resume`] as const,
+) as readonly StartResumeToolName[];
+
+export const TEAM_TOOL_NAMES = [...TEAM_START_RESUME_TOOL_NAMES, TEAM_STEER_TOOL_NAME] as readonly TeamToolName[];
+
+export type TeamResumeToolName = `${TeamBaseToolName}_resume`;
+export type StartResumeToolName = TeamBaseToolName | TeamResumeToolName;
+export type TeamToolName = StartResumeToolName | typeof TEAM_STEER_TOOL_NAME;
+
+export function registerFhTeam(pi: ExtensionAPI): void {
+  // Maintain TEAM_BASE_TOOL_NAMES order so smoke-test enumeration is stable.
+  for (const name of TEAM_BASE_TOOL_NAMES) {
+    if (name === "fh_team_plan") registerPlanTool(pi);
+    else if (name === "fh_team_task") registerTaskTool(pi);
+    else if (name === "fh_team_implement") registerImplementTool(pi);
+    else if (name === "fh_team_auto") registerAutoTool(pi);
+    else if (name === "fh_team_followup") registerFollowupTool(pi);
+  }
+  registerSteerTool(pi);
+  registerSlashCommands(pi);
+}
+
+interface ToolExecuteOutcome<TResult> {
+  content: Array<{ type: string; text: string }>;
+  details: TResult;
+}
+
+interface ResultWithCostSummary {
+  costSummary?: CostSummary;
+}
+
+function appendCostSentence<T extends ResultWithCostSummary>(text: string, result: T): string {
+  const sentence = formatFinalCostSentence(result.costSummary);
+  return sentence ? `${text} ${sentence}` : text;
+}
+
+function withCostSummaryGuidance(description: string): string {
+  return `${description} When the tool result contains a known cost sentence like "Your total cost is $9.99.", extract the actual amount from the tool result and include that cost in your final user-facing summary as "Total cost: $<amount>" (for example, "Total cost: $9.99").`;
+}
+
+function makeExecCtx(
+  toolName: string,
+  signal: AbortSignal | null | undefined,
+  ctx: { hasUI?: boolean; ui?: ExtensionUIContext } | undefined,
+): PiToolExecuteCtx {
+  return {
+    toolName,
+    signal: signal ?? undefined,
+    hasUI: ctx?.hasUI,
+    ui: ctx?.hasUI ? ctx.ui : undefined,
+  };
+}
+
+async function runExec<T>(p: Promise<ToolExecuteOutcome<T>>): Promise<{ content: Array<{ type: "text"; text: string }>; details: T }> {
+  const outcome = await p;
+  return {
+    content: outcome.content.map((c) => ({ type: "text" as const, text: c.text })),
+    details: outcome.details,
+  };
+}
+
+interface StartResumeRegistration<TStartParams, TResumeParams, TResult> {
+  /** Base tool name; the start tool registers under this name directly. */
+  base: TeamBaseToolName;
+  startDescription: string;
+  resumeDescription: string;
+  /** Schema body for `<base>` (a Type.Object, NOT a Type.Union). */
+  startSchema: ReturnType<typeof Type.Object>;
+  /** Schema body for `<base>_resume` (a Type.Object, NOT a Type.Union). */
+  resumeSchema: ReturnType<typeof Type.Object>;
+  executeStart: (params: TStartParams, ctx: PiToolExecuteCtx) => Promise<ToolExecuteOutcome<TResult>>;
+  executeResume: (params: TResumeParams, ctx: PiToolExecuteCtx) => Promise<ToolExecuteOutcome<TResult>>;
+}
+
+/**
+ * Subset of Pi's per-call execute context that fh-team handlers consume.
+ * Kept loose to avoid coupling to Pi internal types beyond what each
+ * handler actually reads. `toolName` is the registered Pi tool name
+ * (`<base>` for the start variant, `<base>_resume` for resume) so inner
+ * handlers can compose typed-error messages with the right surface name.
+ */
+interface PiToolExecuteCtx {
+  toolName: string;
+  signal?: AbortSignal;
+  hasUI?: boolean;
+  ui?: ExtensionUIContext;
+}
+
+/**
+ * Register `<base>` (start) and `<base>_resume` for one fh-team workflow.
+ * Both carry a flat single-object schema so calling LLMs hit the right
+ * shape on the first try (no top-level `anyOf` union). Each `execute`
+ * body is wrapped via `wrapExecute(<piToolName>, ...)` so any
+ * non-FhTeamToolError throw is normalized to
+ * `FhTeamToolError({ kind: "internal", ... })` whose `Error.message`
+ * carries the `FAILED:`/`RESUME:` envelope. Already-typed errors pass
+ * through unchanged.
+ */
+function registerStartResumeTools<TStartParams, TResumeParams, TResult>(
+  pi: ExtensionAPI,
+  reg: StartResumeRegistration<TStartParams, TResumeParams, TResult>,
+): void {
+  const startName = reg.base;
+  const resumeName = `${reg.base}_resume` as TeamResumeToolName;
+
+  const wrappedStart = wrapExecute<TStartParams, ToolExecuteOutcome<TResult>>(startName, async (_id, params, signal, _onUpdate, ctx) => {
+    return reg.executeStart(params, makeExecCtx(startName, signal, ctx));
+  });
+  const wrappedResume = wrapExecute<TResumeParams, ToolExecuteOutcome<TResult>>(resumeName, async (_id, params, signal, _onUpdate, ctx) => {
+    return reg.executeResume(params, makeExecCtx(resumeName, signal, ctx));
+  });
+
+  pi.registerTool({
+    name: startName,
+    label: startName,
+    description: withCostSummaryGuidance(reg.startDescription),
+    parameters: reg.startSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrappedStart(id, params as TStartParams, signal ?? undefined, onUpdate ?? undefined, ctx)),
+  });
+
+  pi.registerTool({
+    name: resumeName,
+    label: resumeName,
+    description: withCostSummaryGuidance(reg.resumeDescription),
+    parameters: reg.resumeSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrappedResume(id, params as TResumeParams, signal ?? undefined, onUpdate ?? undefined, ctx)),
+  });
+}
+
+/**
+ * Register `/fh_team_*` slash commands so the team tools appear in pi's
+ * `/` menu. Each base name registers TWO commands:
+ *   - `/<base>` — directs the agent to call the start tool
+ *   - `/<base>_resume` — directs the agent to call the resume tool
+ *
+ * Defensive against older pi runtimes: if `registerCommand` or
+ * `sendUserMessage` is missing, we degrade gracefully instead of throwing
+ * during extension load.
+ */
+function registerSlashCommands(pi: ExtensionAPI): void {
+  if (typeof pi.registerCommand !== "function") return;
+
+  const send = typeof pi.sendUserMessage === "function" ? pi.sendUserMessage.bind(pi) : undefined;
+  const steerHandler = createFhTeamSteer();
+
+  for (const base of TEAM_BASE_TOOL_NAMES) {
+    const resumeName = `${base}_resume` as TeamResumeToolName;
+    const startHint = startHintForBase(base);
+
+    registerOne(base, `${describeStartTool(base)} Args: ${startHint}.`, (trimmed) =>
+      trimmed.length === 0
+        ? `Invoke the ${base} tool. Ask me first for the ${startHint}.`
+        : `Invoke the ${base} tool with: ${trimmed}`,
+    );
+
+    registerOne(resumeName, `${describeResumeTool(base)} Args: slug to resume.`, (trimmed) =>
+      trimmed.length === 0
+        ? `Invoke the ${resumeName} tool. Ask me first for the slug to resume.`
+        : `Invoke the ${resumeName} tool with: ${trimmed}`,
+    );
+  }
+
+  pi.registerCommand(TEAM_STEER_TOOL_NAME, {
+    description: "Send an instruction to an active fh-team workflow. Args: optional workflowId=<id>, planSlug=<slug>, aiPlanPath=<dir> plus instruction.",
+    handler: async (args, ctx) => {
+      const trimmed = args.trim();
+      if (trimmed.length === 0) {
+        await postSlashPrompt(
+          TEAM_STEER_TOOL_NAME,
+          trimmed,
+          "Invoke the fh_team_steer tool. Ask me first for the instruction and, if needed, the workflowId or planSlug.",
+          ctx,
+        );
+        return;
+      }
+
+      const params = parseSteerSlashArgs(trimmed);
+      if (!params) {
+        ctx.ui?.notify?.(
+          "fh_team_steer: include instruction text, optionally with workflowId=<id> or planSlug=<slug>.",
+          "warning",
+        );
+        return;
+      }
+
+      try {
+        const repoRoot = process.cwd();
+        const ui = ctx?.ui as import("@earendil-works/pi-coding-agent").ExtensionUIContext | undefined;
+        const configDefaults = await resolveCtxDefaults(ui);
+        const { planRoot } = resolveRuntime({ prompt: { aiPlanPath: params.aiPlanPath }, defaults: configDefaults, repoRoot });
+        const resolvedParams = { ...params, aiPlanPath: planRoot };
+        const result = await steerHandler(resolvedParams, { repoRoot, aiPlanPath: planRoot });
+        notifySteerSlashResult(ctx.ui, result);
+      } catch (err) {
+        ctx.ui?.notify?.(`fh_team_steer: ${err instanceof Error ? err.message : String(err)}`, "warning");
+      }
+    },
+  });
+
+  function registerOne(
+    name: string,
+    description: string,
+    build: (trimmed: string) => string,
+    opts: { busyDelivery?: "steer" | "followUp" } = {},
+  ): void {
+    pi.registerCommand(name, {
+      description,
+      handler: async (args, ctx) => {
+        const trimmed = args.trim();
+        const message = build(trimmed);
+        await postSlashPrompt(name, trimmed, message, ctx, opts.busyDelivery ?? "followUp");
+      },
+    });
+  }
+
+  async function postSlashPrompt(
+    name: string,
+    trimmed: string,
+    message: string,
+    ctx: { isIdle?: () => boolean; ui?: ExtensionUIContext },
+    busyDelivery: "steer" | "followUp" = "followUp",
+  ): Promise<void> {
+    if (!send) {
+      if (ctx.ui?.notify) {
+        ctx.ui.notify(
+          `fh-team: this pi runtime can't post slash-command output to the agent. Type "${name} ${trimmed}" instead.`,
+          "warning",
+        );
+      }
+      return;
+    }
+    // When the agent is mid-stream, sendUserMessage requires a delivery
+    // mode or the runtime drops it. Use followUp for ordinary commands;
+    // fh_team_steer non-empty input bypasses this path and writes the
+    // durable steering inbox directly.
+    const idle = typeof ctx.isIdle === "function" ? ctx.isIdle() : true;
+    if (idle) {
+      send(message);
+    } else {
+      send(message, { deliverAs: busyDelivery });
+    }
+  }
+}
+
+function parseSteerSlashArgs(trimmed: string): FhTeamSteerParams | undefined {
+  const matches = Array.from(trimmed.matchAll(/(?:^|\s)([A-Za-z][\w-]*)=(?:"([^"]*)"|'([^']*)'|(\S+))/g));
+  if (matches.length === 0) return { instruction: trimmed };
+
+  const values = new Map<string, string>();
+  const spans: Array<[number, number]> = [];
+  const knownKeys = new Set(["workflowid", "planslug", "priority", "instruction", "aiplanpath"]);
+  for (const match of matches) {
+    const rawKey = match[1] ?? "";
+    const key = rawKey.toLowerCase().replace(/[-_]/g, "");
+    if (!knownKeys.has(key)) continue;
+    const value = match[2] ?? match[3] ?? match[4] ?? "";
+    values.set(key, value);
+    spans.push([match.index ?? 0, (match.index ?? 0) + match[0].length]);
+  }
+
+  let remainder = "";
+  let previousEnd = 0;
+  for (const [start, end] of spans) {
+    remainder += trimmed.slice(previousEnd, start);
+    previousEnd = end;
+  }
+  remainder += trimmed.slice(previousEnd);
+
+  const instruction = (values.get("instruction") ?? remainder).trim();
+  if (instruction.length === 0) return undefined;
+
+  const priority = values.get("priority");
+  return {
+    instruction,
+    workflowId: blankToUndefined(values.get("workflowid")),
+    planSlug: blankToUndefined(values.get("planslug")),
+    priority: priority === "urgent" || priority === "normal" ? priority : undefined,
+    aiPlanPath: blankToUndefined(values.get("aiplanpath")),
+  };
+}
+
+function blankToUndefined(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function notifySteerSlashResult(ui: ExtensionUIContext | undefined, result: FhTeamSteerResult): void {
+  const message = result.ok
+    ? `fh_team_steer: queued instruction ${result.instructionId} for workflow ${result.workflowId}.`
+    : `fh_team_steer: ${result.reason}; ${result.message}`;
+  ui?.notify?.(message, result.ok ? "info" : "warning");
+}
+
+function startHintForBase(base: TeamBaseToolName): string {
+  switch (base) {
+    case "fh_team_plan":
+      return "title (and optionally brief, aiPlanPath, gitMode, tddMode)";
+    case "fh_team_implement":
+      return "slug of the plan folder to implement (optionally aiPlanPath, gitMode, tddMode)";
+    case "fh_team_task":
+      return "title (and optionally brief, aiPlanPath, gitMode, tddMode)";
+    case "fh_team_auto":
+      return "title (and optionally brief, aiPlanPath, gitMode, tddMode)";
+    case "fh_team_followup":
+      return "title of the follow-up (optionally aiPlanPath, gitMode, tddMode); parent plan is auto-detected";
+  }
+}
+
+function describeStartTool(base: TeamBaseToolName): string {
+  switch (base) {
+    case "fh_team_plan":
+      return "Draft a multi-milestone plan via planner+reviewer agents and write a 5-file plan folder. Supports aiPlanPath, gitMode ('auto'|'on'|'off'), tddMode ('auto'|'on'|'off').";
+    case "fh_team_implement":
+      return "Implement an approved plan folder via developer+reviewer agents (single-milestone by default). Supports aiPlanPath, gitMode, tddMode.";
+    case "fh_team_task":
+      return "Single-task end-to-end: plan-review → implement → verify → impl-review → commit. Supports aiPlanPath, gitMode ('auto'|'on'|'off'), tddMode ('auto'|'on'|'off').";
+    case "fh_team_auto":
+      return "Chain fh_team_plan and fh_team_implement (all-milestones) with no human gates. Supports aiPlanPath, gitMode, tddMode.";
+    case "fh_team_followup":
+      return "Draft and implement a follow-up to an existing plan; writes a brand-new sibling plan folder under ai_plan/<date>-followup-<slug>/. Supports aiPlanPath, gitMode, tddMode.";
+  }
+}
+
+function describeResumeTool(base: TeamBaseToolName): string {
+  switch (base) {
+    case "fh_team_plan":
+      return "Resume an in-progress plan-review loop by slug. Accepts aiPlanPath, gitMode, tddMode.";
+    case "fh_team_implement":
+      return "Resume an in-progress implementation loop by slug. Accepts aiPlanPath, gitMode, tddMode.";
+    case "fh_team_task":
+      return "Resume an in-progress single-task workflow by slug. Accepts aiPlanPath, gitMode, tddMode.";
+    case "fh_team_auto":
+      return "Resume an in-progress fh_team_auto run (plan or implement phase) by slug. Accepts aiPlanPath, gitMode, tddMode.";
+    case "fh_team_followup":
+      return "Resume an in-progress fh_team_followup run by slug. Accepts aiPlanPath, gitMode, tddMode.";
+  }
+}
+
+function registerSteerTool(pi: ExtensionAPI): void {
+  const handler = createFhTeamSteer();
+  const wrapped = wrapExecute<FhTeamSteerParams, ToolExecuteOutcome<FhTeamSteerResult>>(
+    TEAM_STEER_TOOL_NAME,
+    async (_id, params, _signal, _onUpdate, ctx) => {
+      const repoRoot = process.cwd();
+      const ui = ctx?.ui as import("@earendil-works/pi-coding-agent").ExtensionUIContext | undefined;
+      const configDefaults = await resolveCtxDefaults(ui);
+      const { planRoot } = resolveRuntime({ prompt: { aiPlanPath: params.aiPlanPath }, defaults: configDefaults, repoRoot });
+      const result = await handler({ ...params, aiPlanPath: planRoot }, { repoRoot, aiPlanPath: planRoot });
+      const text = result.ok
+        ? `fh_team_steer: queued instruction ${result.instructionId} for workflow ${result.workflowId}.`
+        : `fh_team_steer: ${result.reason}; ${result.message}`;
+      return {
+        content: [{ type: "text", text }],
+        details: result,
+      };
+    },
+  );
+
+  pi.registerTool({
+    name: TEAM_STEER_TOOL_NAME,
+    label: TEAM_STEER_TOOL_NAME,
+    description: withCostSummaryGuidance(
+      "Send a steering instruction to an active fh-team workflow. Targets by workflowId, planSlug, or the single active workflow. Standalone ingress only; there is no fh_team_steer_resume.",
+    ),
+    parameters: FhTeamSteerSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrapped(id, params as FhTeamSteerParams, signal ?? undefined, onUpdate ?? undefined, ctx)),
+  });
+}
+
+function registerPlanTool(pi: ExtensionAPI): void {
+  const handler = createFhTeamPlan();
+  // Default external fetcher (URL via web-access, Jira/Confluence via
+  // atlassian). Constructed once per registration; the same instance is
+  // reused for every fh_team_plan call. Tests inject their own fetcher
+  // via the handler's `input.externalFetcher` parameter directly, so
+  // wiring it here does NOT override test-provided fetchers — tests
+  // continue to take precedence.
+  const defaultExternalFetcher = createDefaultExternalFetcher();
+  const GitModeSchema = Type.Union(GIT_MODES.map((m) => Type.Literal(m)));
+  const TddModeSchema = Type.Union(TDD_MODES.map((m) => Type.Literal(m)));
+  const startSchema = Type.Object(
+    {
+      title: Type.String({ description: "Short title used as the slug seed and brief." }),
+      brief: Type.Optional(Type.String({ description: "Detailed requirements / context for the planner." })),
+      maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+      verification: Type.Optional(VerificationConfigSchema),
+      aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are written. Defaults to ./ai_plan/." })),
+      gitMode: Type.Optional(GitModeSchema),
+      tddMode: Type.Optional(TddModeSchema),
+    },
+    { additionalProperties: false },
+  );
+  const resumeSchema = Type.Object(
+    {
+      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
+      maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+      verification: Type.Optional(VerificationConfigSchema),
+      aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are written." })),
+      gitMode: Type.Optional(GitModeSchema),
+      tddMode: Type.Optional(TddModeSchema),
+    },
+    { additionalProperties: false },
+  );
+
+  const exec = async (
+    p: Record<string, any>,
+    pctx: PiToolExecuteCtx,
+  ) => {
+    const ui = pctx.hasUI ? pctx.ui : undefined;
+    const repoRoot = process.cwd();
+    const configDefaults = await resolveCtxDefaults(ui);
+    const toolUi = effectiveUi(ui, configDefaults);
+    const runtime = resolveRuntime({
+      prompt: { aiPlanPath: p.aiPlanPath, gitMode: p.gitMode, tddMode: p.tddMode },
+      defaults: configDefaults,
+      repoRoot,
+    });
+    const result = await handler(
+      {
+        title: p.title,
+        resume: p.resume,
+        brief: p.brief,
+        maxRounds: p.maxRounds,
+        verification: p.verification,
+        externalFetcher: defaultExternalFetcher,
+      },
+      {
+        repoRoot,
+        signal: pctx.signal ?? undefined,
+        ui: toolUi,
+        configDefaults,
+        toolName: pctx.toolName,
+        planRoot: runtime.planRoot,
+        gitMode: runtime.gitMode,
+        tddMode: runtime.tddMode,
+      },
+    );
+    return {
+      content: [{ type: "text", text: appendCostSentence(`fh_team_plan: ${result.approved ? "approved" : "not approved"} after ${result.rounds} rounds; folder=${result.folderPath ?? "(none)"}; performance=${result.performanceReportPath ?? "(none)"}`, result) }],
+      details: result,
+    };
+  };
+
+  registerStartResumeTools(pi, {
+    base: "fh_team_plan",
+    startDescription:
+      "Draft a multi-milestone plan via planner+reviewer agents and write a 5-file plan folder. Begins a new run; required: `title`.",
+    resumeDescription:
+      "Resume an in-progress fh_team_plan run. Required: `resume` (slug, absolute path, or relative path).",
+    startSchema,
+    resumeSchema,
+    executeStart: exec,
+    executeResume: exec,
+  });
+}
+
+function registerTaskTool(pi: ExtensionAPI): void {
+  const handler = createFhTeamTask();
+  const GitModeSchema = Type.Union(GIT_MODES.map((m) => Type.Literal(m)));
+  const TddModeSchema = Type.Union(TDD_MODES.map((m) => Type.Literal(m)));
+  const startSchema = Type.Object(
+    {
+      title: Type.String({ description: "Task title (used as the slug)." }),
+      brief: Type.Optional(Type.String()),
+      maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+      allowDirty: Type.Optional(Type.Boolean({ description: "Skip dirty-worktree guard." })),
+      verification: Type.Optional(VerificationConfigSchema),
+      aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are written. Defaults to ./ai_plan/." })),
+      gitMode: Type.Optional(GitModeSchema),
+      tddMode: Type.Optional(TddModeSchema),
+    },
+    { additionalProperties: false },
+  );
+  const resumeSchema = Type.Object(
+    {
+      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
+      maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+      allowDirty: Type.Optional(Type.Boolean({ description: "Skip dirty-worktree guard." })),
+      verification: Type.Optional(VerificationConfigSchema),
+      aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are read from and written to. Defaults to ./ai_plan/." })),
+      gitMode: Type.Optional(GitModeSchema),
+      tddMode: Type.Optional(TddModeSchema),
+    },
+    { additionalProperties: false },
+  );
+
+  const exec = async (p: Record<string, any>, pctx: PiToolExecuteCtx) => {
+    const ui = pctx.hasUI ? pctx.ui : undefined;
+    const repoRoot = process.cwd();
+    const configDefaults = await resolveCtxDefaults(ui);
+    const toolUi = effectiveUi(ui, configDefaults);
+    const runtime = resolveRuntime({ prompt: { aiPlanPath: p.aiPlanPath, gitMode: p.gitMode, tddMode: p.tddMode }, defaults: configDefaults, repoRoot });
+    const shouldPush = async (): Promise<boolean> => {
+      if (!toolUi) return false; // headless mode: never push
+      return (await toolUi.confirm("Push this commit?", `Push to remote now?`)) === true;
+    };
+    const result = await handler(
+      {
+        title: p.title,
+        resume: p.resume,
+        brief: p.brief,
+        maxRounds: p.maxRounds,
+        allowDirty: p.allowDirty,
+        verification: p.verification,
+        shouldPush,
+      },
+      { repoRoot, signal: pctx.signal ?? undefined, ui: toolUi, configDefaults, toolName: pctx.toolName, planRoot: runtime.planRoot, gitMode: runtime.gitMode, tddMode: runtime.tddMode, rawGitMode: runtime.raw.gitMode, rawTddMode: runtime.raw.tddMode },
+    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: appendCostSentence(`fh_team_task: ${result.approved ? "approved" : "not approved"}; commit=${result.commitSha ?? "(none)"}; pushed=${result.pushed}; performance=${result.performanceReportPath ?? "(none)"}`, result),
+        },
+      ],
+      details: result,
+    };
+  };
+
+  registerStartResumeTools(pi, {
+    base: "fh_team_task",
+    startDescription:
+      "End-to-end single-task workflow: plan-review → implement → verify → impl-review → commit. Begins a new run; required: `title`.",
+    resumeDescription:
+      "Resume an in-progress fh_team_task workflow. Required: `resume` (slug, absolute path, or relative path).",
+    startSchema,
+    resumeSchema,
+    executeStart: exec,
+    executeResume: exec,
+  });
+}
+
+function registerImplementTool(pi: ExtensionAPI): void {
+  const handler = createFhTeamImplement();
+  const GitModeSchema = Type.Union(GIT_MODES.map((m) => Type.Literal(m)));
+  const TddModeSchema = Type.Union(TDD_MODES.map((m) => Type.Literal(m)));
+  const sharedFields = {
+    mode: Type.Optional(Type.Union([Type.Literal("single-milestone"), Type.Literal("all-milestones")])),
+    maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+    useWorktree: Type.Optional(Type.Boolean()),
+    branchPrefix: Type.Optional(Type.String()),
+    pauseBetweenMilestones: Type.Optional(Type.Boolean({
+      description:
+        "When true, pause and ask the user to confirm between each milestone. When false, run end-to-end. Default: per-tool config (`implement.pause_between_milestones=true`, `auto.pause_between_milestones=false`).",
+    })),
+    verification: Type.Optional(VerificationConfigSchema),
+    aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are read from and written to. Defaults to ./ai_plan/." })),
+    gitMode: Type.Optional(GitModeSchema),
+    tddMode: Type.Optional(TddModeSchema),
+  } as const;
+  const startSchema = Type.Object(
+    {
+      slug: Type.String({ description: "Plan-folder slug under ai_plan/." }),
+      ...sharedFields,
+    },
+    { additionalProperties: false },
+  );
+  const resumeSchema = Type.Object(
+    {
+      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
+      ...sharedFields,
+    },
+    { additionalProperties: false },
+  );
+
+  const exec = async (p: Record<string, any>, pctx: PiToolExecuteCtx) => {
+    const ui = pctx.hasUI ? pctx.ui : undefined;
+    const configDefaults = await resolveCtxDefaults(ui);
+    const toolUi = effectiveUi(ui, configDefaults);
+    // NOTE: production registration does NOT pass a `shouldContinue`
+    // callback. The inter-milestone pause is driven entirely by the
+    // `pauseBetweenMilestones` config knob (resolution: prompt arg →
+    // project config → global config → DEFAULT_CONFIG.implement.pause_between_milestones=true).
+    // Tests can still inject `shouldContinue` directly via the input
+    // type to exercise specific gate behaviors deterministically.
+    const repoRoot = process.cwd();
+    const runtime = resolveRuntime({ prompt: { aiPlanPath: p.aiPlanPath, gitMode: p.gitMode, tddMode: p.tddMode }, defaults: configDefaults, repoRoot });
+    const result = await handler(
+      {
+        slug: p.slug,
+        resume: p.resume,
+        mode: p.mode,
+        maxRounds: p.maxRounds,
+        useWorktree: p.useWorktree,
+        branchPrefix: p.branchPrefix,
+        pauseBetweenMilestones: p.pauseBetweenMilestones,
+        verification: p.verification,
+      },
+      { repoRoot, signal: pctx.signal ?? undefined, ui: toolUi, configDefaults, toolName: pctx.toolName, planRoot: runtime.planRoot, gitMode: runtime.gitMode, tddMode: runtime.tddMode, rawGitMode: runtime.raw.gitMode, rawTddMode: runtime.raw.tddMode },
+    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: appendCostSentence(await formatImplementResultText(result, repoRoot), result),
+        },
+      ],
+      details: result,
+    };
+  };
+
+  registerStartResumeTools(pi, {
+    base: "fh_team_implement",
+    startDescription:
+      "Read an approved plan folder and implement milestones via developer+reviewer agents (D1 default). Begins a new run; required: `slug`.",
+    resumeDescription:
+      "Resume an in-progress fh_team_implement run. Required: `resume` (slug, absolute path, or relative path).",
+    startSchema,
+    resumeSchema,
+    executeStart: exec,
+    executeResume: exec,
+  });
+}
+
+async function formatImplementResultText(result: FhTeamImplementResult, repoRoot: string): Promise<string> {
+  const approvedThisRun = result.milestones.filter((m) => m.approved).length;
+  let text = `fh_team_implement: ${approvedThisRun} milestone(s) approved this run on branch ${result.branch ?? "(no branch)"}.`;
+  const progress = await readPlanProgress(repoRoot, result.slug).catch(() => undefined);
+  if (progress) {
+    const pendingSuffix = progress.pendingIds.length > 0 ? ` (${progress.pendingIds.join(", ")})` : "";
+    text += ` Plan status: ${progress.approved}/${progress.total} milestone(s) approved; ${progress.pendingIds.length} pending${pendingSuffix}.`;
+    if (progress.pendingIds.length > 0) {
+      text += ` Next: ask whether to continue with ${progress.pendingIds[0]}.`;
+    }
+  }
+  if (result.performanceReportPath) {
+    text += ` Performance: ${result.performanceReportPath}.`;
+  }
+  // M4: surface lane-branch cleanup warnings count so the user sees that
+  // teardown noticed something even when the run otherwise succeeded.
+  if (result.warnings && result.warnings.length > 0) {
+    text += ` Branch cleanup warnings: ${result.warnings.length} (see details.warnings).`;
+  }
+  return text;
+}
+
+/**
+ * Render the result text for `fh_team_auto`. Modeled on
+ * `formatImplementResultText` but with an explicit
+ * `SUCCESS` / `PARTIAL` / `NO-OP` prefix so calling LLMs cannot
+ * misread "5 milestone(s)" as "5 milestones still pending."
+ *
+ * Three cases:
+ * - **NO-OP**: this invocation processed zero milestones AND the plan
+ *   folder is at N/N approved. Typically a resume-after-completion.
+ * - **SUCCESS**: this invocation processed >= 1 milestone AND the plan
+ *   is now at N/N approved (zero pending).
+ * - **PARTIAL**: this invocation processed >= 1 milestone but the plan
+ *   still has pending milestones (interrupted run, max-rounds hit on
+ *   one milestone, etc.). Includes a Next: hint with the first pending
+ *   milestone id so the calling LLM knows exactly which resume to
+ *   issue.
+ *
+ * Performance + branch-cleanup warnings are appended unchanged from
+ * the implement formatter.
+ */
+async function formatAutoResultText(
+  result: { planRounds: number; implement: FhTeamImplementResult; performanceReportPaths?: string[] },
+  repoRoot: string,
+): Promise<string> {
+  const implResult = result.implement;
+  const approvedThisRun = implResult.milestones.filter((m) => m.approved).length;
+  const totalThisRun = implResult.milestones.length;
+  const progress = await readPlanProgress(repoRoot, implResult.slug).catch(() => undefined);
+  const planStatus = progress
+    ? `Plan status: ${progress.approved}/${progress.total} milestone(s) approved; ${progress.pendingIds.length} pending${progress.pendingIds.length > 0 ? ` (${progress.pendingIds.join(", ")})` : ""}.`
+    : undefined;
+
+  let prefix: string;
+  let runSummary: string;
+  if (totalThisRun === 0 && progress && progress.pendingIds.length === 0) {
+    // NO-OP: the resume found nothing to do because the plan was
+    // already complete. Make this unambiguous so the calling LLM
+    // doesn't conclude "I need to retry" or "the implementation
+    // failed."
+    prefix = "NO-OP";
+    runSummary = `nothing to do this run; plan already at ${progress.approved}/${progress.total} approved.`;
+  } else if (progress && progress.pendingIds.length === 0 && approvedThisRun > 0) {
+    prefix = "SUCCESS";
+    runSummary = `plan reviewed in ${result.planRounds} round(s); ${approvedThisRun}/${totalThisRun} milestone(s) approved this run on branch ${implResult.branch ?? "(no branch)"}.`;
+  } else {
+    prefix = "PARTIAL";
+    runSummary = `plan reviewed in ${result.planRounds} round(s); ${approvedThisRun}/${totalThisRun} milestone(s) approved this run on branch ${implResult.branch ?? "(no branch)"}.`;
+  }
+
+  const parts: string[] = [`fh_team_auto: ${prefix} — ${runSummary}`];
+  if (planStatus) parts.push(planStatus);
+  if (prefix === "PARTIAL" && progress && progress.pendingIds.length > 0) {
+    parts.push(`Next: invoke fh_team_auto_resume { resume: '${implResult.slug}' } to continue with ${progress.pendingIds[0]}.`);
+  }
+  if (implResult.warnings && implResult.warnings.length > 0) {
+    parts.push(`Branch cleanup warnings: ${implResult.warnings.length} (see details.implement.warnings).`);
+  }
+  const perf = (result.performanceReportPaths ?? []).join(", ");
+  parts.push(`Performance: ${perf || "(none)"}.`);
+  return parts.join(" ");
+}
+
+async function readPlanProgress(repoRoot: string, slug: string): Promise<{ total: number; approved: number; pendingIds: string[] }> {
+  const tracker = await parseStoryTracker(repoRoot, slug);
+  return {
+    total: tracker.milestones.length,
+    approved: tracker.milestones.filter(isMilestoneApproved).length,
+    pendingIds: tracker.milestones.filter(hasRunnableStories).map((milestone) => milestone.id),
+  };
+}
+
+function isMilestoneApproved(milestone: ParsedMilestone): boolean {
+  return /^approved\b/i.test(milestone.approvalStatus ?? "");
+}
+
+function hasRunnableStories(milestone: ParsedMilestone): boolean {
+  return milestone.stories.some((story) => story.status === "pending" || story.status === "in-dev" || story.status === "needs-rework");
+}
+
+function registerAutoTool(pi: ExtensionAPI): void {
+  const handler = createFhTeamAuto();
+  const GitModeSchema = Type.Union(GIT_MODES.map((m) => Type.Literal(m)));
+  const TddModeSchema = Type.Union(TDD_MODES.map((m) => Type.Literal(m)));
+  const sharedFields = {
+    maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+    branchPrefix: Type.Optional(Type.String()),
+    pauseBetweenMilestones: Type.Optional(Type.Boolean({
+      description:
+        "When true, pause and ask the user to confirm between each milestone. When false (default for fh_team_auto), run end-to-end.",
+    })),
+    verification: Type.Optional(VerificationConfigSchema),
+    aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are read from and written to. Defaults to ./ai_plan/." })),
+    gitMode: Type.Optional(GitModeSchema),
+    tddMode: Type.Optional(TddModeSchema),
+  } as const;
+  const startSchema = Type.Object(
+    {
+      title: Type.String(),
+      brief: Type.Optional(Type.String()),
+      ...sharedFields,
+    },
+    { additionalProperties: false },
+  );
+  const resumeSchema = Type.Object(
+    {
+      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
+      ...sharedFields,
+    },
+    { additionalProperties: false },
+  );
+
+  const exec = async (p: Record<string, any>, pctx: PiToolExecuteCtx) => {
+    const ui = pctx.hasUI ? pctx.ui : undefined;
+    const configDefaults = await resolveCtxDefaults(ui);
+    const toolUi = effectiveUi(ui, configDefaults);
+    const repoRoot = process.cwd();
+    const runtime = resolveRuntime({ prompt: { aiPlanPath: p.aiPlanPath, gitMode: p.gitMode, tddMode: p.tddMode }, defaults: configDefaults, repoRoot });
+    const result = await handler(
+      {
+        title: p.title,
+        resume: p.resume,
+        brief: p.brief,
+        maxRounds: p.maxRounds,
+        branchPrefix: p.branchPrefix,
+        pauseBetweenMilestones: p.pauseBetweenMilestones,
+        verification: p.verification,
+      },
+      { repoRoot, signal: pctx.signal ?? undefined, ui: toolUi, configDefaults, toolName: pctx.toolName, planRoot: runtime.planRoot, gitMode: runtime.gitMode, tddMode: runtime.tddMode, rawGitMode: runtime.raw.gitMode, rawTddMode: runtime.raw.tddMode },
+    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: appendCostSentence(await formatAutoResultText(result, repoRoot), result),
+        },
+      ],
+      details: result,
+    };
+  };
+
+  registerStartResumeTools(pi, {
+    base: "fh_team_auto",
+    startDescription:
+      "Chain fh_team_plan and fh_team_implement (all-milestones) with no human gates between. Begins a new run; required: `title`.",
+    resumeDescription:
+      "Resume an in-progress fh_team_auto run (plan or implement phase). Required: `resume` (slug, absolute path, or relative path).",
+    startSchema,
+    resumeSchema,
+    executeStart: exec,
+    executeResume: exec,
+  });
+}
+
+function registerFollowupTool(pi: ExtensionAPI): void {
+  const handler = createFhTeamFollowup();
+  const GitModeSchema = Type.Union(GIT_MODES.map((m) => Type.Literal(m)));
+  const TddModeSchema = Type.Union(TDD_MODES.map((m) => Type.Literal(m)));
+  const sharedFields = {
+    parentPlan: Type.Optional(Type.String({ description: "Override parent plan auto-detection. Accepts a slug (e.g. 2026-05-08-add-foo), a relative path (./ai_plan/2026-05-08-add-foo), or an absolute path." })),
+    allowDirty: Type.Optional(Type.Boolean()),
+    maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+    verification: Type.Optional(VerificationConfigSchema),
+    aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are read from and written to. Defaults to ./ai_plan/." })),
+    gitMode: Type.Optional(GitModeSchema),
+    tddMode: Type.Optional(TddModeSchema),
+  } as const;
+  const startSchema = Type.Object(
+    {
+      title: Type.String(),
+      brief: Type.Optional(Type.String()),
+      ...sharedFields,
+    },
+    { additionalProperties: false },
+  );
+  const resumeSchema = Type.Object(
+    {
+      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
+      ...sharedFields,
+    },
+    { additionalProperties: false },
+  );
+
+  const exec = async (p: Record<string, any>, pctx: PiToolExecuteCtx) => {
+    const ui = pctx.hasUI ? pctx.ui : undefined;
+    const configDefaults = await resolveCtxDefaults(ui);
+    const toolUi = effectiveUi(ui, configDefaults);
+    const shouldPush = async (): Promise<boolean> => {
+      if (!toolUi) return false;
+      return (await toolUi.confirm("Push followup?", "Push commit to remote now?")) === true;
+    };
+    const selectFromAmbiguous = async (candidates: string[]) => {
+      if (!toolUi) return undefined;
+      return toolUi.select("Multiple plan folders found", candidates);
+    };
+    const repoRoot = process.cwd();
+    const runtime = resolveRuntime({ prompt: { aiPlanPath: p.aiPlanPath, gitMode: p.gitMode, tddMode: p.tddMode }, defaults: configDefaults, repoRoot });
+    const result = await handler(
+      {
+        title: p.title,
+        resume: p.resume,
+        brief: p.brief,
+        parentPlan: p.parentPlan,
+        allowDirty: p.allowDirty,
+        maxRounds: p.maxRounds,
+        verification: p.verification,
+        shouldPush,
+        selectFromAmbiguous,
+      },
+      { repoRoot, signal: pctx.signal ?? undefined, ui: toolUi, configDefaults, toolName: pctx.toolName, planRoot: runtime.planRoot, gitMode: runtime.gitMode, tddMode: runtime.tddMode, rawGitMode: runtime.raw.gitMode, rawTddMode: runtime.raw.tddMode },
+    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: appendCostSentence(`fh_team_followup: ${result.approved ? "approved" : "not approved"}; slug=${result.slug}; commit=${result.commitSha ?? "(none)"}; pushed=${result.pushed}; pr-description=${result.prDescriptionPath ?? "(none)"}; performance=${result.performanceReportPath ?? "(none)"}`, result),
+        },
+      ],
+      details: result,
+    };
+  };
+
+  registerStartResumeTools(pi, {
+    base: "fh_team_followup",
+    startDescription:
+      "Draft and implement a follow-up to a completed plan. Creates a new plan folder under `ai_plan/<date>-followup-<slug>/` (e.g. `ai_plan/2026-05-08-followup-better-anim/`). The parent plan is referenced in the planner brief and recorded in `.fh-workflow/workflow.json` as `parentSlug` for resume; the parent folder is not modified. Runs in the current branch (same as `fh_team_task`); switch branches before invoking if a fresh branch is required. Required: `title`.",
+    resumeDescription:
+      "Resume an in-progress fh_team_followup run. Required: `resume` (slug, absolute path, or relative path).",
+    startSchema,
+    resumeSchema,
+    executeStart: exec,
+    executeResume: exec,
+  });
+}

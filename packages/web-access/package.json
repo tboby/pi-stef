@@ -1,0 +1,46 @@
+{
+  "name": "@life-of-pi/web-access",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pi extension for no-key web search, URL fetch, rendered scraping, browser sessions, login flows, and CloakBrowser-backed page access.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "web-access",
+    "web-search",
+    "web-fetch",
+    "cloakbrowser",
+    "browser-automation"
+  ],
+  "scripts": {
+    "check-runtime": "node bin/check-runtime.mjs",
+    "install-browser": "npx cloakbrowser install"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "cloakbrowser": "^0.3.31",
+    "defuddle": "^0.18.1",
+    "jsdom": "^29.1.0",
+    "playwright-core": "^1.59.1",
+    "turndown": "^7.2.4",
+    "typebox": "^1.1.35"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.1",
+    "@types/turndown": "5.0.6"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions"
+    ]
+  }
+}

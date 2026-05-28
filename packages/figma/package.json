@@ -1,0 +1,23 @@
+{
+  "name": "@life-of-pi/figma",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pi extension for Figma REST API tools, compact design context, and Jira-linked Figma summaries.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "keywords": ["pi-package", "pi-extension", "figma"],
+  "dependencies": {
+    "zod": "^3.25.62"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": ["./extensions"]
+  }
+}
