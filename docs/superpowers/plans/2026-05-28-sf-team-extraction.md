@@ -390,7 +390,7 @@ git commit -m "feat: add backward-compat config migration from fh-team to sf-tea
 - [ ] **Step 1: Find test files with fh in filename**
 
 ```bash
-find packages/sf-team/tests -name '*fh*' -o -name '*fh-*'
+find packages/sf-team/tests \( -name '*fh*' -o -name '*fh-*' \)
 ```
 
 If none found (tests use descriptive names like `register-steer.test.ts`), skip to Step 3.
@@ -880,8 +880,11 @@ Expected: 6 package rows.
 - Run lint/typecheck/tests after each milestone.
 - Prefer linting changed files only for speed.
 - Commit locally after each completed milestone (**do not push**).
+- Each milestone commit serves as a rollback point. If a sed pass goes wrong, `git reset --hard HEAD` reverts to the last clean state.
 - Stop and ask user for feedback.
 - Apply feedback, rerun checks, and commit again.
 - Move to next milestone only after user approval.
 - After all milestones are completed and approved, ask permission to push.
 - Only after approved push: mark plan as completed.
+
+**Note on `composite: true` + `noEmit: true`:** The base tsconfig sets `noEmit: true` but project references with `composite: true` still work with `tsc -b` on TypeScript 6+. This is the existing pattern in superpowers-adapter and passes `pnpm typecheck` today. No changes to `tsconfig.base.json` are needed.
