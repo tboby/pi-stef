@@ -347,8 +347,8 @@ Review remaining matches. Suggested replacements:
 - Any other tool descriptions with "First Horizon" → replace with generic text appropriate to the context.
 
 ```bash
-# Safe replacements (non-URL context only):
-find packages/ -type f \( -name '*.md' -o -name '*.json' -o -name '*.ts' -o -name '*.yaml' \) \
+# Safe replacements (non-URL context only) — scoped to sf-team and agent-workflows only:
+find packages/sf-team packages/agent-workflows -type f \( -name '*.md' -o -name '*.json' -o -name '*.ts' -o -name '*.yaml' \) \
   -exec sed -i '' '/atlassian\.net/!s/First Horizon //g; /atlassian\.net/!s/First Horizon//g; /atlassian\.net/!s/first horizon//g' {} +
 ```
 
