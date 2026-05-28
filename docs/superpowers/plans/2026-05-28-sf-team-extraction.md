@@ -10,6 +10,31 @@
 
 ---
 
+## Milestone M0: Pre-flight Verification
+
+Verify the toolchain and dependency availability before starting.
+
+### Task M0-S1: Verify @earendil-works/pi-* packages are resolvable
+
+- [ ] **Step 1: Check that @earendil-works pi packages are available**
+
+```bash
+cd /Users/stefano/Projects/pi-stef
+# Try resolving via pnpm to confirm registry access
+pnpm info @earendil-works/pi-coding-agent version 2>/dev/null || \
+  echo "WARNING: @earendil-works/pi-coding-agent not found in registry"
+```
+
+If the packages aren't in a public registry, they must be available locally or via a configured private registry. The user must confirm this before proceeding.
+
+- [ ] **Step 2: Verify codex CLI is functional (optional, for later review rounds)**
+
+```bash
+codex --version
+```
+
+---
+
 ## Milestone M1: Copy Packages
 
 Copy all 5 packages from fh-agent into pi-stef. Remove fh-agent-specific artifacts.
@@ -251,18 +276,7 @@ find packages/sf-team -name '*.ts' -exec sed -i '' 's/fh_team/sf_team/g' {} +
 find packages/sf-team -name '*.ts' -exec sed -i '' 's/fh-team/sf-team/g' {} +
 ```
 
-- [ ] **Step 5: Replace bare "fh " (word boundary) — careful to avoid false matches in words like "branch", "fingerprint"**
-
-```bash
-# Only match 'fh' as a standalone identifier (after dot, in strings, as variable prefix)
-# Skip this if it causes false positives — verify after running
-find packages/sf-team -name '*.ts' -exec sed -i '' 's/fh-team/sf-team/g; s/fh_team/sf_team/g' {} +
-# Re-run to catch any remaining 'fh' as part of compound identifiers:
-# grep for remaining occurrences first
-grep -rn '"fh' packages/sf-team/src/ --include="*.ts" | head -20
-```
-
-- [ ] **Step 6: Verify — check for remaining fh references in TS files**
+- [ ] **Step 5: Verify — check for remaining fh references in TS files**
 
 ```bash
 grep -rn 'fh[_-]' packages/sf-team/src/ packages/sf-team/extensions/ --include="*.ts"
@@ -276,7 +290,7 @@ grep -rn 'fhTeam\|FhTeam' packages/sf-team/src/ packages/sf-team/extensions/ --i
 
 Expected: 0 matches.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add packages/sf-team/
@@ -343,10 +357,10 @@ find packages/sf-team -type f \( -name '*.md' -o -name '*.json' -o -name '*.yaml
 grep -rn -i 'first horizon\|firsthorizon\|FirstHorizon' packages/sf-team/ | head -20
 ```
 
-If matches found, replace with context-appropriate text or remove. The `agent-workflows` package description says "First Horizon agent extensions" — change to "agent extensions".
+If matches found, replace "First Horizon " with empty string or "agent" as contextually appropriate. The `agent-workflows` package description says "First Horizon agent extensions" — change to "agent extensions".
 
 ```bash
-find packages/sf-team -type f \( -name '*.md' -o -name '*.json' \) \
+find packages/ -type f \( -name '*.md' -o -name '*.json' \) \
   -exec sed -i '' 's/First Horizon //g; s/First Horizon//g; s/first horizon//g' {} +
 ```
 
@@ -541,25 +555,80 @@ Replace with:
 
 - [ ] **Step 2: Check and fix the other 4 packages' tsconfig files**
 
-For each of agent-workflows, atlassian, figma, web-access — check if their tsconfig extends `../../tsconfig.json` and fix to `../../tsconfig.base.json`. Add `"composite": true` if missing.
+For each of agent-workflows, atlassian, figma, web-access — check if a tsconfig.json exists. Some packages (atlassian, figma, web-access) may not have one in the source fh-agent monorepo. If missing, create it.
 
 ```bash
 for pkg in agent-workflows atlassian figma web-access; do
   if [ -f packages/$pkg/tsconfig.json ]; then
+    # Fix extends path from fh-agent to pi-stef
     sed -i '' 's|"extends": "../../tsconfig.json"|"extends": "../../tsconfig.base.json"|g' packages/$pkg/tsconfig.json
-    echo "=== $pkg ==="
+    echo "=== $pkg (existing) ==="
+    cat packages/$pkg/tsconfig.json
+  else
+    # Create tsconfig.json matching superpowers-adapter pattern
+    cat > packages/$pkg/tsconfig.json << 'TSEOF'
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "extensions/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}
+TSEOF
+    echo "=== $pkg (created) ==="
     cat packages/$pkg/tsconfig.json
   fi
 done
 ```
 
-If any package is missing `"composite": true` in compilerOptions, add it.
+Note: Not all packages have `extensions/` or `tests/` directories — the glob patterns are forgiving (TypeScript ignores non-matching globs). The important thing is `"composite": true` and the correct `"extends"` path.
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add packages/*/tsconfig.json
 git commit -m "chore: fix tsconfig extends and composite settings for new packages"
+```
+
+### Task M5-S2.5: Unify typebox dependency
+
+**Files:**
+- Modify: `packages/sf-team/package.json`
+- Modify: `packages/atlassian/package.json`
+
+The fh-agent packages use `"typebox": "^1.1.35"` (standalone package), while superpowers-adapter uses `"@sinclair/typebox": "*"` (scoped package). These resolve to the same upstream library but via different npm names, creating a runtime fork risk for `instanceof` checks or cross-package schema passing.
+
+- [ ] **Step 1: Replace `typebox` with `@sinclair/typebox` in all new package.json files**
+
+```bash
+cd /Users/stefano/Projects/pi-stef
+for pkg in sf-team atlassian; do
+  if grep -q '"typebox"' packages/$pkg/package.json; then
+    sed -i '' 's/"typebox": "\^1.1.35"/"@sinclair\/typebox": "*"/g' packages/$pkg/package.json
+    echo "=== $pkg ==="
+    grep -A1 'typebox' packages/$pkg/package.json
+  fi
+done
+```
+
+- [ ] **Step 2: Update TypeScript imports to match**
+
+```bash
+# Replace bare `typebox` imports with `@sinclair/typebox`
+find packages/sf-team packages/atlassian -name '*.ts' -exec sed -i '' \
+  's/from "typebox"/from "@sinclair\/typebox"/g' {} +
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add packages/sf-team/ packages/atlassian/
+git commit -m "refactor: unify typebox dependency to @sinclair/typebox"
 ```
 
 ### Task M5-S3: Update install script
@@ -680,7 +749,7 @@ git commit -m "refactor: remove remaining First Horizon references"
 - [ ] **Step 1: Search entire pi-stef project**
 
 ```bash
-grep -rn "@mariozechner" --include="*.ts" --include="*.json" --exclude-dir=node_modules .
+grep -rn "@mariozechner" --include="*.ts" --include="*.json" . | grep -v node_modules
 ```
 
 Expected: 0 matches. If found, replace with `@earendil-works`.
@@ -778,7 +847,7 @@ Expected: 0 matches.
 - [ ] **Step 3: Verify zero remaining @mariozechner references**
 
 ```bash
-grep -rn "@mariozechner" --include="*.ts" --include="*.json" --exclude-dir=node_modules .
+grep -rn "@mariozechner" --include="*.ts" --include="*.json" . | grep -v node_modules
 ```
 
 Expected: 0 matches.
