@@ -328,19 +328,21 @@ grep -rn -i 'first horizon\|firsthorizon\|FirstHorizon' packages/sf-team/ | head
 
 If matches found, replace "First Horizon " with empty string or "agent" as contextually appropriate. The `agent-workflows` package description says "First Horizon agent extensions" — change to "agent extensions".
 
-**IMPORTANT: Do NOT blindly replace `firsthorizon` in `.atlassian.net` URLs.** These are functional Jira/Confluence hostnames used in test assertions (e.g., `firsthorizon.atlassian.net/browse/DIGENG-17720`). They must be preserved.
+**IMPORTANT: Do NOT blindly replace `firsthorizon` in `.atlassian.net` URLs.** These are functional Jira/Confluence hostnames used in test assertions (e.g., `firsthorizon.atlassian.net/browse/DIGENG-17720`). They must be preserved. Also protect backslash-escaped variants like `firsthorizon\.atlassian\.net`.
 
 ```bash
-# First, audit what would be affected:
-grep -rn -i 'firsthorizon' packages/ --include="*.ts" --include="*.json" --include="*.md" --include="*.yaml" | grep -v 'atlassian\.net'
+# First, audit what would be affected (excluding atlassian.net URLs):
+grep -rn -i 'firsthorizon' packages/ --include="*.ts" --include="*.json" --include="*.md" --include="*.yaml" | grep -v 'atlassian\.net' | grep -v 'atlassian\\\.net'
 ```
 
-Review remaining matches. Only replace branding strings (like package descriptions), not functional URLs. For URL-containing lines, leave them unchanged or substitute a generic hostname if tests allow it.
+Review remaining matches. Suggested replacements:
+- `"Search the web using First Horizon no-key provider cascade."` → `"Search the web using the configured provider cascade."`
+- `"Reusable workflow engine primitives for First Horizon agent extensions."` → `"Reusable workflow engine primitives for agent extensions."`
+- Any other tool descriptions with "First Horizon" → replace with generic text appropriate to the context.
 
 ```bash
-# Safe replacements (non-URL context only) — run on a per-file basis after review:
-# For package descriptions and comments:
-find packages/ -type f \( -name '*.md' -o -name '*.json' \) \
+# Safe replacements (non-URL context only):
+find packages/ -type f \( -name '*.md' -o -name '*.json' -o -name '*.ts' -o -name '*.yaml' \) \
   -exec sed -i '' '/atlassian\.net/!s/First Horizon //g; /atlassian\.net/!s/First Horizon//g; /atlassian\.net/!s/first horizon//g' {} +
 ```
 
@@ -648,6 +650,14 @@ Expected: 0 matches (all replaced).
 git add packages/sf-team/ packages/atlassian/ packages/web-access/ packages/figma/
 git commit -m "refactor: unify typebox dependency to @sinclair/typebox"
 ```
+
+- [ ] **Step 5: After `pnpm install` in M7, verify single-copy resolution**
+
+```bash
+pnpm why @sinclair/typebox 2>/dev/null | head -20
+```
+
+All packages should resolve to the same version. If multiple copies appear, add a `pnpm.override` in the root `package.json`.
 
 ### Task M5-S3: Update install script
 
