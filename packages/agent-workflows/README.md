@@ -1,6 +1,6 @@
 # @pi-stef/agent-workflows
 
-Reusable TypeScript workflow-engine primitives for First Horizon Pi extensions.
+Reusable TypeScript workflow-engine primitives for Pi extensions.
 
 This package is maintainer-facing infrastructure. It does not register Pi tools by itself; extensions such as `@pi-stef/sf-team` import it to get durable workflow folders, exact resume, short widget messages, verification policy helpers, and a generic orchestrator lifecycle.
 

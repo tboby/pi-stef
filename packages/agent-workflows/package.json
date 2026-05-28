@@ -2,7 +2,7 @@
   "name": "@pi-stef/agent-workflows",
   "version": "0.1.0",
   "private": true,
-  "description": "Reusable workflow engine primitives for First Horizon agent extensions.",
+  "description": "Reusable workflow engine primitives for agent extensions.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

@@ -1,6 +1,6 @@
 # Web Access
 
-`@pi-stef/web-access` is a First Horizon Pi extension for no-key web search, URL fetch, rendered scraping, browser sessions, login flows, screenshots, and CloakBrowser-backed page access.
+`@pi-stef/web-access` is a Pi extension for no-key web search, URL fetch, rendered scraping, browser sessions, login flows, screenshots, and CloakBrowser-backed page access.
 
 The package is optional. Install it when an agent needs web retrieval beyond the normal model context.
 
@@ -48,7 +48,7 @@ fh_web_flow instruction="go to example.com and search for pricing" profile="rese
 
 ## Tools
 
-The extension uses namespaced First Horizon tool names to avoid collisions with common Pi packages:
+The extension uses namespaced tool names to avoid collisions with common Pi packages:
 
 | Tool | Purpose |
 |---|---|
@@ -173,7 +173,7 @@ CloakBrowser's public README documents a first-launch browser cache under `~/.cl
 
 ## Provenance And License Notes
 
-This package is a First Horizon implementation inspired by the internal `web-automation` skill in `/Users/stefano.fiorini/Documents/projects/ai-coding-skills`, plus the current Pi `fetch` package ecosystem. The source skill had no `LICENSE`, `NOTICE`, or `COPYING` file during planning, so implementation should re-create behavior from documented requirements unless internal provenance is confirmed.
+This package is a implementation inspired by the internal `web-automation` skill in `/Users/stefano.fiorini/Documents/projects/ai-coding-skills`, plus the current Pi `fetch` package ecosystem. The source skill had no `LICENSE`, `NOTICE`, or `COPYING` file during planning, so implementation should re-create behavior from documented requirements unless internal provenance is confirmed.
 
 Runtime dependencies:
 

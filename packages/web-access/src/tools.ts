@@ -93,7 +93,7 @@ function registerTools(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "fh_web_search",
     label: "FH Web Search",
-    description: "Search the web using First Horizon no-key provider cascade.",
+    description: "Search the web using no-key provider cascade.",
     promptSnippet: "Search the web with fh_web_search when current public web results are needed.",
     parameters: searchParams,
     execute: async (_toolCallId, params, signal) => {
@@ -208,7 +208,7 @@ function registerTools(pi: ExtensionAPI): void {
 
 function registerCommands(pi: ExtensionAPI): void {
   const searchCommand = {
-    description: "Search the web with First Horizon web-access.",
+    description: "Search the web with web-access.",
     handler: async (args: string, ctx: any) => {
       ctx.ui.notify(await handleSearchCommand(args), "info");
     },
@@ -219,12 +219,12 @@ function registerCommands(pi: ExtensionAPI): void {
   } catch {
     pi.registerCommand("web-search", {
       ...searchCommand,
-      description: "Search the web with First Horizon web-access. Fallback when /search is unavailable.",
+      description: "Search the web with web-access. Fallback when /search is unavailable.",
     });
   }
 
   pi.registerCommand("web", {
-    description: "Manage First Horizon web-access: /web status|sessions|clear-session",
+    description: "Manage web-access: /web status|sessions|clear-session",
     handler: async (args: string, ctx: any) => {
       ctx.ui.notify(await handleWebCommand(args, ctx.cwd), "info");
     },
