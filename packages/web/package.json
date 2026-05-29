@@ -22,6 +22,7 @@
     "install-browser": "npx cloakbrowser install"
   },
   "dependencies": {
+    "@pi-stef/paths": "file:../paths",
     "@mozilla/readability": "^0.6.0",
     "cloakbrowser": "^0.3.31",
     "defuddle": "^0.18.1",

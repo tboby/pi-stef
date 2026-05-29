@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { globalConfig, globalDir } from "@pi-stef/paths";
+
 import type { WebAccessConfig, WebAccessConfigParams, WebBrowserHumanPreset, WebSearchProviderName } from "./types";
 
 const DEFAULT_SENSITIVE_QUERY_KEYS = [
@@ -29,7 +31,7 @@ export async function loadWebAccessConfig(
   homeDir = process.env.HOME ?? process.cwd(),
 ): Promise<WebAccessConfig> {
   const defaults = defaultConfig(homeDir);
-  const fileConfig = await readConfigFile(env.SF_WEB_CONFIG ?? path.join(homeDir, ".pi", "web", "config.json"));
+  const fileConfig = await readConfigFile(env.SF_WEB_CONFIG ?? globalConfig("web", homeDir));
   const envConfig = configFromEnv(env);
   const paramConfig = sanitizeConfig(params);
   const merged = mergeConfig(defaults, fileConfig, envConfig, paramConfig);
@@ -54,7 +56,7 @@ export function defaultConfig(homeDir = process.env.HOME ?? process.cwd()): WebA
     maxLines: 2000,
     maxResults: 10,
     outputDir: path.join(tmpdir(), "sf-web"),
-    profilesDir: path.join(homeDir, ".pi", "web", "profiles"),
+    profilesDir: path.join(globalDir("web", homeDir), "profiles"),
     searchProviders: DEFAULT_SEARCH_PROVIDERS,
     sensitiveQueryKeys: DEFAULT_SENSITIVE_QUERY_KEYS,
     userAgent:
