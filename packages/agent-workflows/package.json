@@ -12,6 +12,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
+  "dependencies": {
+    "@pi-stef/paths": "file:../paths"
+  },
   "keywords": [
     "pi-package",
     "agent-workflows",

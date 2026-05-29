@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { readFile, writeFile, mkdir, readdir, rm, rename, stat } from "node:fs/promises";
 import { hostname } from "node:os";
 import path from "node:path";
+import { PI_DIR, SF_NAMESPACE } from "@pi-stef/paths";
 
 import { planFolderPath, planFolderPathFromRoot, PLAN_FOLDER_ROOT } from "../artifacts/paths"; // migration-allowed: legacy
 
@@ -17,7 +18,7 @@ function resolveSweepRoot(target: LockTarget): string {
   return target.planRoot;
 }
 
-const LOCK_DIR = ".sf-team.lock";
+const LOCK_DIR = path.join(PI_DIR, SF_NAMESPACE, "team", "team.lock");
 const META_FILE = "metadata.json";
 const STALE_SWEEP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -57,6 +58,7 @@ export async function acquireLock(
   await mkdir(folder, { recursive: true });
 
   const lockDirPath = path.join(folder, LOCK_DIR);
+  await mkdir(path.dirname(lockDirPath), { recursive: true });
   const metaPath = path.join(lockDirPath, META_FILE);
   const pid = opts.pid ?? process.pid;
   const meta: LockMetadata = {
@@ -106,7 +108,7 @@ export async function acquireLock(
       }
     }
 
-    const killedPath = path.join(folder, `${LOCK_DIR}.killed.${uniq}.${attempt}`);
+    const killedPath = path.join(folder, `${path.basename(LOCK_DIR)}.killed.${uniq}.${attempt}`);
     try {
       await rename(lockDirPath, killedPath);
     } catch (err) {

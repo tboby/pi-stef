@@ -11,7 +11,7 @@ let originalHome: string;
 const testHome = path.join(os.tmpdir(), `cascade-test-${process.pid}-${Date.now()}`);
 
 function makeWorkflowJson(planRoot: string, slug: string): void {
-  const dir = path.join(planRoot, slug, ".sf-workflow");
+  const dir = path.join(planRoot, slug, ".pi", "sf", "agent-workflows");
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "workflow.json"), "{}", "utf8");
 }
@@ -20,7 +20,7 @@ beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cascade-"));
   originalHome = os.homedir();
   Object.defineProperty(os, "homedir", { value: () => testHome, configurable: true });
-  fs.mkdirSync(path.join(testHome, ".sf-team"), { recursive: true });
+  fs.mkdirSync(path.join(testHome, ".pi", "sf", "team"), { recursive: true });
 });
 
 afterEach(() => {

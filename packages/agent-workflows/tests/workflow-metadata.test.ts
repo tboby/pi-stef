@@ -69,7 +69,7 @@ describe("checkpoint store", () => {
 
       store = recordCheckpointStarted(store, {
         stepId: "planner",
-        artifactPath: ".sf-workflow/artifacts/planner.md",
+        artifactPath: ".pi/sf/agent-workflows/artifacts/planner.md",
         inputFingerprint: "input-1",
         now: startedAt,
       });
@@ -99,7 +99,7 @@ describe("checkpoint store", () => {
       expect(reread?.checkpoints.planner).toMatchObject({
         stepId: "planner",
         status: "completed",
-        artifactPath: ".sf-workflow/artifacts/planner.md",
+        artifactPath: ".pi/sf/agent-workflows/artifacts/planner.md",
         inputFingerprint: "input-1",
         outputFingerprint: "output-1",
         startedAt: startedAt.toISOString(),

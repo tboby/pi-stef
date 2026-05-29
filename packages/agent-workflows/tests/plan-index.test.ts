@@ -10,7 +10,7 @@ import {
 
 // Override the home dir used by plan-index in tests
 const testHome = path.join(os.tmpdir(), `plan-index-test-${process.pid}-${Date.now()}`);
-const indexPath = path.join(testHome, ".sf-team", "plan-index.json");
+const indexPath = path.join(testHome, ".pi", "sf", "team", "plan-index.json");
 
 // Patch homedir for tests
 let originalHome: string;
@@ -78,8 +78,8 @@ describe("plan-index", () => {
     const slug = "my-slug";
     const planRoot1 = path.join(testHome, "plans/one");
     const planRoot2 = path.join(testHome, "plans/two");
-    const wf1 = path.join(planRoot1, slug, ".sf-workflow", "workflow.json");
-    const wf2 = path.join(planRoot2, slug, ".sf-workflow", "workflow.json");
+    const wf1 = path.join(planRoot1, slug, ".pi", "sf", "agent-workflows", "workflow.json");
+    const wf2 = path.join(planRoot2, slug, ".pi", "sf", "agent-workflows", "workflow.json");
     fs.mkdirSync(path.dirname(wf1), { recursive: true });
     fs.mkdirSync(path.dirname(wf2), { recursive: true });
     fs.writeFileSync(wf1, "{}", "utf8");
@@ -97,7 +97,7 @@ describe("plan-index", () => {
   });
 
   it("(edge) malformed entries with null slug array are sanitized", () => {
-    const p = path.join(testHome, ".sf-team", "plan-index.json");
+    const p = path.join(testHome, ".pi", "sf", "team", "plan-index.json");
     fs.writeFileSync(p, JSON.stringify({ version: 1, entries: { "my-slug": null } }), "utf8");
     const idx = readIndex();
     expect(idx.entries["my-slug"]).toBeUndefined();

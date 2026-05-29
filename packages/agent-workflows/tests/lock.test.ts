@@ -33,7 +33,7 @@ describe("plan-folder lock", () => {
     const { root, dispose } = tmp();
     try {
       const slug = "2026-05-06-stale";
-      const lockDir = path.join(planFolderPath(root, slug), ".sf-team.lock");
+      const lockDir = path.join(planFolderPath(root, slug), ".pi", "sf", "team", "team.lock");
       mkdirSync(lockDir, { recursive: true });
       writeFileSync(
         path.join(lockDir, "metadata.json"),
@@ -58,7 +58,7 @@ describe("plan-folder lock", () => {
   it("sweeps stale sibling lock directories older than 24 hours", async () => {
     const { root, dispose } = tmp();
     try {
-      const staleSibling = path.join(root, "ai_plan", "old-plan", ".sf-team.lock");
+      const staleSibling = path.join(root, "ai_plan", "old-plan", ".pi", "sf", "team", "team.lock");
       mkdirSync(staleSibling, { recursive: true });
       const past = (Date.now() - 30 * 60 * 60 * 1000) / 1000;
       utimesSync(staleSibling, past, past);

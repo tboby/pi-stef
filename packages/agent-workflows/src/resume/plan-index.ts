@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { globalDir } from "@pi-stef/paths";
 import { WORKFLOW_FOLDER_NAME, WORKFLOW_METADATA_FILE } from "../artifacts/paths";
 
 export interface PlanIndexEntry {
@@ -15,7 +15,7 @@ interface PlanIndex {
 }
 
 function indexPath(): string {
-  return path.join(os.homedir(), ".sf-team", "plan-index.json");
+  return path.join(globalDir("team"), "plan-index.json");
 }
 
 function emptyIndex(): PlanIndex {

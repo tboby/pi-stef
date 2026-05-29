@@ -21,6 +21,7 @@ import {
   workflowVerificationCachePath,
   writeJsonAtomic,
 } from "../src";
+import { PI_DIR, SF_NAMESPACE } from "@pi-stef/paths";
 
 function tmp(): { root: string; dispose: () => void } {
   const root = mkdtempSync(path.join(tmpdir(), "agent-workflows-artifacts-"));
@@ -33,7 +34,7 @@ describe("workflow artifact paths", () => {
     const slug = "2026-05-06-example";
 
     expect(PLAN_FOLDER_ROOT).toBe("ai_plan");
-    expect(WORKFLOW_FOLDER_NAME).toBe(".sf-workflow");
+    expect(WORKFLOW_FOLDER_NAME).toBe(path.join(PI_DIR, SF_NAMESPACE, "agent-workflows"));
     expect(CHECKPOINTS_FILE).toBe("checkpoints.json");
     expect(VERIFICATION_CACHE_FILE).toBe("verification-cache.json");
     expect(FIVE_FILE_NAMES).toEqual([
@@ -46,14 +47,14 @@ describe("workflow artifact paths", () => {
     expect(EXECUTION_STRATEGY_FILE).toBe("execution-strategy.json");
     expect(TASK_FILE_NAME).toBe("task-plan.md");
     expect(planFolderPath(root, slug)).toBe(path.join(root, "ai_plan", slug));
-    expect(workflowFolderPath(root, slug)).toBe(path.join(root, "ai_plan", slug, ".sf-workflow"));
-    expect(workflowMetadataPath(root, slug)).toBe(path.join(root, "ai_plan", slug, ".sf-workflow", "workflow.json"));
-    expect(workflowCheckpointsPath(root, slug)).toBe(path.join(root, "ai_plan", slug, ".sf-workflow", "checkpoints.json"));
+    expect(workflowFolderPath(root, slug)).toBe(path.join(root, "ai_plan", slug, PI_DIR, "sf", "agent-workflows"));
+    expect(workflowMetadataPath(root, slug)).toBe(path.join(root, "ai_plan", slug, PI_DIR, "sf", "agent-workflows", "workflow.json"));
+    expect(workflowCheckpointsPath(root, slug)).toBe(path.join(root, "ai_plan", slug, PI_DIR, "sf", "agent-workflows", "checkpoints.json"));
     expect(workflowVerificationCachePath(root, slug)).toBe(
-      path.join(root, "ai_plan", slug, ".sf-workflow", "verification-cache.json"),
+      path.join(root, "ai_plan", slug, PI_DIR, "sf", "agent-workflows", "verification-cache.json"),
     );
     expect(workflowArtifactPath(root, slug, "planner/draft.md")).toBe(
-      path.join(root, "ai_plan", slug, ".sf-workflow", "artifacts", "planner", "draft.md"),
+      path.join(root, "ai_plan", slug, PI_DIR, "sf", "agent-workflows", "artifacts", "planner", "draft.md"),
     );
   });
 

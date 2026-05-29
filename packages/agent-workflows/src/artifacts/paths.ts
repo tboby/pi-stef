@@ -1,10 +1,11 @@
 import os from "node:os";
 import path from "node:path";
+import { PI_DIR, SF_NAMESPACE } from "@pi-stef/paths";
 
 /** Root for plan folders relative to repoRoot. Convention: ai_plan/<slug>/ */
 export const PLAN_FOLDER_ROOT = "ai_plan" as const;
 
-export const WORKFLOW_FOLDER_NAME = ".sf-workflow" as const;
+export const WORKFLOW_FOLDER_NAME = path.join(PI_DIR, SF_NAMESPACE, "agent-workflows") as `${string}`;
 export const WORKFLOW_ARTIFACTS_FOLDER_NAME = "artifacts" as const;
 export const WORKFLOW_METADATA_FILE = "workflow.json" as const;
 export const CHECKPOINTS_FILE = "checkpoints.json" as const;

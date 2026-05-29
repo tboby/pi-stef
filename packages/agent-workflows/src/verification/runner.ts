@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { WORKFLOW_FOLDER_NAME } from "../artifacts/paths";
 import {
   isVerificationEnabledForPhase,
   type ResolvedVerificationConfig,
@@ -115,7 +116,7 @@ interface PersistentVerificationCache {
 }
 
 function persistentCachePath(cwd: string, configuredPath: string | undefined): string {
-  const rel = configuredPath ?? path.join(".sf-workflow", "verification-cache.json");
+  const rel = configuredPath ?? path.join(WORKFLOW_FOLDER_NAME, "verification-cache.json");
   return path.isAbsolute(rel) ? rel : path.join(cwd, rel);
 }
 

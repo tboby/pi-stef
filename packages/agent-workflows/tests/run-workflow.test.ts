@@ -229,7 +229,7 @@ describe("runWorkflow", () => {
       expect(result.declinedResume).toBe(true);
       expect(createReporter).not.toHaveBeenCalled();
       expect(body).not.toHaveBeenCalled();
-      expect(existsSync(path.join(root, "ai_plan", "decline", ".sf-team.lock"))).toBe(false);
+      expect(existsSync(path.join(root, "ai_plan", "decline", ".pi", "sf", "team", "team.lock"))).toBe(false);
     } finally {
       dispose();
     }
