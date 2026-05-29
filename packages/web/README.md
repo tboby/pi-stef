@@ -1,17 +1,17 @@
 # Web Access
 
-`@pi-stef/web-access` is a Pi extension for no-key web search, URL fetch, rendered scraping, browser sessions, login flows, screenshots, and CloakBrowser-backed page access.
+`@pi-stef/web` is a Pi extension for no-key web search, URL fetch, rendered scraping, browser sessions, login flows, screenshots, and CloakBrowser-backed page access.
 
 The package is optional. Install it when an agent needs web retrieval beyond the normal model context.
 
 ```bash
-pi install git:github.com/<USER>/pi-stef#packages/web-access
+pi install git:github.com/<USER>/pi-stef#packages/web
 ```
 
 For project-local install:
 
 ```bash
-pi install -l git:github.com/<USER>/pi-stef#packages/web-access
+pi install -l git:github.com/<USER>/pi-stef#packages/web
 ```
 
 The package uses `runtimePostInstallCommands` so CloakBrowser binary preparation runs after package-local `npm install --omit=peer --workspaces=false` has installed `cloakbrowser` and `playwright-core`.
@@ -32,17 +32,17 @@ The package uses `runtimePostInstallCommands` so CloakBrowser binary preparation
 Use natural language when the agent needs current web context, URL extraction, rendered pages, or browser sessions:
 
 ```text
-pi "Use web-access to search for current browser automation options and summarize the top sources with links."
-pi "Fetch this URL as markdown with web-access, then compare it with the local README: https://example.com/docs"
+pi "Use web to search for current browser automation options and summarize the top sources with links."
+pi "Fetch this URL as markdown with web, then compare it with the local README: https://example.com/docs"
 pi "Use a named browser profile to open the staging login page and capture the visible error."
 ```
 
 Use exact tools when you need deterministic parameters:
 
 ```text
-fh_web_search query="current Figma REST API rate limits" maxResults=5
-fh_web_fetch url="https://example.com/docs" format="markdown" mode="auto"
-fh_web_flow instruction="go to example.com and search for pricing" profile="research"
+web_search query="current Figma REST API rate limits" maxResults=5
+web_fetch url="https://example.com/docs" format="markdown" mode="auto"
+web_flow instruction="go to example.com and search for pricing" profile="research"
 ```
 
 ## Tools
@@ -51,11 +51,11 @@ The extension uses namespaced tool names to avoid collisions with common Pi pack
 
 | Tool | Purpose |
 |---|---|
-| `fh_web_search` | Search the web through no-key providers. |
-| `fh_web_fetch` | Fetch one URL as markdown, text, HTML, JSON, or raw output. |
-| `fh_web_flow` | Run deterministic browser steps such as goto, click, type, press, wait, screenshot, and extract. |
-| `fh_web_login` | Create or refresh a named browser login profile. |
-| `fh_web_session` | List, inspect, locate, or clear session/profile state. |
+| `web_search` | Search the web through no-key providers. |
+| `web_fetch` | Fetch one URL as markdown, text, HTML, JSON, or raw output. |
+| `web_flow` | Run deterministic browser steps such as goto, click, type, press, wait, screenshot, and extract. |
+| `web_login` | Create or refresh a named browser login profile. |
+| `web_session` | List, inspect, locate, or clear session/profile state. |
 
 Slash commands:
 
@@ -72,11 +72,11 @@ Slash commands:
 
 | Tool | Required | Optional | Notes |
 |---|---|---|---|
-| `fh_web_search` | `query` | `maxResults`, `providers`, `searxngUrl`, `profile`, `headless` | Uses SearXNG when configured, then DuckDuckGo HTML/Lite, then CloakBrowser-backed Google/Bing providers when selected or reached by the cascade. |
-| `fh_web_fetch` | `url` | `format`, `mode`, `selector`, `screenshot`, `profile`, `headless` | `format` is `markdown`, `text`, `html`, `json`, or `raw`. `mode` is `auto`, `fast`, or `browser`. |
-| `fh_web_flow` | `instruction` or `steps` | `profile`, `headless` | Supports `goto`/`navigate`/`open`, `click`, `type`/`fill`, `press`/`keypress`/`key`, `wait`, `screenshot`, and `extract`. Host-only instructions such as `go to walmart.com and search for espresso machines` are normalized to HTTPS flow steps. |
-| `fh_web_login` | `url` | `profile`, `interactive`, `interactiveWaitMs`, `usernameEnv`, `passwordEnv`, `headless` | Does not accept raw passwords. Defaults to `SF_WEB_USERNAME` and `SF_WEB_PASSWORD`. |
-| `fh_web_session` | None | `action`, `profile`, `yes` | `action` is `list`, `inspect`, `locate`, or `clear`. `clear` requires `yes: true`. |
+| `web_search` | `query` | `maxResults`, `providers`, `searxngUrl`, `profile`, `headless` | Uses SearXNG when configured, then DuckDuckGo HTML/Lite, then CloakBrowser-backed Google/Bing providers when selected or reached by the cascade. |
+| `web_fetch` | `url` | `format`, `mode`, `selector`, `screenshot`, `profile`, `headless` | `format` is `markdown`, `text`, `html`, `json`, or `raw`. `mode` is `auto`, `fast`, or `browser`. |
+| `web_flow` | `instruction` or `steps` | `profile`, `headless` | Supports `goto`/`navigate`/`open`, `click`, `type`/`fill`, `press`/`keypress`/`key`, `wait`, `screenshot`, and `extract`. Host-only instructions such as `go to walmart.com and search for espresso machines` are normalized to HTTPS flow steps. |
+| `web_login` | `url` | `profile`, `interactive`, `interactiveWaitMs`, `usernameEnv`, `passwordEnv`, `headless` | Does not accept raw passwords. Defaults to `SF_WEB_USERNAME` and `SF_WEB_PASSWORD`. |
+| `web_session` | None | `action`, `profile`, `yes` | `action` is `list`, `inspect`, `locate`, or `clear`. `clear` requires `yes: true`. |
 
 ### Fetch Limits
 
@@ -87,14 +87,14 @@ Slash commands:
 After installation, verify package-local runtime imports:
 
 ```bash
-cd packages/web-access
+cd packages/web
 npm run check-runtime
 ```
 
 Install or update the CloakBrowser browser binary manually when needed:
 
 ```bash
-cd packages/web-access
+cd packages/web
 npm run install-browser
 ```
 
@@ -190,7 +190,7 @@ Runtime dependencies:
 - Private, loopback, link-local, multicast, and reserved IP ranges are blocked by default.
 - Fast fetch re-validates redirects before reading the body. Browser mode validates requested navigation targets before handing them to CloakBrowser; treat redirects and authenticated browsing as sensitive.
 - Browser profiles can contain cookies and session tokens. Use named profiles sparingly and clear them when no longer needed.
-- `fh_web_login` does not accept raw password values as tool parameters. Use interactive login or environment variable names.
+- `web_login` does not accept raw password values as tool parameters. Use interactive login or environment variable names.
 - Windows profile permissions are best-effort and rely on the user's normal account isolation.
 
 ## Browser Test
@@ -198,6 +198,6 @@ Runtime dependencies:
 The real browser tests are skipped by default. Run them only when you intentionally want to launch CloakBrowser:
 
 ```bash
-SF_WEB_RUN_BROWSER_TESTS=1 pnpm test -- --run packages/web-access/tests/browserSmoke.test.ts
-SF_WEB_RUN_BROWSER_TESTS=1 pnpm test -- --run packages/web-access/tests/tools.e2e.test.ts
+SF_WEB_RUN_BROWSER_TESTS=1 pnpm test -- --run packages/web/tests/browserSmoke.test.ts
+SF_WEB_RUN_BROWSER_TESTS=1 pnpm test -- --run packages/web/tests/tools.e2e.test.ts
 ```
