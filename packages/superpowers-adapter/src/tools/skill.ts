@@ -106,19 +106,43 @@ export function discoverSkills(cwd: string): Map<string, SkillMeta> {
   for (const basePath of skillPaths) {
     if (!existsSync(basePath)) continue;
     try {
-      const skillDirs = readdirSync(basePath, { withFileTypes: true });
-      for (const skillDir of skillDirs) {
-        if (!skillDir.isDirectory()) continue;
-        const skillFile = join(basePath, skillDir.name, "SKILL.md");
-        if (!existsSync(skillFile)) continue;
-        try {
-          const content = readFileSync(skillFile, "utf-8");
-          const meta = parseSkillFrontmatter(content, skillFile);
-          if (meta?.name && !skills.has(meta.name)) {
-            skills.set(meta.name, meta);
+      const entries = readdirSync(basePath, { withFileTypes: true });
+      for (const entry of entries) {
+        const entryPath = join(basePath, entry.name);
+        // Check if this entry is a skill directory (has SKILL.md) or a container (has subdirs)
+        const skillFile = join(entryPath, "SKILL.md");
+        if (existsSync(skillFile)) {
+          // Entry is a skill directory
+          try {
+            const content = readFileSync(skillFile, "utf-8");
+            const meta = parseSkillFrontmatter(content, skillFile);
+            if (meta?.name && !skills.has(meta.name)) {
+              skills.set(meta.name, meta);
+            }
+          } catch {
+            // Skip unreadable skill files
           }
-        } catch {
-          // Skip unreadable skill files
+        } else {
+          // Entry might be a container directory of skills (e.g., a symlink to a skills collection)
+          // Try to discover skills one level deeper
+          try {
+            const subEntries = readdirSync(entryPath, { withFileTypes: true });
+            for (const subEntry of subEntries) {
+              const subSkillFile = join(entryPath, subEntry.name, "SKILL.md");
+              if (!existsSync(subSkillFile)) continue;
+              try {
+                const content = readFileSync(subSkillFile, "utf-8");
+                const meta = parseSkillFrontmatter(content, subSkillFile);
+                if (meta?.name && !skills.has(meta.name)) {
+                  skills.set(meta.name, meta);
+                }
+              } catch {
+                // Skip unreadable skill files
+              }
+            }
+          } catch {
+            // Not a directory or unreadable, skip
+          }
         }
       }
     } catch {
