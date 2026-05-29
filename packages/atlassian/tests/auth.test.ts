@@ -31,7 +31,7 @@ afterEach(async () => {
 
 describe("AtlassianAuth", () => {
   it("uses complete env config before files and normalizes trailing slashes", async () => {
-    await writeConfig(".config/life-of-pi/atlassian.json", {
+    await writeConfig(".pi/sf/atlassian/config.json", {
       baseUrl: "https://file.atlassian.net",
       email: "file@example.com",
       apiToken: "file-token",
@@ -56,7 +56,7 @@ describe("AtlassianAuth", () => {
   });
 
   it("fails on partial Atlassian env instead of falling back to files", async () => {
-    await writeConfig(".config/life-of-pi/atlassian.json", {
+    await writeConfig(".pi/sf/atlassian/config.json", {
       baseUrl: "https://file.atlassian.net",
       email: "file@example.com",
       apiToken: "file-token",
@@ -66,61 +66,24 @@ describe("AtlassianAuth", () => {
     expect(() => new AtlassianAuth().getConfig()).toThrow(/incomplete atlassian environment/i);
   });
 
-  it("uses the first existing config file and fails fast when it is malformed", async () => {
-    await writeFile(path.join(homeDir, ".atlassian-mcp.json"), "{not-json");
-    await writeConfig(".config/atlassian-mcp/config.json", {
-      domain: "later.atlassian.net",
-      email: "later@example.com",
-      apiToken: "later-token",
-    });
-
+  it("fails fast when ~/.pi/sf/atlassian/config.json is malformed", async () => {
+    const cfgDir = path.join(homeDir, ".pi", "sf", "atlassian");
+    await mkdir(cfgDir, { recursive: true });
+    await writeFile(path.join(cfgDir, "config.json"), "{not-json");
     expect(() => new AtlassianAuth().getConfig()).toThrow(/failed to read atlassian config/i);
   });
 
-  it("checks ~/.pi/atlassian/config.json before legacy config paths", async () => {
-    await writeConfig(".pi/atlassian/config.json", {
+  it("reads config from ~/.pi/sf/atlassian/config.json", async () => {
+    await writeConfig(".pi/sf/atlassian/config.json", {
       baseUrl: "https://pi.atlassian.net",
       email: "pi@example.com",
       apiToken: "pi-token",
-    });
-    await writeConfig(".config/life-of-pi/atlassian.json", {
-      baseUrl: "https://legacy.atlassian.net",
-      email: "legacy@example.com",
-      apiToken: "legacy-token",
     });
 
     expect(new AtlassianAuth().getConfig()).toEqual({
       baseUrl: "https://pi.atlassian.net",
       email: "pi@example.com",
       apiToken: "pi-token",
-    });
-  });
-
-  it("falls back to legacy ~/.config/life-of-pi/atlassian.json when ~/.pi/atlassian/config.json is absent", async () => {
-    await writeConfig(".config/life-of-pi/atlassian.json", {
-      baseUrl: "https://legacy.atlassian.net",
-      email: "legacy@example.com",
-      apiToken: "legacy-token",
-    });
-
-    expect(new AtlassianAuth().getConfig()).toEqual({
-      baseUrl: "https://legacy.atlassian.net",
-      email: "legacy@example.com",
-      apiToken: "legacy-token",
-    });
-  });
-
-  it("reads upstream MCP domain-shaped config and cwd-local config last", async () => {
-    await mkdir(cwdDir, { recursive: true });
-    await writeFile(
-      path.join(cwdDir, ".atlassian-mcp.json"),
-      JSON.stringify({ domain: "cwd.atlassian.net", email: "cwd@example.com", apiToken: "cwd-token" }),
-    );
-
-    expect(new AtlassianAuth().getConfig()).toEqual({
-      baseUrl: "https://cwd.atlassian.net",
-      email: "cwd@example.com",
-      apiToken: "cwd-token",
     });
   });
 

@@ -10,6 +10,7 @@
   },
   "keywords": ["pi-package", "pi-extension", "atlassian", "jira", "confluence"],
   "dependencies": {
+    "@pi-stef/paths": "file:../paths",
     "@pi-stef/figma": "file:../figma",
     "@sinclair/typebox": "*",
     "zod": "^3.25.62"

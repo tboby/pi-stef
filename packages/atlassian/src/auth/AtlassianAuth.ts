@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { globalConfig } from "@pi-stef/paths";
 import { z } from "zod";
 
 const FileConfigSchema = z
@@ -99,13 +100,7 @@ export class AtlassianAuth {
 
   private configPaths(): string[] {
     return [
-      // Pi-conventional canonical path. Recommended location going forward.
-      path.join(os.homedir(), ".pi/atlassian/config.json"),
-      // Legacy paths kept for backward compatibility.
-      path.join(os.homedir(), ".config/life-of-pi/atlassian.json"),
-      path.join(os.homedir(), ".atlassian-mcp.json"),
-      path.join(os.homedir(), ".config/atlassian-mcp/config.json"),
-      path.join(process.cwd(), ".atlassian-mcp.json"),
+      globalConfig("atlassian"),
     ];
   }
 
