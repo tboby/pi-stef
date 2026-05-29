@@ -5,13 +5,13 @@
 ## Installation
 
 ```bash
-pi install git:github.com/<USER>/pi-stef#packages/web --scope user
+pi install git:github.com/sfiorini/pi-stef#packages/web
 ```
 
 For project-local install:
 
 ```bash
-pi install -l git:github.com/<USER>/pi-stef#packages/web
+pi install -l git:github.com/sfiorini/pi-stef#packages/web
 ```
 
 After installation, verify runtime dependencies:
