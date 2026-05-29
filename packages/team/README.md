@@ -209,7 +209,7 @@ sf_team_steer planSlug=2026-05-01-cache-eviction instruction="Do not touch the p
 
 When exactly one sf-team workflow is active, `instruction` alone is accepted. When multiple active workflows match, the tool returns candidate workflow ids and does not append anything.
 
-The active workflow keeps the main orchestrator loop available for conversation while role agents run in the background. Safe-boundary drains run at workflow start, before/after role-agent spawns, during active child ticks, before milestone completion, and before final completion. Each drain asks a steering-decider to classify the new instruction against the current snapshot, then records the decision, snapshots, and actions under `.sf-workflow/steering/`.
+The active workflow keeps the main orchestrator loop available for conversation while role agents run in the background. Safe-boundary drains run at workflow start, before/after role-agent spawns, during active child ticks, before milestone completion, and before final completion. Each drain asks a steering-decider to classify the new instruction against the current snapshot, then records the decision, snapshots, and actions under `.pi/sf/agent-workflows/steering/`.
 
 Steering can apply future guidance, restart or stop running agents, request confirmation before destructive worktree discard, amend a milestone plan, or mark completed stories/milestones as `needs-rework` so execution resumes from the amended point. Resume reconciles stale active-agent records, requeues orphaned `analyzing` or `partially-applied` instructions, and uses `applied-instructions.jsonl` to avoid replaying decisions that already took effect.
 
@@ -268,13 +268,13 @@ sf_team_followup_resume resume=2026-05-08-followup-add-cache-metric
 
 The historical `sf_team_<base> resume=...` form (a single tool with an `anyOf` start/resume schema) is gone. Use `<base>_resume` for resume calls. Natural-language phrasing like `pi "Resume the interrupted sf_team_auto workflow ..."` still works because the agent routes through the right tool when interpreting the request.
 
-Exact resume normally requires `.sf-workflow/workflow.json` to prove the same owner tool started the folder. Older metadata-less auto folders can be recovered only when they already contain both plan checkpoints and milestone implementation checkpoints; the resumed run writes metadata for future resumes. After ownership is accepted, `sf_team_auto_resume resume=<target>` skips researcher/planner whenever it finds an existing implementable five-file plan folder and resumes the implementation phase directly.
+Exact resume normally requires `.pi/sf/agent-workflows/workflow.json` to prove the same owner tool started the folder. Older metadata-less auto folders can be recovered only when they already contain both plan checkpoints and milestone implementation checkpoints; the resumed run writes metadata for future resumes. After ownership is accepted, `sf_team_auto_resume resume=<target>` skips researcher/planner whenever it finds an existing implementable five-file plan folder and resumes the implementation phase directly.
 
 ## Architecture
 
 The TypeScript orchestrator owns the state machine. Each role-agent is a single-job pi subprocess: receive a typed payload, produce content (plan markdown / code changes / verdict markdown), exit. Review loops alternate role-agent spawns and reviewer spawns; agents do not spawn other agents.
 
-Reusable workflow concerns live in `@pi-stef/agent-workflows`: plan-folder locks, `.sf-workflow` metadata, checkpoint stores, resume target analysis, widget messages, verification policy/cache helpers, and the generic `runWorkflow` lifecycle. `sf-team` is the first consumer of that library and keeps the tool-specific pieces: role prompts, plan/tracker parsing, worktree and merge policy, tmux panes, transcripts, diagnostics, performance reports, Telegram notifications, and final result formatting.
+Reusable workflow concerns live in `@pi-stef/agent-workflows`: plan-folder locks, `.pi/sf/agent-workflows` metadata, checkpoint stores, resume target analysis, widget messages, verification policy/cache helpers, and the generic `runWorkflow` lifecycle. `sf-team` is the first consumer of that library and keeps the tool-specific pieces: role prompts, plan/tracker parsing, worktree and merge policy, tmux panes, transcripts, diagnostics, performance reports, Telegram notifications, and final result formatting.
 
 Reviewers and the researcher always run with strict isolation: `--no-prompt-templates --no-extensions --no-context-files --tools read,grep,find,ls` (reviewer also pins `--no-skills`). Planner and developer agents get role-tuned skills via `--skill <path>`.
 
@@ -318,12 +318,12 @@ Planner agents receive a `PLANNER_TDD_REMINDER` that nudges them to schedule eac
 
 Layered global + project config, with project winning at field level:
 
-- Global: `~/.pi/sf-team/config.json`
-- Project: `<repo>/.sf-team.json`
+- Global: `~/.pi/sf/team/config.json`
+- Project: `<repo>/.pi/sf/team/config.json`
 
 Resolution chain (locked): `prompt args → project config → global config → DEFAULT_CONFIG`. The first non-`undefined` value wins.
 
-`pi install git:github.com/sfiorini/pi-stef#packages/team` creates the global file at `~/.pi/sf-team/config.json` when it is missing. Existing files are preserved and reported as pre-existing. Project files are intentionally not generated: `<repo>/.sf-team.json` should contain only sparse overrides that belong in that repository.
+`pi install git:github.com/sfiorini/pi-stef#packages/team` creates the global file at `~/.pi/sf/team/config.json` when it is missing. Existing files are preserved and reported as pre-existing. Project files are intentionally not generated: `<repo>/.pi/sf/team/config.json` should contain only sparse overrides that belong in that repository.
 
 The generated file is copied from [`packages/sf-team/config/defaults.json`](config/defaults.json) and includes every built-in default. That includes reserved keys accepted by the schema but not honored yet, and advanced operational keys such as `heartbeatMs`; see the reference table below before changing those.
 
@@ -371,11 +371,11 @@ Resume is intentionally strict. The workflow folder records the tool that starte
 | `sf_team_auto` | `sf_team_auto_resume` |
 | `sf_team_followup` | `sf_team_followup_resume` |
 
-Normal handoff is still supported: `sf_team_implement slug=<slug>` can implement a five-file plan produced by `sf_team_plan`. That is not exact resume; it is the normal plan-to-implementation workflow, and implement intentionally claims plan-owned metadata for that handoff. `sf_team_followup title=... parentPlan=<parent-slug>` still targets a parent plan to derive context from. Exact follow-up resume targets the FOLLOWUP'S OWN slug — `sf_team_followup_resume resume=<followup-slug>` (e.g. `2026-05-08-followup-better-anim`) — and the resume code re-loads the parent's milestone-plan from the followup's `.sf-workflow/workflow.json` `parentSlug`.
+Normal handoff is still supported: `sf_team_implement slug=<slug>` can implement a five-file plan produced by `sf_team_plan`. That is not exact resume; it is the normal plan-to-implementation workflow, and implement intentionally claims plan-owned metadata for that handoff. `sf_team_followup title=... parentPlan=<parent-slug>` still targets a parent plan to derive context from. Exact follow-up resume targets the FOLLOWUP'S OWN slug — `sf_team_followup_resume resume=<followup-slug>` (e.g. `2026-05-08-followup-better-anim`) — and the resume code re-loads the parent's milestone-plan from the followup's `.pi/sf/agent-workflows/workflow.json` `parentSlug`.
 
 Legacy policy:
 
-- If `.sf-workflow/workflow.json` exists, `ownerTool` must match the invoked tool's workflow base (`sf_team_plan_resume` matches an `sf_team_plan` owner record, etc.).
+- If `.pi/sf/agent-workflows/workflow.json` exists, `ownerTool` must match the invoked tool's workflow base (`sf_team_plan_resume` matches an `sf_team_plan` owner record, etc.).
 - If metadata is missing, `sf_team_implement_resume resume=<slug-or-path>` may resume a legacy five-file plan folder.
 - If metadata is missing, `sf_team_auto_resume resume=<slug-or-path>` may resume only a five-file plan folder that already has both plan-phase checkpoints and milestone implementation checkpoints. This evidence is used for legacy ownership recovery; once accepted, auto resumes implementation directly instead of rerunning the plan phase. The resumed run writes `workflow.json` so later resumes use the normal owner check.
 - Other exact resume calls require metadata because they cannot reconstruct planner/task/follow-up subprocess boundaries safely.
@@ -470,7 +470,7 @@ Examples:
 
 Named stages resolve to package scripts in the verification cwd. Missing scripts are skipped with a widget message rather than treated as a passing command. `mode: "agent"` or `mode: "commands-and-agent"` spawns a read-only verifier agent using the reviewer role settings; the verifier must return exactly one `VERIFICATION: PASS` status line or the gate fails.
 
-The run cache avoids repeating a command within one orchestrator run when the verification fingerprint is unchanged. The fingerprint includes cwd, tool name, phase, command, package-manager files/install state, git `HEAD`, git status, unstaged diff, staged diff, and untracked file contents. Persistent cache is opt-in and defaults to `ai_plan/<slug>/.sf-workflow/verification-cache.json`; unreadable, invalid, or missing cache files are treated as misses.
+The run cache avoids repeating a command within one orchestrator run when the verification fingerprint is unchanged. The fingerprint includes cwd, tool name, phase, command, package-manager files/install state, git `HEAD`, git status, unstaged diff, staged diff, and untracked file contents. Persistent cache is opt-in and defaults to `ai_plan/<slug>/.pi/sf/agent-workflows/verification-cache.json`; unreadable, invalid, or missing cache files are treated as misses.
 
 ### Model ids: prefer `provider/model`
 
@@ -678,7 +678,7 @@ FAILED: sf_team_implement empty_diff: milestone M5 produced no
 changes after 3 attempts. RESUME: invoke sf_team_implement_resume
 { resume: '<slug>' } and consider setting
 `implement.empty_diff_retry_model` to a stronger model in
-~/.pi/sf-team/config.json.
+~/.pi/sf/team/config.json.
 ```
 
 Two config knobs control retry policy:
@@ -824,7 +824,7 @@ By default, sf-team auto-detects whether the current working directory is inside
 Pass `gitMode='off'` on any tool call, or set it globally via config:
 
 ```jsonc
-// ~/.pi/sf-team/config.json
+// ~/.pi/sf/team/config.json
 {
   "paths": { "git_mode": "off" }
 }
@@ -843,7 +843,7 @@ sf_team_followup title="Add metric for cache evictions" aiPlanPath=~/work/plans 
 sf_team_steer planSlug=2026-05-01-upgrade-postgres aiPlanPath=/home/user/notes/plans instruction="Skip the vacuum step"
 ```
 
-`aiPlanPath` is resolved to an absolute path and persisted in `.sf-workflow/workflow.json` so `_resume` calls find the folder even when invoked from a different working directory. A global slug-to-planRoot index at `~/.sf-team/plan-index.json` is updated on every plan write; slug-only resumes consult the index when the slug is not found at the default `ai_plan/` location.
+`aiPlanPath` is resolved to an absolute path and persisted in `.pi/sf/agent-workflows/workflow.json` so `_resume` calls find the folder even when invoked from a different working directory. A global slug-to-planRoot index at `~/.pi/sf/team/plan-index.json` is updated on every plan write; slug-only resumes consult the index when the slug is not found at the default `ai_plan/` location.
 
 ### TDD mode
 
@@ -869,7 +869,7 @@ All new arguments (`aiPlanPath`, `gitMode`, `tddMode`) are **opt-in**. Existing 
 - `tddMode` defaults to `auto`, which preserves the prior behavior: TDD proof block required for code changes; the `no-test-needed:` shortcut is allowed for non-code diffs (docs, config, type-only).
 - `aiPlanPath` defaults to `undefined`, which resolves to `<cwd>/ai_plan/` — the same path sf-team has always used.
 
-No existing config keys were renamed or removed. The two new config sections (`paths` and `tdd`) are silently ignored by older versions of sf-team, so a shared `~/.pi/sf-team/config.json` that adds these keys is safe to roll out without updating every environment at once.
+No existing config keys were renamed or removed. The two new config sections (`paths` and `tdd`) are silently ignored by older versions of sf-team, so a shared `~/.pi/sf/team/config.json` that adds these keys is safe to roll out without updating every environment at once.
 
 The only observable change to git-mode workflows is that the developer agent's git/staging instructions are now composed at spawn time via `composeDeveloperSystemPreamble` instead of being hard-coded in `developer.yaml`. The wording is identical; no behavior difference.
 
@@ -877,7 +877,7 @@ The only observable change to git-mode workflows is that the developer agent's g
 
 Use headless mode when you want the workflow to spend less time maintaining interactive side channels and more time running the actual phase work. It is intended for fast local runs, CI-like runs, or performance investigations where the performance report is the main artifact.
 
-Enable it per repo in `<repo>/.sf-team.json`:
+Enable it per repo in `<repo>/.pi/sf/team/config.json`:
 
 ```jsonc
 {
@@ -885,7 +885,7 @@ Enable it per repo in `<repo>/.sf-team.json`:
 }
 ```
 
-Or enable it globally in `~/.pi/sf-team/config.json`:
+Or enable it globally in `~/.pi/sf/team/config.json`:
 
 ```jsonc
 {
@@ -969,7 +969,7 @@ Use the report's wall time, phase totals, role totals, and failure section to de
 | `paths.git_mode` | `auto` | global+project+prompt (`gitMode`) | `auto` enables git operations when cwd is inside a git work tree; `on` always enables; `off` always disables. |
 | `tdd.mode` | `auto` | global+project+prompt (`tddMode`) | TDD policy: `auto` requires a proof block for code changes but allows `no-test-needed:` for non-code diffs; `on` always requires proof (no shortcut); `off` waives the contract entirely. |
 
-Resolution order applies to every knob: `prompt args → <repo>/.sf-team.json → ~/.pi/sf-team/config.json → built-in DEFAULT_CONFIG`. The first non-`undefined` value wins.
+Resolution order applies to every knob: `prompt args → <repo>/.pi/sf/team/config.json → ~/.pi/sf/team/config.json → built-in DEFAULT_CONFIG`. The first non-`undefined` value wins.
 
 ## Cost totals
 
@@ -1102,8 +1102,8 @@ ai_plan/<YYYY-MM-DD-slug>/
   │   └── diagnostics-<ISO-stamp>.log     ← one per failed run
   ├── reports/
   │   └── performance-<ISO-stamp>.md      ← one per run
-  ├── .sf-team.lock/                       ← transient lockdir; metadata.json inside while a run owns the folder
-  └── .sf-workflow/
+  ├── .pi/sf/team/team.lock/                       ← transient lockdir; metadata.json inside while a run owns the folder
+  └── .pi/sf/agent-workflows/
       ├── workflow.json            ← durable owner/status/phase/worktree/branch metadata; includes `parentSlug` for followups
       ├── checkpoints.json         ← completed/failed step records with input/output fingerprints
       ├── verification-cache.json  ← persistent cache when opted in
@@ -1111,7 +1111,7 @@ ai_plan/<YYYY-MM-DD-slug>/
       └── artifacts/               ← checkpoint payloads and reusable step outputs
 ```
 
-`sf_team_followup` writes a brand-new sibling plan folder under `ai_plan/<date>-followup-<title-kebab>/` (e.g. `ai_plan/2026-05-08-followup-better-anim/`) using the same single-file `task-plan.md` layout as `sf_team_task`. The parent plan is referenced in the planner's brief and recorded in the followup's own `.sf-workflow/workflow.json` as `parentSlug`; the parent folder is not modified. Followup runs in the current branch (same as `sf_team_task`) — switch branches before invoking if a fresh branch is required.
+`sf_team_followup` writes a brand-new sibling plan folder under `ai_plan/<date>-followup-<title-kebab>/` (e.g. `ai_plan/2026-05-08-followup-better-anim/`) using the same single-file `task-plan.md` layout as `sf_team_task`. The parent plan is referenced in the planner's brief and recorded in the followup's own `.pi/sf/agent-workflows/workflow.json` as `parentSlug`; the parent folder is not modified. Followup runs in the current branch (same as `sf_team_task`) — switch branches before invoking if a fresh branch is required.
 
 Per-phase transcripts: each phase folder (`planning/`, `implementation/`) keeps its own counter that initializes from the highest existing sequence number on resume, so a resumed run never overwrites prior transcripts. System entries (validation-failed, patch transcripts) bucket by the active phase at write time.
 

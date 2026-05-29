@@ -43,13 +43,13 @@ figma_get_implementation_context input="https://www.figma.com/design/..." maxDep
 Create the canonical config file:
 
 ```bash
-mkdir -p ~/.pi/figma
-cat > ~/.pi/figma/config.json <<'JSON'
+mkdir -p ~/.pi/sf/figma
+cat > ~/.pi/sf/figma/config.json <<'JSON'
 {
   "apiToken": "MY_TOKEN"
 }
 JSON
-chmod 600 ~/.pi/figma/config.json
+chmod 600 ~/.pi/sf/figma/config.json
 ```
 
 Install the package:
@@ -75,12 +75,11 @@ Without a `fileKey`, `figma_auth_status` only checks local config presence. With
 
 Compatibility fallbacks are supported during the first minor release after `figma` ships:
 
-- `{ "apiKey": "..." }` in `~/.pi/figma/config.json`
-- legacy `~/.config/figma/credentials.json`
+- `{ "apiKey": "..." }` in `~/.pi/sf/figma/config.json`
 - `FIGMA_API_TOKEN`, `FIGMA_TOKEN`, or `FIGMA_ACCESS_TOKEN`
 - compatible `.mcp.json` Figma token entries
 
-New setups should use `{ "apiToken": "..." }` in `~/.pi/figma/config.json`.
+New setups should use `{ "apiToken": "..." }` in `~/.pi/sf/figma/config.json`.
 
 ## Migration From figma-context
 
@@ -221,7 +220,7 @@ URL parsing accepts Figma `/file`, `/design`, `/proto`, `/board`, and `/slides` 
 
 | Symptom | Action |
 |---|---|
-| `Figma API token not found` | Create `~/.pi/figma/config.json` with `{ "apiToken": "MY_TOKEN" }` or set a documented env fallback. |
+| `Figma API token not found` | Create `~/.pi/sf/figma/config.json` with `{ "apiToken": "MY_TOKEN" }` or set a documented env fallback. |
 | 401 or 403 | Check token validity, scopes, and file access. |
 | 404 | Confirm the file key and node id, and verify the token can access the file. |
 | 429 | Wait or narrow the request with node IDs and lower depth. |
@@ -232,6 +231,6 @@ URL parsing accepts Figma `/file`, `/design`, `/proto`, `/board`, and `/slides` 
 
 - Tokens are read from local config or environment and are never printed by tools.
 - `pi` does not scaffold secret-bearing Figma config files.
-- Keep `~/.pi/figma/config.json` at `chmod 600` when possible.
+- Keep `~/.pi/sf/figma/config.json` at `chmod 600` when possible.
 - Asset downloads only write when `outputDir` is explicit and resolved safely under the allowed working directory.
 - Raw tools can return large file data; prefer compact tools for normal agent work.

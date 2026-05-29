@@ -44,17 +44,11 @@ export ATLASSIAN_API_TOKEN="..."
 
 `ATLASSIAN_DOMAIN=your-site.atlassian.net` may be used instead of `ATLASSIAN_BASE_URL`.
 
-The package also supports config files. The first existing config file is authoritative and malformed files fail fast:
+The package also supports config files. Config is read from:
 
-1. `~/.pi/atlassian/config.json` — **recommended** Pi-conventional path
-2. `~/.config/life-of-pi/atlassian.json` — legacy fallback
-3. `~/.atlassian-mcp.json` — upstream MCP compatibility
-4. `~/.config/atlassian-mcp/config.json` — upstream MCP compatibility
-5. `./.atlassian-mcp.json` — CWD-local upstream MCP compatibility
+1. `~/.pi/sf/atlassian/config.json` — Pi-conventional path
 
-New setups should put credentials in `~/.pi/atlassian/config.json`. The legacy and upstream-MCP paths remain supported for backward compatibility.
-
-The CWD-local `./.atlassian-mcp.json` is supported for compatibility and should be treated as a credential surface.
+Malformed files fail fast. New setups should put credentials in `~/.pi/sf/atlassian/config.json`.
 
 ### Config file shape
 
@@ -81,15 +75,15 @@ Or the upstream-MCP-compatible `domain` form:
 To create the recommended config file:
 
 ```bash
-mkdir -p ~/.pi/atlassian
-cat > ~/.pi/atlassian/config.json <<'JSON'
+mkdir -p ~/.pi/sf/atlassian
+cat > ~/.pi/sf/atlassian/config.json <<'JSON'
 {
   "baseUrl": "https://your-site.atlassian.net",
   "email": "you@example.com",
   "apiToken": "..."
 }
 JSON
-chmod 600 ~/.pi/atlassian/config.json
+chmod 600 ~/.pi/sf/atlassian/config.json
 ```
 
 The `chmod 600` step is recommended so the file is only readable by your user — the API token grants full Jira and Confluence access for the email's account.
@@ -125,7 +119,7 @@ Use `story_context` when a Jira story should drive implementation work. It retur
 
 `jira_issue` remains available for compact single-issue context. Pass `includeContext: true` to use the same bounded traversal. `jira_get_issue` also accepts `includeContext: true` when a raw issue read should be upgraded to implementation context.
 
-The walker follows same-site Jira browse links, Jira keys, and Confluence page links. It keeps Figma URLs as design-link inventory and, when `~/.pi/figma/config.json` is configured, also fetches compact linked Figma context automatically.
+The walker follows same-site Jira browse links, Jira keys, and Confluence page links. It keeps Figma URLs as design-link inventory and, when `~/.pi/sf/figma/config.json` is configured, also fetches compact linked Figma context automatically.
 
 Figma enrichment is bounded for Jira latency:
 
