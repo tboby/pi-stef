@@ -7,7 +7,7 @@ import {
 import {
   fetchGuardedText,
   loadWebAccessConfig,
-} from "@pi-stef/web-access";
+} from "@pi-stef/web";
 
 import type { ExternalFetcher } from "./types";
 
@@ -16,9 +16,9 @@ import type { ExternalFetcher } from "./types";
  * no test seam overrides the wiring.
  *
  * Dispatch by `ref.kind`:
- *   - `url`        → `fetchGuardedText` from `@pi-stef/web-access`
+ *   - `url`        → `fetchGuardedText` from `@pi-stef/web`
  *                    (SSRF allowlist, DNS pinning, streamed byte cap,
- *                    redirect cap, timeout — see web-access docs).
+ *                    redirect cap, timeout — see web docs).
  *   - `jira`       → `getJiraIssueContext` + `renderJiraIssueMarkdown`
  *                    from `@pi-stef/atlassian`. Lazily reads
  *                    `AtlassianAuth` credentials; throws "Atlassian

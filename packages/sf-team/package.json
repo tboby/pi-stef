@@ -22,7 +22,7 @@
     "@pi-stef/agent-workflows": "file:../agent-workflows",
     "@pi-stef/atlassian": "file:../atlassian",
     "@pi-stef/figma": "file:../figma",
-    "@pi-stef/web-access": "file:../web-access",
+    "@pi-stef/web": "file:../web",
     "marked": "^15.0.12",
     "marked-terminal": "^7.3.0",
     "@sinclair/typebox": "*"

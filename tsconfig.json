@@ -6,6 +6,6 @@
     { "path": "packages/atlassian" },
     { "path": "packages/figma" },
     { "path": "packages/sf-team" },
-    { "path": "packages/web-access" }
+    { "path": "packages/web" }
   ]
 }

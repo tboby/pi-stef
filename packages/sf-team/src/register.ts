@@ -435,7 +435,7 @@ function registerSteerTool(pi: ExtensionAPI): void {
 
 function registerPlanTool(pi: ExtensionAPI): void {
   const handler = createSfTeamPlan();
-  // Default external fetcher (URL via web-access, Jira/Confluence via
+  // Default external fetcher (URL via web, Jira/Confluence via
   // atlassian). Constructed once per registration; the same instance is
   // reused for every sf_team_plan call. Tests inject their own fetcher
   // via the handler's `input.externalFetcher` parameter directly, so

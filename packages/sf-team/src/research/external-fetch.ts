@@ -4,7 +4,7 @@ import type { ExternalFetcher, ExternalFetchResult, ExternalRef } from "./types"
  * Scan a prompt for external references and call the injected `ExternalFetcher`
  * for each. The production default fetcher (constructed by
  * `createDefaultExternalFetcher` in `default-fetcher.ts` and wired in
- * `register.ts`) dispatches URL refs through `@pi-stef/web-access`
+ * `register.ts`) dispatches URL refs through `@pi-stef/web`
  * (`fetchGuardedText` with SSRF policy + streaming byte cap), and Jira /
  * Confluence refs through `@pi-stef/atlassian` (`getJiraIssueContext`,
  * `getConfluencePageContext`). Tests and any direct API caller may pass
