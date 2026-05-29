@@ -18,7 +18,11 @@ importers:
         specifier: ^4.0.0
         version: 4.1.7(@types/node@22.19.19)(jsdom@29.1.1)(vite@8.0.14(@types/node@22.19.19)(jiti@2.7.0)(yaml@2.9.0))
 
-  packages/agent-workflows: {}
+  packages/agent-workflows:
+    dependencies:
+      '@pi-stef/paths':
+        specifier: file:../paths
+        version: link:../paths
 
   packages/atlassian:
     dependencies:
@@ -31,6 +35,9 @@ importers:
       '@pi-stef/figma':
         specifier: file:../figma
         version: link:../figma
+      '@pi-stef/paths':
+        specifier: file:../paths
+        version: link:../paths
       '@sinclair/typebox':
         specifier: '*'
         version: 0.34.49
@@ -46,6 +53,9 @@ importers:
       '@earendil-works/pi-coding-agent':
         specifier: '*'
         version: 0.76.0(ws@8.21.0)(zod@3.25.76)
+      '@pi-stef/paths':
+        specifier: file:../paths
+        version: link:../paths
       '@sinclair/typebox':
         specifier: '*'
         version: 0.34.49
@@ -53,35 +63,7 @@ importers:
         specifier: ^3.25.62
         version: 3.25.76
 
-  packages/sf-team:
-    dependencies:
-      '@earendil-works/pi-coding-agent':
-        specifier: '*'
-        version: 0.76.0(ws@8.21.0)(zod@4.4.3)
-      '@earendil-works/pi-tui':
-        specifier: '*'
-        version: 0.76.0
-      '@pi-stef/agent-workflows':
-        specifier: file:../agent-workflows
-        version: link:../agent-workflows
-      '@pi-stef/atlassian':
-        specifier: file:../atlassian
-        version: file:packages/atlassian(@earendil-works/pi-ai@0.76.0(ws@8.21.0)(zod@4.4.3))(@earendil-works/pi-coding-agent@0.76.0(ws@8.21.0)(zod@4.4.3))
-      '@pi-stef/figma':
-        specifier: file:../figma
-        version: file:packages/figma(@earendil-works/pi-ai@0.76.0(ws@8.21.0)(zod@4.4.3))(@earendil-works/pi-coding-agent@0.76.0(ws@8.21.0)(zod@4.4.3))(@sinclair/typebox@0.34.49)
-      '@pi-stef/web':
-        specifier: file:../web
-        version: link:../web
-      '@sinclair/typebox':
-        specifier: '*'
-        version: 0.34.49
-      marked:
-        specifier: ^15.0.12
-        version: 15.0.12
-      marked-terminal:
-        specifier: ^7.3.0
-        version: 7.3.0(marked@15.0.12)
+  packages/paths: {}
 
   packages/superpowers-adapter:
     dependencies:
@@ -102,6 +84,39 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/team:
+    dependencies:
+      '@earendil-works/pi-coding-agent':
+        specifier: '*'
+        version: 0.76.0(ws@8.21.0)(zod@4.4.3)
+      '@earendil-works/pi-tui':
+        specifier: '*'
+        version: 0.76.0
+      '@pi-stef/agent-workflows':
+        specifier: file:../agent-workflows
+        version: link:../agent-workflows
+      '@pi-stef/atlassian':
+        specifier: file:../atlassian
+        version: file:packages/atlassian(@earendil-works/pi-ai@0.76.0(ws@8.21.0)(zod@4.4.3))(@earendil-works/pi-coding-agent@0.76.0(ws@8.21.0)(zod@4.4.3))
+      '@pi-stef/figma':
+        specifier: file:../figma
+        version: file:packages/figma(@earendil-works/pi-ai@0.76.0(ws@8.21.0)(zod@4.4.3))(@earendil-works/pi-coding-agent@0.76.0(ws@8.21.0)(zod@4.4.3))(@sinclair/typebox@0.34.49)
+      '@pi-stef/paths':
+        specifier: file:../paths
+        version: link:../paths
+      '@pi-stef/web':
+        specifier: file:../web
+        version: link:../web
+      '@sinclair/typebox':
+        specifier: '*'
+        version: 0.34.49
+      marked:
+        specifier: ^15.0.12
+        version: 15.0.12
+      marked-terminal:
+        specifier: ^7.3.0
+        version: 7.3.0(marked@15.0.12)
+
   packages/web:
     dependencies:
       '@earendil-works/pi-ai':
@@ -113,6 +128,9 @@ importers:
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
+      '@pi-stef/paths':
+        specifier: file:../paths
+        version: link:../paths
       '@sinclair/typebox':
         specifier: '*'
         version: 0.34.49
@@ -468,6 +486,9 @@ packages:
       '@earendil-works/pi-ai': '*'
       '@earendil-works/pi-coding-agent': '*'
       '@sinclair/typebox': '*'
+
+  '@pi-stef/paths@file:packages/paths':
+    resolution: {directory: packages/paths, type: directory}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -2155,6 +2176,7 @@ snapshots:
       '@earendil-works/pi-ai': 0.76.0(ws@8.21.0)(zod@4.4.3)
       '@earendil-works/pi-coding-agent': 0.76.0(ws@8.21.0)(zod@4.4.3)
       '@pi-stef/figma': file:packages/figma(@earendil-works/pi-ai@0.76.0(ws@8.21.0)(zod@4.4.3))(@earendil-works/pi-coding-agent@0.76.0(ws@8.21.0)(zod@4.4.3))(@sinclair/typebox@0.34.49)
+      '@pi-stef/paths': file:packages/paths
       '@sinclair/typebox': 0.34.49
       zod: 3.25.76
 
@@ -2162,8 +2184,11 @@ snapshots:
     dependencies:
       '@earendil-works/pi-ai': 0.76.0(ws@8.21.0)(zod@4.4.3)
       '@earendil-works/pi-coding-agent': 0.76.0(ws@8.21.0)(zod@4.4.3)
+      '@pi-stef/paths': file:packages/paths
       '@sinclair/typebox': 0.34.49
       zod: 3.25.76
+
+  '@pi-stef/paths@file:packages/paths': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 

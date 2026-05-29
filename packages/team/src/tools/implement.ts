@@ -25,6 +25,7 @@ import { runVerificationGateWithFixLoop } from "./verification-gate-loop";
 import { decideSteeringInstruction, decideSteeringInstructions } from "../steering/decider";
 import { enforcePauseAtSafeBoundary } from "../steering/pause-enforcement";
 import { applySteeringBacktrack } from "../steering/backtrack";
+import { GIT_MAX_BUFFER } from "./shared-helpers";
 
 export { detectPackageManager, packageScriptsAt } from "../runtime/package-manager";
 
@@ -1835,15 +1836,15 @@ function stageTrackedModifications(cwd: string): void {
 
 function readStagedDiff(cwd: string): string {
   stageTrackedModifications(cwd);
-  const r = spawnSync("git", ["diff", "--cached"], { cwd, encoding: "utf8" });
+  const r = spawnSync("git", ["diff", "--cached"], { cwd, encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
   return r.status === 0 ? r.stdout : "";
 }
 
 function readReviewDiff(cwd: string, baseRef: string | undefined): string {
   if (!baseRef) return readStagedDiff(cwd);
   stageTrackedModifications(cwd);
-  const committed = spawnSync("git", ["diff", `${baseRef}..HEAD`], { cwd, encoding: "utf8" });
-  const staged = spawnSync("git", ["diff", "--cached"], { cwd, encoding: "utf8" });
+  const committed = spawnSync("git", ["diff", `${baseRef}..HEAD`], { cwd, encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
+  const staged = spawnSync("git", ["diff", "--cached"], { cwd, encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
   return [
     committed.status === 0 ? committed.stdout : "",
     staged.status === 0 ? staged.stdout : "",
@@ -1859,14 +1860,14 @@ function readReviewDiff(cwd: string, baseRef: string | undefined): string {
  * the full diff for transcripts.
  */
 function readStagedDiffStat(cwd: string): string {
-  const r = spawnSync("git", ["diff", "--cached", "--stat"], { cwd, encoding: "utf8" });
+  const r = spawnSync("git", ["diff", "--cached", "--stat"], { cwd, encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
   return r.status === 0 ? r.stdout : "";
 }
 
 function readReviewDiffStat(cwd: string, baseRef: string | undefined): string {
   if (!baseRef) return readStagedDiffStat(cwd);
-  const committed = spawnSync("git", ["diff", `${baseRef}..HEAD`, "--stat"], { cwd, encoding: "utf8" });
-  const staged = spawnSync("git", ["diff", "--cached", "--stat"], { cwd, encoding: "utf8" });
+  const committed = spawnSync("git", ["diff", `${baseRef}..HEAD`, "--stat"], { cwd, encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
+  const staged = spawnSync("git", ["diff", "--cached", "--stat"], { cwd, encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
   return [
     committed.status === 0 ? committed.stdout : "",
     staged.status === 0 ? staged.stdout : "",

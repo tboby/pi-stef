@@ -15,6 +15,9 @@ import type { AgentRole, TeamMember } from "../runtime/types";
  * helper string.
  */
 
+/** Max buffer for git diff spawnSync calls — large enough for any realistic staged diff. */
+export const GIT_MAX_BUFFER = 50 * 1024 * 1024;
+
 /** Resolve a default `TeamMember` for the given role from the agents config. */
 export function defaultMember(
   role: AgentRole,
@@ -43,13 +46,13 @@ export function assertCleanWorktree(toolName: string, cwd: string): void {
 
 /** Read the current staged diff (`git diff --cached`). Returns "" on failure. */
 export function readStagedDiff(cwd: string): string {
-  const r = spawnSync("git", ["diff", "--cached"], { cwd, encoding: "utf8" });
+  const r = spawnSync("git", ["diff", "--cached"], { cwd, encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
   return r.status === 0 ? r.stdout : "";
 }
 
 /** Read the staged diff stat (`git diff --cached --stat`). Returns "" on failure. */
 export function readStagedDiffStat(cwd: string): string {
-  const r = spawnSync("git", ["diff", "--cached", "--stat"], { cwd, encoding: "utf8" });
+  const r = spawnSync("git", ["diff", "--cached", "--stat"], { cwd, encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
   return r.status === 0 ? r.stdout : "";
 }
 
