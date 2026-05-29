@@ -5,14 +5,13 @@
 The package is optional. Install it when an agent needs web retrieval beyond the normal model context.
 
 ```bash
-pi install web-access --scope project
-pi install web-access --scope global
+pi install git:github.com/<USER>/pi-stef#packages/web-access
 ```
 
-Use `--dry-run` first when you want to inspect package-local dependency prep:
+For project-local install:
 
 ```bash
-pi install web-access --scope project --dry-run
+pi install -l git:github.com/<USER>/pi-stef#packages/web-access
 ```
 
 The package uses `runtimePostInstallCommands` so CloakBrowser binary preparation runs after package-local `npm install --omit=peer --workspaces=false` has installed `cloakbrowser` and `playwright-core`.
@@ -62,13 +61,12 @@ Slash commands:
 
 ```text
 /search <query>
-/web-search <query>
 /web status
 /web sessions
 /web clear-session <name> [--yes]
 ```
 
-`/search` is preferred when available. `/web-search` is the fallback when another package owns `/search`.
+`/search` registers when the name is available. If another package already owns `/search`, the extension falls back to `/web-search` automatically.
 
 ### Tool Parameters
 
