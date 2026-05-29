@@ -700,7 +700,7 @@ The `shouldContinue` callback on `SfTeamImplementInput` is a TEST-ONLY override:
 
 ```bash
 # Install
-scripts/pi install sf-team --scope project
+scripts/pi install sf-team
 
 # In a pi session, ask the researcher → planner → reviewer pipeline to draft a plan:
 sf_team_plan title="Add per-org rate limiting" brief="..."

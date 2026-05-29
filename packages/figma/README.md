@@ -55,13 +55,13 @@ chmod 600 ~/.pi/figma/config.json
 Install the package:
 
 ```bash
-pi install figma --scope project
+pi install git:github.com/<USER>/pi-stef#packages/figma
 ```
 
-Use `--scope global` when you want the tools available in every Pi project. Use `--dry-run` first when you want to inspect the Pi install command:
+Use the default install for global availability, or add `-l` for project-local install. Use `--dry-run` first when you want to inspect the Pi install command:
 
 ```bash
-pi install figma --scope project --dry-run
+pi install git:github.com/<USER>/pi-stef#packages/figma --dry-run
 ```
 
 Check token discovery without printing the token:
