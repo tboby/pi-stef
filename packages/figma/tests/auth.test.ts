@@ -18,35 +18,20 @@ describe("FigmaAuthorization", () => {
     vi.restoreAllMocks();
   });
 
-  it("reads apiToken from ~/.pi/figma/config.json as the canonical config", async () => {
+  it("reads apiToken from ~/.pi/sf/figma/config.json as the canonical config", async () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "figma-home-"));
     vi.stubEnv("HOME", home);
-    fs.mkdirSync(path.join(home, ".pi", "figma"), { recursive: true });
+    fs.mkdirSync(path.join(home, ".pi", "sf", "figma"), { recursive: true });
     fs.writeFileSync(
-      path.join(home, ".pi", "figma", "config.json"),
+      path.join(home, ".pi", "sf", "figma", "config.json"),
       JSON.stringify({ apiToken: "token-from-pi-config" }),
     );
 
     const { FigmaAuthorization, FIGMA_CONFIG_PATH } = await loadAuthorization();
     const auth = new FigmaAuthorization();
 
-    expect(FIGMA_CONFIG_PATH).toBe(path.join(home, ".pi", "figma", "config.json"));
+    expect(FIGMA_CONFIG_PATH).toBe(path.join(home, ".pi", "sf", "figma", "config.json"));
     expect(auth.getConfig()).toEqual({ apiToken: "token-from-pi-config" });
-  });
-
-  it("keeps legacy apiKey credential files as a compatibility fallback", async () => {
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "figma-home-"));
-    vi.stubEnv("HOME", home);
-    fs.mkdirSync(path.join(home, ".config", "figma"), { recursive: true });
-    fs.writeFileSync(
-      path.join(home, ".config", "figma", "credentials.json"),
-      JSON.stringify({ apiKey: "legacy-token" }),
-    );
-
-    const { FigmaAuthorization } = await loadAuthorization();
-    const auth = new FigmaAuthorization();
-
-    expect(auth.getConfig()).toEqual({ apiToken: "legacy-token", apiKey: "legacy-token" });
   });
 
   it("sends the configured token without exposing it in tool output", async () => {

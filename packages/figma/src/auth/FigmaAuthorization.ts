@@ -2,6 +2,7 @@ import fs from 'fs';
 import * as os from 'os';
 import path from 'path';
 import z from 'zod';
+import { globalConfig } from '@pi-stef/paths';
 
 const McpConfigSchema = z.object({
   mcpServers: z.object({
@@ -36,11 +37,7 @@ function currentHomeDir(): string {
 }
 
 export function getFigmaConfigPath(): string {
-  return path.resolve(currentHomeDir(), '.pi/figma/config.json');
-}
-
-function getLegacyCredentialsPath(): string {
-  return path.resolve(currentHomeDir(), '.config/figma/credentials.json');
+  return globalConfig("figma", currentHomeDir());
 }
 
 export const FIGMA_CONFIG_PATH = getFigmaConfigPath();
@@ -135,16 +132,12 @@ export class FigmaAuthorization {
     const fromEnv = this.readFromEnv();
     if (fromEnv) return fromEnv;
 
-    // Compatibility: legacy figma-context credential file.
-    const fromFile = this.readConfigFile(getLegacyCredentialsPath());
-    if (fromFile) return fromFile;
-
     // Fallback: .mcp.json
     const fromMcp = this.readFromMcpConfig();
     if (fromMcp) return fromMcp;
 
     throw new Error(
-      'Figma API token not found. Create ~/.pi/figma/config.json with { "apiToken": "..." } or set FIGMA_API_TOKEN.',
+      'Figma API token not found. Create ~/.pi/sf/figma/config.json with { "apiToken": "..." } or set FIGMA_API_TOKEN.',
     );
   }
 

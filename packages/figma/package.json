@@ -10,6 +10,7 @@
   },
   "keywords": ["pi-package", "pi-extension", "figma"],
   "dependencies": {
+    "@pi-stef/paths": "file:../paths",
     "zod": "^3.25.62"
   },
   "peerDependencies": {
