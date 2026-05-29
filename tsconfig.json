@@ -5,7 +5,7 @@
     { "path": "packages/agent-workflows" },
     { "path": "packages/atlassian" },
     { "path": "packages/figma" },
-    { "path": "packages/sf-team" },
+    { "path": "packages/team" },
     { "path": "packages/web" }
   ]
 }

@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { Value } from "@sinclair/typebox/value";
 
-import sfTeamExtension from "../extensions/sf-team";
+import sfTeamExtension from "../extensions/team";
 import { TEAM_BASE_TOOL_NAMES, TEAM_TOOL_NAMES } from "../src/register";
 
 class FakePi {

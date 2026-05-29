@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import sfTeamExtension from "../extensions/sf-team";
+import sfTeamExtension from "../extensions/team";
 import { TEAM_TOOL_NAMES } from "../src/register";
 
 class FakePi {
@@ -60,14 +60,16 @@ describe("M1 smoke: extension entry registers the production tool surface", () =
     }
   });
 
-  it("registers /sf_team_* slash commands so the tools surface in pi's `/` menu", async () => {
+  it("registers /sf-team-* slash commands so the tools surface in pi's `/` menu", async () => {
     const pi = new FakePi();
     sfTeamExtension(pi as never);
-    expect(pi.commands.map((c) => c.name)).toEqual([...TEAM_TOOL_NAMES]);
+    // Slash commands use hyphens; tool names keep underscores.
+    const expectedCommandNames = TEAM_TOOL_NAMES.map((n) => n.replace(/_/g, "-"));
+    expect(pi.commands.map((c) => c.name)).toEqual(expectedCommandNames);
 
     // Handler with args + idle agent delegates via sendUserMessage with no
     // delivery mode — same path as natural-language typing.
-    const planCmd = pi.commands.find((c) => c.name === "sf_team_plan")!;
+    const planCmd = pi.commands.find((c) => c.name === "sf-team-plan")!;
     await planCmd.handler("Add OAuth login", { isIdle: () => true });
     expect(pi.sentMessages.at(-1)?.content).toMatch(/sf_team_plan/);
     expect(pi.sentMessages.at(-1)?.content).toMatch(/Add OAuth login/);
@@ -92,8 +94,9 @@ describe("M1 smoke: extension entry registers the production tool surface", () =
   it("falls back to ctx.ui.notify when sendUserMessage is missing", async () => {
     const pi = new FakePiNoSendUserMessage();
     sfTeamExtension(pi as never);
-    expect(pi.commands.map((c) => c.name)).toEqual([...TEAM_TOOL_NAMES]);
-    const planCmd = pi.commands.find((c) => c.name === "sf_team_plan")!;
+    const expectedCommandNames = TEAM_TOOL_NAMES.map((n) => n.replace(/_/g, "-"));
+    expect(pi.commands.map((c) => c.name)).toEqual(expectedCommandNames);
+    const planCmd = pi.commands.find((c) => c.name === "sf-team-plan")!;
     const notifications: Array<{ msg: string; level: string }> = [];
     await planCmd.handler("Add OAuth", {
       ui: { notify: (msg: string, level: string) => notifications.push({ msg, level }) },

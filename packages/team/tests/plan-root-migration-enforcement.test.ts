@@ -18,7 +18,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 
-const SF_TEAM_SRC = path.join(REPO_ROOT, "packages/sf-team/src");
+const SF_TEAM_SRC = path.join(REPO_ROOT, "packages/team/src");
 const AGENT_WF_SRC = path.join(REPO_ROOT, "packages/agent-workflows/src");
 
 /** Files excluded from all sweeps (definition / shim files). */

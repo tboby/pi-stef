@@ -66,7 +66,7 @@ describe("sf_team_steer registration", () => {
     await registerWorkflow(repoRoot, "workflow-a", "plan-a");
     const pi = new FakePi();
     registerSfTeam(pi as never);
-    const command = pi.commands.find((entry) => entry.name === "sf_team_steer");
+    const command = pi.commands.find((entry) => entry.name === "sf-team-steer");
     const notify = vi.fn();
     const originalCwd = process.cwd();
 
@@ -106,7 +106,7 @@ describe("sf_team_steer registration", () => {
 
     const pi = new FakePi();
     registerSfTeam(pi as never);
-    const command = pi.commands.find((entry) => entry.name === "sf_team_steer");
+    const command = pi.commands.find((entry) => entry.name === "sf-team-steer");
     const notify = vi.fn();
     const originalCwd = process.cwd();
 
@@ -136,7 +136,7 @@ describe("sf_team_steer registration", () => {
     await registerWorkflow(repoRoot, "workflow-a", "plan-a");
     const pi = new FakePi();
     registerSfTeam(pi as never);
-    const command = pi.commands.find((entry) => entry.name === "sf_team_steer");
+    const command = pi.commands.find((entry) => entry.name === "sf-team-steer");
     const notify = vi.fn();
     const originalCwd = process.cwd();
 
@@ -160,7 +160,7 @@ describe("sf_team_steer registration", () => {
   it("keeps an empty steering slash command as an agent prompt for missing args", async () => {
     const pi = new FakePi();
     registerSfTeam(pi as never);
-    const command = pi.commands.find((entry) => entry.name === "sf_team_steer");
+    const command = pi.commands.find((entry) => entry.name === "sf-team-steer");
 
     expect(command).toBeDefined();
     await command!.handler("", { isIdle: () => true });

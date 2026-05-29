@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { Value } from "@sinclair/typebox/value";
 
-import sfTeamExtension from "../extensions/sf-team";
+import sfTeamExtension from "../extensions/team";
 import { planFolderPath } from "../src/plan/paths";
 import * as autoModule from "../src/tools/auto";
 import * as implementModule from "../src/tools/implement";

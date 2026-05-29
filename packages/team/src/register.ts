@@ -193,14 +193,23 @@ function registerStartResumeTools<TStartParams, TResumeParams, TResult>(
 }
 
 /**
- * Register `/sf_team_*` slash commands so the team tools appear in pi's
+ * Convert a tool name (underscore) to a slash-command name (hyphen).
+ * e.g. `sf_team_plan` → `sf-team-plan`, `sf_team_plan_resume` → `sf-team-plan-resume`
+ */
+function toolToCommandName(toolName: string): string {
+  return toolName.replace(/_/g, "-");
+}
+
+/**
+ * Register `/sf-team-*` slash commands so the team tools appear in pi's
  * `/` menu. Each base name registers TWO commands:
  *   - `/<base>` — directs the agent to call the start tool
- *   - `/<base>_resume` — directs the agent to call the resume tool
+ *   - `/<base>-resume` — directs the agent to call the resume tool
  *
- * Defensive against older pi runtimes: if `registerCommand` or
- * `sendUserMessage` is missing, we degrade gracefully instead of throwing
- * during extension load.
+ * Slash commands use hyphens (`sf-team-plan`); tool names keep underscores
+ * (`sf_team_plan`). Defensive against older pi runtimes: if
+ * `registerCommand` or `sendUserMessage` is missing, we degrade gracefully
+ * instead of throwing during extension load.
  */
 function registerSlashCommands(pi: ExtensionAPI): void {
   if (typeof pi.registerCommand !== "function") return;
@@ -209,23 +218,23 @@ function registerSlashCommands(pi: ExtensionAPI): void {
   const steerHandler = createSfTeamSteer();
 
   for (const base of TEAM_BASE_TOOL_NAMES) {
-    const resumeName = `${base}_resume` as TeamResumeToolName;
+    const resumeToolName = `${base}_resume` as TeamResumeToolName;
     const startHint = startHintForBase(base);
 
-    registerOne(base, `${describeStartTool(base)} Args: ${startHint}.`, (trimmed) =>
+    registerOne(toolToCommandName(base), `${describeStartTool(base)} Args: ${startHint}.`, (trimmed) =>
       trimmed.length === 0
         ? `Invoke the ${base} tool. Ask me first for the ${startHint}.`
         : `Invoke the ${base} tool with: ${trimmed}`,
     );
 
-    registerOne(resumeName, `${describeResumeTool(base)} Args: slug to resume.`, (trimmed) =>
+    registerOne(toolToCommandName(resumeToolName), `${describeResumeTool(base)} Args: slug to resume.`, (trimmed) =>
       trimmed.length === 0
-        ? `Invoke the ${resumeName} tool. Ask me first for the slug to resume.`
-        : `Invoke the ${resumeName} tool with: ${trimmed}`,
+        ? `Invoke the ${resumeToolName} tool. Ask me first for the slug to resume.`
+        : `Invoke the ${resumeToolName} tool with: ${trimmed}`,
     );
   }
 
-  pi.registerCommand(TEAM_STEER_TOOL_NAME, {
+  pi.registerCommand(toolToCommandName(TEAM_STEER_TOOL_NAME), {
     description: "Send an instruction to an active sf-team workflow. Args: optional workflowId=<id>, planSlug=<slug>, aiPlanPath=<dir> plus instruction.",
     handler: async (args, ctx) => {
       const trimmed = args.trim();

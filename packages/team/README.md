@@ -1,11 +1,25 @@
-# @pi-stef/sf-team
+# SF Team
 
-Pi extension that runs a small **team of role-agents** (planner, developer, reviewer, researcher) as `pi` subprocesses to drive plan / implement / task / auto / followup workflows.
+`@pi-stef/team` runs a small **team of role-agents** (planner, developer, reviewer, researcher) as `pi` subprocesses to drive plan / implement / task / auto / followup workflows.
 
 Use it for larger code changes where you want a durable plan folder, reviewer-approved milestones, resumable orchestration, configurable verification gates, and optional tmux side panes without asking a single model to hold the entire workflow in memory.
 
+## Installation
+
+```bash
+pi install git:github.com/sfiorini/pi-stef#packages/team
+```
+
+For project-local install:
+
+```bash
+pi install -l git:github.com/sfiorini/pi-stef#packages/team
+```
+
 ## Contents
 
+- [Natural Language Usage](#natural-language-usage)
+- [Slash Commands](#slash-commands)
 - [Tools](#tools)
 - [Start A Workflow](#start-a-workflow)
 - [Steer Active Workflow](#steer-active-workflow)
@@ -23,7 +37,83 @@ Use it for larger code changes where you want a durable plan folder, reviewer-ap
 - [Safety properties](#safety-properties)
 - [Plan-folder layout](#plan-folder-layout)
 
+## Natural Language Usage
+
+The agent understands natural-language requests and routes them to the correct tool. Examples:
+
+**Draft a plan:**
+```text
+"Plan out adding per-org rate limiting with milestones, reviewer approval, and a durable plan folder."
+"Create a multi-milestone plan for refactoring the auth module. The reviewer should use Claude Opus."
+"Use sf_team_plan to draft a plan for migrating the database to Postgres 17."
+```
+The agent calls `sf_team_plan`.
+
+**Implement an approved plan:**
+```text
+"Implement the plan at ai_plan/2026-05-01-add-rate-limiting, milestone by milestone."
+"Run sf_team_implement on the approved plan folder and stop before pushing."
+```
+The agent calls `sf_team_implement`.
+
+**End-to-end single task:**
+```text
+"Fix the cache eviction race: reproduce it, add a regression test, fix it, get review, and commit locally."
+"Do a full task workflow: plan, implement, review, verify, and commit a fix for the broken pagination."
+"Use sf_team_task to handle this small bug fix end-to-end."
+```
+The agent calls `sf_team_task`.
+
+**Plan + implement chained (fully autonomous):**
+```text
+"Plan and implement adding per-org rate limiting with no human gates. Use Claude Opus as reviewer."
+"Run sf_team_auto to plan and implement the auth module refactor autonomously."
+"Auto-plan and auto-implement: upgrade the notification system to use websockets."
+```
+The agent calls `sf_team_auto`.
+
+**Follow up on a completed plan:**
+```text
+"Create a follow-up to the rate-limiting plan that adds per-endpoint metrics."
+"Use sf_team_followup to add cache eviction metrics to the existing plan."
+```
+The agent calls `sf_team_followup`.
+
+**Resume an interrupted workflow:**
+```text
+"Resume the interrupted auto workflow from 2026-05-06-refactor-auth and continue from its saved checkpoints."
+"Resume the sf_team_task workflow at ./ai_plan/2026-05-06-fix-cache-race."
+```
+The agent calls the appropriate `_resume` tool.
+
+**Steer an active workflow:**
+```text
+"Tell the running workflow not to touch the public cache interface — adapt internals only."
+"Steer the active plan to make the metric name configurable before continuing."
+```
+The agent calls `sf_team_steer`.
+
+## Slash Commands
+
+Slash commands inject a prompt into the agent conversation. The agent then calls the corresponding tool.
+
+| Command | Args | Example |
+|---------|------|---------|
+| `/sf-team-plan` | `<title>` | `/sf-team-plan Add per-org rate limiting` |
+| `/sf-team-implement` | `<slug>` | `/sf-team-implement 2026-05-01-add-rate-limiting` |
+| `/sf-team-task` | `<title>` | `/sf-team-task Fix race in cache eviction` |
+| `/sf-team-auto` | `<title>` | `/sf-team-auto Refactor auth module` |
+| `/sf-team-followup` | `<title>` | `/sf-team-followup Add metric for cache evictions` |
+| `/sf-team-steer` | `<instruction>` | `/sf-team-steer Do not touch the public cache interface` |
+| `/sf-team-plan-resume` | `<slug>` | `/sf-team-plan-resume 2026-05-06-add-rate-limit` |
+| `/sf-team-implement-resume` | `<slug>` | `/sf-team-implement-resume 2026-05-06-add-rate-limit` |
+| `/sf-team-task-resume` | `<slug>` | `/sf-team-task-resume 2026-05-06-fix-cache-race` |
+| `/sf-team-auto-resume` | `<slug>` | `/sf-team-auto-resume 2026-05-06-refactor-auth` |
+| `/sf-team-followup-resume` | `<slug>` | `/sf-team-followup-resume 2026-05-08-followup-add-cache-metric` |
+
 ## Tools
+
+All tools use the `sf_team_` prefix to avoid collisions with other Pi extensions.
 
 Each base workflow registers TWO Pi tools — `<base>` (start) and
 `<base>_resume`. `sf_team_steer` is a standalone ingress tool for
@@ -55,7 +145,7 @@ What each workflow does:
 - **followup**: resolves the parent plan, drafts and implements a follow-up against it as a brand-new sibling plan folder under `ai_plan/<date>-followup-<slug>/`. Runs in the current branch (mirrors `sf_team_task`); the parent's plan folder and pr-description are not modified.
 - **steer**: appends a user instruction to the durable steering inbox for an active workflow, targeted by `workflowId`, `planSlug`, or the single unambiguous active workflow. Ambiguous targets return candidate workflow ids instead of guessing.
 
-Slash commands mirror the split: `/sf_team_plan` for new runs and `/sf_team_plan_resume` for resume (and the same shape for the other four workflows). `/sf_team_steer` posts to the standalone steer tool. If Pi is busy, workflow slash commands queue as follow-up instructions, while `/sf_team_steer` is delivered with Pi's steering delivery mode.
+Slash commands use hyphens and mirror the split: `/sf-team-plan` for new runs and `/sf-team-plan-resume` for resume (and the same shape for the other four workflows). `/sf-team-steer` posts to the standalone steer tool. If Pi is busy, workflow slash commands queue as follow-up instructions, while `/sf-team-steer` is delivered with Pi's steering delivery mode.
 
 During `sf_team_plan` research Q&A, questions are required by default. Selection questions automatically include an `Other (describe)` choice that opens inline text entry and stores the typed text as the answer. Escape does not skip required selection or free-text questions; it only skips a free-text question when the researcher explicitly marked that question optional. Recorded answers are cached in `ai_plan/<slug>/research-answers.json` so resume does not re-ask already answered questions.
 
@@ -233,7 +323,7 @@ Layered global + project config, with project winning at field level:
 
 Resolution chain (locked): `prompt args → project config → global config → DEFAULT_CONFIG`. The first non-`undefined` value wins.
 
-`scripts/pi install sf-team` creates the global file at `~/.pi/sf-team/config.json` when it is missing. Existing files are preserved and reported as pre-existing. Project files are intentionally not generated: `<repo>/.sf-team.json` should contain only sparse overrides that belong in that repository.
+`pi install git:github.com/sfiorini/pi-stef#packages/team` creates the global file at `~/.pi/sf-team/config.json` when it is missing. Existing files are preserved and reported as pre-existing. Project files are intentionally not generated: `<repo>/.sf-team.json` should contain only sparse overrides that belong in that repository.
 
 The generated file is copied from [`packages/sf-team/config/defaults.json`](config/defaults.json) and includes every built-in default. That includes reserved keys accepted by the schema but not honored yet, and advanced operational keys such as `heartbeatMs`; see the reference table below before changing those.
 
@@ -700,7 +790,7 @@ The `shouldContinue` callback on `SfTeamImplementInput` is a TEST-ONLY override:
 
 ```bash
 # Install
-scripts/pi install sf-team
+pi install git:github.com/sfiorini/pi-stef#packages/team
 
 # In a pi session, ask the researcher → planner → reviewer pipeline to draft a plan:
 sf_team_plan title="Add per-org rate limiting" brief="..."

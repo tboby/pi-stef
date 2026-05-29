@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import sfTeamExtension from "../extensions/sf-team";
+import sfTeamExtension from "../extensions/team";
 import { planFolderPath } from "../src/plan/paths";
 import { emptyUsageTotal, type CostSummary, type CostUsageTotal } from "../src/orchestrator/cost";
 import * as autoModule from "../src/tools/auto";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import sfTeamExtension from "../extensions/sf-team";
+import sfTeamExtension from "../extensions/team";
 import { TEAM_TOOL_NAMES } from "../src/register";
 
 class FakePi {

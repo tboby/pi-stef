@@ -43,7 +43,7 @@ function statSync(p: string): { isDirectory(): boolean } {
 describe("steering spawn-site audit", () => {
   const ALLOWED_DIRECT_SPAWN_AGENT_IMPORTS: ReadonlySet<string> = new Set([
     // The spawn helper itself is the canonical consumer.
-    path.normalize("packages/sf-team/src/tools/shared.ts"),
+    path.normalize("packages/team/src/tools/shared.ts"),
   ]);
 
   it("no new direct imports of runtime/spawn outside makeSpawnHelper", () => {
