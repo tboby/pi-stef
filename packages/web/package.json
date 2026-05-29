@@ -1,5 +1,5 @@
 {
-  "name": "@pi-stef/web-access",
+  "name": "@pi-stef/web",
   "version": "0.1.0",
   "private": true,
   "description": "Pi extension for no-key web search, URL fetch, rendered scraping, browser sessions, login flows, and CloakBrowser-backed page access.",
@@ -11,7 +11,7 @@
   "keywords": [
     "pi-package",
     "pi-extension",
-    "web-access",
+    "web",
     "web-search",
     "web-fetch",
     "cloakbrowser",
