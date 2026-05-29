@@ -30,12 +30,15 @@ import {
   composeDeveloperSystemPreamble,
   composePlanVerifyFixesPrompt,
   defaultDeps,
+  DEV_DIFF_CAP_BYTES,
+  DEV_PLAN_CAP_BYTES,
   makeReviewer,
   makeRunStringReviewLoop,
   makeSpawnHelper,
   PLAN_REVIEW_EXECUTION_STRATEGY_GUIDANCE,
   runLoopWithPartialOutput,
   truncatePayloadBytes,
+  truncateWithTranscriptHint,
   type ToolDeps,
 } from "./shared";
 import {
@@ -682,31 +685,33 @@ function composePlanBrief(
   ].join("\n");
 }
 
-function composePlanRevise(
+export function composePlanRevise(
   prev: string,
   v: { findings: { P0: string[]; P1: string[]; P2: string[]; P3: string[] } },
   parentContext?: { slug: string; parentMilestonePlan: string },
   opts?: { tddMode?: "on" | "off" | "auto" },
 ): string {
+  const cappedPrev = truncateWithTranscriptHint(prev, DEV_PLAN_CAP_BYTES, `*plan-revise*`);
   if (!parentContext) {
     return [
       "Revise the task plan to address findings:",
       formatFindings(v.findings),
       "",
       "Prior plan:",
-      prev,
+      cappedPrev,
       PLANNER_TDD_REMINDER({ tddMode: opts?.tddMode }),
     ].join("\n");
   }
+  const cappedParent = truncateWithTranscriptHint(parentContext.parentMilestonePlan, DEV_PLAN_CAP_BYTES, `*parent-plan*`);
   return [
     `Revise the followup plan to address findings:`,
     formatFindings(v.findings),
     "",
     "## Prior plan",
-    prev,
+    cappedPrev,
     "",
     "## Parent plan context",
-    parentContext.parentMilestonePlan,
+    cappedParent,
     PLANNER_TDD_REMINDER({ tddMode: opts?.tddMode }),
   ].join("\n");
 }
@@ -764,6 +769,7 @@ export function composeDeveloperBrief(
   plan: string,
   opts?: { tddMode?: "on" | "off" | "auto"; gitMode?: "on" | "off" },
 ): string {
+  const cappedPlan = truncateWithTranscriptHint(plan, DEV_PLAN_CAP_BYTES, `*task-plan*`);
   return [
     "Implement the following task plan in the current working tree.",
     composeDeveloperSystemPreamble({ gitMode: opts?.gitMode }),
@@ -771,7 +777,7 @@ export function composeDeveloperBrief(
     "",
     "## Plan",
     "",
-    plan,
+    cappedPlan,
   ].join("\n");
 }
 
@@ -780,6 +786,7 @@ export function composeDevRevise(
   v: { findings: { P0: string[]; P1: string[]; P2: string[]; P3: string[] } },
   opts?: { tddMode?: "on" | "off" | "auto"; gitMode?: "on" | "off" },
 ): string {
+  const cappedPrev = truncateWithTranscriptHint(prev, DEV_DIFF_CAP_BYTES, `*dev-impl-diff*`);
   return [
     "Update the implementation to address the reviewer findings below.",
     composeDeveloperSystemPreamble({ gitMode: opts?.gitMode }),
@@ -789,7 +796,7 @@ export function composeDevRevise(
     formatFindings(v.findings),
     "",
     "## Prior diff",
-    prev,
+    cappedPrev,
   ].join("\n");
 }
 

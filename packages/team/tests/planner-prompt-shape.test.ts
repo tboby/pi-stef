@@ -107,7 +107,7 @@ describe("composeReviseBrief ALSO carries the lockfile + Stories clauses (round 
   // as fresh no-session pi processes and only see composeReviseBrief —
   // so without the clauses there, a reviewer-requested revision could
   // regress to refusal-prose despite the initial brief being correct.
-  const reviseBrief = __testing__.composeReviseBrief();
+  const reviseBrief = __testing__.composeReviseBrief("# Plan\n\nContent", { findings: { P0: [], P1: [], P2: [], P3: [] } });
 
   it("contains the lockfile-tolerant clause", () => {
     expect(reviseBrief).toMatch(/team\.lock\.killed/);

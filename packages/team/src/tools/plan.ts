@@ -29,7 +29,7 @@ import { isApproved, type ReviewerVerdict } from "../review/parse";
 import type { WorkflowToolName } from "@pi-stef/agent-workflows";
 import { revisePlanWithPatchOrFallback } from "./plan-revision";
 import { normalOrResumeValue, resolveToolResume } from "./resume";
-import { composePlanVerifyFixesPrompt, defaultDeps, EXECUTION_STRATEGY_JSON_EXAMPLE, makeReviewer, makeRunStringReviewLoop, makeSpawnHelper, PLAN_REVIEW_EXECUTION_STRATEGY_GUIDANCE, runLoopWithPartialOutput, truncatePayloadBytes, type ToolDeps } from "./shared";
+import { composePlanVerifyFixesPrompt, defaultDeps, DEV_PLAN_CAP_BYTES, EXECUTION_STRATEGY_JSON_EXAMPLE, makeReviewer, makeRunStringReviewLoop, makeSpawnHelper, PLAN_REVIEW_EXECUTION_STRATEGY_GUIDANCE, runLoopWithPartialOutput, truncatePayloadBytes, truncateWithTranscriptHint, type ToolDeps } from "./shared";
 import { reapplySteeringPlanNotes } from "../steering/guidance-plan-notes-reapply";
 import { enforcePauseAtSafeBoundary } from "../steering/pause-enforcement";
 import { decideSteeringInstruction, decideSteeringInstructions } from "../steering/decider";
@@ -1087,7 +1087,7 @@ function composePlannerBrief(title: string, enrichedBrief: string, tddMode: "on"
 export const __testing__ = {
   composeInitialPlanReviewPrompt,
   composePlannerBrief,
-  composeReviseBrief: () => composeReviseBrief("prior plan body", { findings: { P0: ["sample"], P1: [], P2: [], P3: [] } }),
+  composeReviseBrief,
 };
 
 const EXPLICIT_RESEARCHER_SKIP_PHRASES = [
@@ -1325,11 +1325,12 @@ async function runAgentWithSteeringDrain<T>(
   }
 }
 
-function composeReviseBrief(
+export function composeReviseBrief(
   priorPlan: string,
   v: { findings: { P0: string[]; P1: string[]; P2: string[]; P3: string[] } },
   tddMode: "on" | "off" | "auto" = "auto",
 ): string {
+  const cappedPlan = truncateWithTranscriptHint(priorPlan, DEV_PLAN_CAP_BYTES, `*planner-revise*`);
   return [
     "Revise the plan to address the reviewer findings below. Return the FULL revised plan, not a diff.",
     "",
@@ -1347,7 +1348,7 @@ function composeReviseBrief(
     ...v.findings.P3.map((f) => `- ${f}`),
     "",
     "## Prior plan",
-    priorPlan,
+    cappedPlan,
   ].join("\n");
 }
 

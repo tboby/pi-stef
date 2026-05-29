@@ -7,7 +7,12 @@ import type { WorkflowCheckpointRuntime, WorkflowReporter } from "@pi-stef/agent
 
 import { parseReviewerVerdict, type ReviewerVerdict } from "../review/parse";
 import { MaxReviewRoundsError, ReviewerEmptyVerdictError, RevisionUnchangedError, isEmptyReviewerOutput, runReviewLoop, type ReviewerFn, type ReviewerPriorContext, type ReviseFn, type RunReviewLoopOptions } from "../review/loop";
-import { truncateBytes } from "./impl-summary";
+import {
+  DEV_DIFF_CAP_BYTES,
+  DEV_PLAN_CAP_BYTES,
+  RESTART_TASK_CAP_BYTES,
+  truncateBytes,
+} from "./impl-summary";
 import { PLAN_FOLDER_ROOT, planFolderPathFromRoot } from "../plan/paths";
 import { fetchJiraContext as defaultFetchJiraContext } from "../research/jira-context";
 import { spawnAgent as defaultSpawnAgent } from "../runtime/spawn";
@@ -615,6 +620,31 @@ export function truncatePriorVerdict(s: string, transcriptHint: string): string 
   if (capped.length === s.length) return s;
   return `${capped}\n\n…(truncated at 8 KB; the full prior reviewer verdict is in the transcript matching pattern \`${transcriptHint}\` under \`ai_plan/<slug>/transcript/\`. If you suspect P0/P1/P2 findings fell past this cutoff, read the full transcript before approving.)`;
 }
+
+/**
+ * Hard limit on the total task string passed to `buildPiArgv`. If the task
+ * exceeds this, `buildPiArgv` throws instead of letting the OS reject the
+ * spawn with an opaque `E2BIG`. Set at 768 KB — well under macOS ARG_MAX
+ * (~1 MB) with headroom for argv overhead and steering guidance injection.
+ */
+export const SPAWN_TASK_CAP_BYTES = 768 * 1024;
+
+/**
+ * Truncate `text` so its UTF-8 byte length is ≤ `capBytes`, appending a
+ * transcript-pointer hint on overflow. Used by all compose functions that
+ * embed potentially large content (diffs, plans) into developer/planner
+ * prompts. The hint tells the agent to use its read/grep/find/ls tools to
+ * inspect the full content in the transcript if needed.
+ */
+export function truncateWithTranscriptHint(text: string, capBytes: number, transcriptHint: string): string {
+  const capped = truncateBytes(text, capBytes);
+  if (capped.length === text.length) return text;
+  const kb = Math.round(capBytes / 1024);
+  return `${capped}\n\n…(truncated at ${kb} KB; the full content is in the transcript matching pattern \`${transcriptHint}\` under the worktree's \`ai_plan/<slug>/transcript/\` folder. Use your read/grep/find/ls tools to inspect the omitted sections if needed.)`;
+}
+
+// Re-export the per-element caps for convenience.
+export { DEV_DIFF_CAP_BYTES, DEV_PLAN_CAP_BYTES, RESTART_TASK_CAP_BYTES };
 
 /**
  * Round-2+ verify-fixes prompt for PLAN-reviewer paths

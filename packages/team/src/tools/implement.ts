@@ -15,7 +15,7 @@ import { effectiveTmuxManager, effectiveUi, implementationReviewMaxRounds, workf
 import type { TeamMember } from "../runtime/types";
 import { composeImplSummary, composeImplVerifyFixesPrompt } from "./impl-summary";
 import { normalOrResumeValue, resolveToolResume } from "./resume";
-import { composeDeveloperSystemPreamble, defaultDeps, makeReviewer, makeRunStringReviewLoop, makeSpawnHelper, runLoopWithPartialOutput, type ToolDeps } from "./shared";
+import { composeDeveloperSystemPreamble, defaultDeps, DEV_DIFF_CAP_BYTES, DEV_PLAN_CAP_BYTES, makeReviewer, makeRunStringReviewLoop, makeSpawnHelper, runLoopWithPartialOutput, truncateWithTranscriptHint, type ToolDeps } from "./shared";
 import { pendingMilestones, readImplementPlanFolder } from "./implement-reader";
 import { planExecutionWaves, type ExecutionSchedule, type ScheduledMilestoneBatch, type ScheduledMilestoneLane, type ScheduledStoryLane } from "./execution-scheduler";
 import { REVIEWER_TDD_POLICY, composeTddContract } from "./tdd-policy";
@@ -1612,7 +1612,7 @@ export function composeStoryEmptyDiffReprompt(
     developerToolGuardrails({ cwd }),
     "",
     `## Milestone reference (${milestone.id})`,
-    extractMilestoneSection(milestonePlan, milestone.id) ?? "",
+    truncateWithTranscriptHint(extractMilestoneSection(milestonePlan, milestone.id) ?? "", DEV_PLAN_CAP_BYTES, `*milestone-plan*`),
   ].filter(Boolean).join("\n");
 }
 
@@ -1629,7 +1629,7 @@ export function composeMilestoneBrief(
   // can balloon to hundreds of KB on even moderately-sized plans and pushes
   // the developer's first tool call past the heartbeat threshold while the
   // model is still reading the input.
-  const section = extractMilestoneSection(milestonePlan, m.id) ?? milestonePlan;
+  const section = truncateWithTranscriptHint(extractMilestoneSection(milestonePlan, m.id) ?? milestonePlan, DEV_PLAN_CAP_BYTES, `*milestone-plan*`);
   return [
     `Implement milestone ${m.id}: ${m.title}`,
     "",
@@ -1652,7 +1652,7 @@ export function composeStoryBrief(
   milestonePlan: string,
   opts: DeveloperPromptOptions = {},
 ): string {
-  const section = extractMilestoneSection(milestonePlan, milestone.id) ?? milestonePlan;
+  const section = truncateWithTranscriptHint(extractMilestoneSection(milestonePlan, milestone.id) ?? milestonePlan, DEV_PLAN_CAP_BYTES, `*milestone-plan*`);
   return [
     `Implement story ${story.id} for milestone ${milestone.id}: ${milestone.title}`,
     "",
@@ -1738,6 +1738,7 @@ export function composeMilestoneRevise(
   v: { findings: { P0: string[]; P1: string[]; P2: string[]; P3: string[] } },
   opts: DeveloperPromptOptions = {},
 ): string {
+  const cappedDiff = truncateWithTranscriptHint(prevDiff, DEV_DIFF_CAP_BYTES, `*revision-impl-${milestoneId}*`);
   return [
     `Update milestone ${milestoneId} to address findings:`,
     "",
@@ -1748,7 +1749,7 @@ export function composeMilestoneRevise(
     developerToolGuardrails(opts),
     "",
     "## Prior diff",
-    prevDiff,
+    cappedDiff,
   ].join("\n");
 }
 

@@ -3,6 +3,7 @@ import { access, realpath } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
+import { RESTART_TASK_CAP_BYTES, truncateWithTranscriptHint } from "../tools/shared";
 import type { SteeringStore } from "./store";
 import type {
   ActiveAgentRecord,
@@ -100,16 +101,19 @@ export function combineAbortSignals(signals: Array<AbortSignal | undefined>): Ab
 
 export function composeRestartPrompt(input: RestartPromptInput): string {
   const originalTask = input.originalTask?.trim();
+  const cappedTask = originalTask
+    ? truncateWithTranscriptHint(originalTask, RESTART_TASK_CAP_BYTES, `*original-task*`)
+    : undefined;
   return [
     "Restart this agent run with amended steering context.",
     "",
     "Original task summary:",
     input.originalTaskSummary || "(no summary available)",
-    ...(originalTask
+    ...(cappedTask
       ? [
           "",
           "Original task full context:",
-          originalTask,
+          cappedTask,
         ]
       : []),
     "",

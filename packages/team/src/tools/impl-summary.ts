@@ -42,6 +42,15 @@ export const IMPL_FINAL_TEXT_CAP_BYTES = 16_384;
 export const IMPL_DIFF_STAT_CAP_BYTES = 8_192;
 export const IMPL_PRIOR_VERDICT_CAP_BYTES = 8_192;
 
+/** Max bytes for embedded git diffs in developer revision prompts. */
+export const DEV_DIFF_CAP_BYTES = 256 * 1024;
+
+/** Max bytes for embedded plan/milestone text in developer prompts. */
+export const DEV_PLAN_CAP_BYTES = 128 * 1024;
+
+/** Max bytes for original task text in steering restart prompts. */
+export const RESTART_TASK_CAP_BYTES = 128 * 1024;
+
 /**
  * Truncate `s` so its UTF-8 byte length is ≤ `capBytes`. If the cap falls
  * mid-multi-byte sequence, round DOWN to the previous valid UTF-8

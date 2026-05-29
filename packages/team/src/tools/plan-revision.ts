@@ -4,7 +4,7 @@ import type { PlanRevisionMetrics } from "../plan/revision-metrics";
 import type { TeamMember } from "../runtime/types";
 import type { PlanRevisionMode } from "../config/schema";
 import type { SpawnAgentReturning } from "./shared";
-import { EXECUTION_STRATEGY_JSON_EXAMPLE } from "./shared";
+import { DEV_PLAN_CAP_BYTES, EXECUTION_STRATEGY_JSON_EXAMPLE, truncateWithTranscriptHint } from "./shared";
 
 export interface PlanRevisionResult {
   plan: string;
@@ -145,7 +145,7 @@ export function composePlanPatchRevisePrompt(args: {
     JSON.stringify(args.findings.findings, null, 2),
     "",
     "Prior plan:",
-    args.priorPlan,
+    truncateWithTranscriptHint(args.priorPlan, DEV_PLAN_CAP_BYTES, `*planner-revise*`),
   ].join("\n");
 }
 

@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { globalConfig } from "@pi-stef/paths";
 
+import { SPAWN_TASK_CAP_BYTES } from "../tools/shared";
 import { resolveSkillPath } from "./resolve-skill";
 import type { TeamMember } from "./types";
 
@@ -399,6 +400,14 @@ export function buildPiArgv(member: TeamMember, task: string, opts: BuildArgvOpt
 
   if (opts.appendSystemPromptPath) {
     argv.push("--append-system-prompt", opts.appendSystemPromptPath);
+  }
+
+  const taskBytes = Buffer.byteLength(task, "utf8");
+  if (taskBytes > SPAWN_TASK_CAP_BYTES) {
+    throw new Error(
+      `Task prompt for ${member.role} (${member.model}) is ${taskBytes} bytes, exceeds SPAWN_TASK_CAP_BYTES (${SPAWN_TASK_CAP_BYTES}). ` +
+      `Per-element caps in the compose function should prevent this — a cap is likely missing.`,
+    );
   }
 
   argv.push("-p", task);
