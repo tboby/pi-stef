@@ -184,18 +184,6 @@ Sync uses GitHub Gists for cloud storage. Prerequisites:
 
 On first `ct push` or `ct sync`, a secret gist is created automatically.
 
-## Migration from pi-depo / kit.yml
-
-If you previously used `pi-depo` with a `kit.yml` file:
-
-1. Rename `kit.yml` to `cat.yaml`
-2. Move it to `~/.pi/sf/catalog/cat.yaml`
-3. Update the format:
-   - Replace `rating` string values with catalog rating enum (`core` | `useful` | `debatable`)
-   - Add `meta.pi_version` field
-4. Run `/ct login` to set up gist sync
-5. Run `/ct sync` to push and reconcile
-
 ## Development
 
 ```bash
