@@ -20,6 +20,8 @@ export const CatalogPackageSchema = z.object({
   type: PackageType.optional(),
   /** Optional profile name this package belongs to. */
   profile: z.string().optional(),
+  /** Whether the package is active. Defaults to true when absent. */
+  enabled: z.boolean().optional(),
   /** Previous rating before disable; used by enablePackage to restore. */
   previousRating: Rating.optional(),
 });

@@ -173,6 +173,50 @@ packages:
     expect(parsed.packages.c.rating).toBe("debatable");
     expect(parsed.packages.d.rating).toBe("disabled");
   });
+
+  it("accepts enabled: true on a package entry", () => {
+    const doc: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-skill": {
+          source: "https://github.com/example/my-skill",
+          rating: "core",
+          enabled: true,
+        },
+      },
+    };
+    const parsed = CatalogYamlSchema.parse(doc);
+    expect(parsed.packages["my-skill"].enabled).toBe(true);
+  });
+
+  it("accepts enabled: false on a package entry", () => {
+    const doc: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-skill": {
+          source: "https://github.com/example/my-skill",
+          rating: "core",
+          enabled: false,
+        },
+      },
+    };
+    const parsed = CatalogYamlSchema.parse(doc);
+    expect(parsed.packages["my-skill"].enabled).toBe(false);
+  });
+
+  it("accepts a package entry without enabled (defaults to undefined)", () => {
+    const doc: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-skill": {
+          source: "https://github.com/example/my-skill",
+          rating: "core",
+        },
+      },
+    };
+    const parsed = CatalogYamlSchema.parse(doc);
+    expect(parsed.packages["my-skill"].enabled).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -212,6 +256,8 @@ describe("CatalogPackageSchema", () => {
       rating: 5,
     });
     expect(result.success).toBe(false);
+  });
+
   });
 });
 

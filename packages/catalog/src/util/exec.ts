@@ -73,8 +73,10 @@ export function execCommand(
       args,
       spawnOptions,
       (error, stdout, stderr) => {
-        const out = stdout ?? "";
-        const err = stderr ?? "";
+        // stdout/stderr may be Buffer when no encoding is specified;
+        // coerce to string in all cases.
+        const out = typeof stdout === "string" ? stdout : (stdout?.toString() ?? "");
+        const err = typeof stderr === "string" ? stderr : (stderr?.toString() ?? "");
 
         if (error) {
           const isTimeout =
@@ -93,9 +95,11 @@ export function execCommand(
           } else {
             // Node sets error.code to a string errno like 'ENOENT' for
             // spawn failures; numeric exit codes are on error.status.
+            // (status is present on child_process errors but not in
+            // the ErrnoException type.)
             const exitCode =
-              typeof (error as NodeJS.ErrnoException).status === "number"
-                ? (error as NodeJS.ErrnoException).status!
+              typeof (error as Error & { status?: number }).status === "number"
+                ? (error as Error & { status?: number }).status!
                 : 1;
             reject(
               new ExecError(
