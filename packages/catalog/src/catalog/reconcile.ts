@@ -9,9 +9,9 @@
  * piUninstall and updates the lock file on success.
  */
 
-import path from "node:path";
 import fs from "node:fs";
 import { piInstall, piUninstall } from "../util/exec.js";
+import { lockFile } from "../config/paths.js";
 import type { InstalledMap } from "./install.js";
 
 // ---------------------------------------------------------------------------
@@ -266,32 +266,6 @@ export function reconcile(
 // executeActions
 // ---------------------------------------------------------------------------
 
-function lockFilePath(home?: string): string {
-  // Reuse the same lock file path convention as paths.ts
-  const dir = home
-    ? path.join(home, ".pi", "sf", "catalog")
-    : path.join(
-        process.env.PI_HOME ?? "",
-        ".pi",
-        "sf",
-        "catalog",
-      );
-
-  // Fallback: use paths module if available
-  if (!dir) {
-    // Dynamic import would be async; use a reasonable default
-    return path.join(".pi", "sf", "catalog", "catalog.lock.json");
-  }
-
-  return path.join(dir, "catalog.lock.json");
-}
-
-/**
- * Execute the actions in a reconcile plan by running piInstall / piUninstall.
- *
- * On full success, writes an updated lock file. On partial failure, returns
- * errors but does NOT write the lock file.
- */
 export async function executeActions(
   plan: ReconcilePlan,
   options?: ExecuteOptions,
@@ -338,11 +312,10 @@ export async function executeActions(
 
   // Write lock file only on full success
   if (success && (plan.installs.length + plan.uninstalls.length + plan.upgrades.length > 0)) {
-    const lfPath = lockFilePath(options?.home);
+    const lfPath = lockFile(options?.home);
     const lockContent = JSON.stringify(
       {
         packages: {},
-        updatedAt: new Date().toISOString(),
       },
       null,
       2,

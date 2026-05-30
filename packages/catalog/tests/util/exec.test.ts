@@ -137,6 +137,51 @@ describe("execCommand", () => {
     >;
     expect(options.shell).toBeUndefined();
   });
+
+  it("converts Buffer stdout/stderr to strings", async () => {
+    // When execFile is called without encoding, Node passes Buffer objects.
+    // Verify the implementation converts them to strings.
+    mockedExecFile.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (..._args: any[]) => {
+        const cb = _args[_args.length - 1] as (
+          err: Error | null,
+          stdout: Buffer,
+          stderr: Buffer,
+        ) => void;
+        cb(
+          null,
+          Buffer.from("buffer output"),
+          Buffer.from("buffer error"),
+        );
+        return undefined as unknown as ReturnType<typeof execFile>;
+      },
+    );
+
+    const result = await execCommand("cmd", []);
+    expect(typeof result.stdout).toBe("string");
+    expect(result.stdout).toBe("buffer output");
+    expect(typeof result.stderr).toBe("string");
+    expect(result.stderr).toBe("buffer error");
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("extracts numeric exit code from child process error status", async () => {
+    // Child process errors have a numeric `status` property (not on ErrnoException).
+    const error = new Error("Command failed") as Error & {
+      status?: number;
+      code?: string;
+    };
+    error.status = 42;
+    error.code = "ERR_CHILD_PROCESS_EXIT_CODE";
+    mockExecFileResult({ error, stdout: "out", stderr: "err" });
+
+    await expect(execCommand("cmd", [])).rejects.toMatchObject({
+      exitCode: 42,
+      stdout: "out",
+      stderr: "err",
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

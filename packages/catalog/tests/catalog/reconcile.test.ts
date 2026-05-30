@@ -6,6 +6,8 @@ import {
   type ReconcilePlan,
 } from "../../src/catalog/reconcile.js";
 import type { InstalledMap } from "../../src/catalog/install.js";
+import { lockFile as lockFilePathFromPaths } from "../../src/config/paths.js";
+import { LockFileSchema } from "../../src/config/schema.js";
 
 // ---------------------------------------------------------------------------
 // reconcile — pure logic tests (no mocks needed)
@@ -546,6 +548,58 @@ describe("executeActions", () => {
     expect(writtenLock!.path).toContain("catalog.lock.json");
     const parsed = JSON.parse(writtenLock!.content);
     expect(parsed).toHaveProperty("packages");
+  });
+
+  it("uses lockFile path from paths.ts when home is provided", async () => {
+    const plan: ReconcilePlan = {
+      installs: [
+        { type: "install", key: "pkg-a", source: "npm:pkg-a" },
+      ],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    };
+
+    await executeActions(plan, { home: "/tmp/test-home", lockFileWriter: mockLockWriter });
+
+    expect(writtenLock).not.toBeNull();
+    expect(writtenLock!.path).toBe(lockFilePathFromPaths("/tmp/test-home"));
+  });
+
+  it("uses lockFile path from paths.ts with os.homedir() when home is omitted", async () => {
+    const plan: ReconcilePlan = {
+      installs: [
+        { type: "install", key: "pkg-a", source: "npm:pkg-a" },
+      ],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    };
+
+    await executeActions(plan, { lockFileWriter: mockLockWriter });
+
+    expect(writtenLock).not.toBeNull();
+    expect(writtenLock!.path).toBe(lockFilePathFromPaths());
+  });
+
+  it("writes lock file content that matches LockFileSchema (no updatedAt)", async () => {
+    const plan: ReconcilePlan = {
+      installs: [
+        { type: "install", key: "pkg-a", source: "npm:pkg-a" },
+      ],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    };
+
+    await executeActions(plan, { lockFileWriter: mockLockWriter });
+
+    expect(writtenLock).not.toBeNull();
+    const parsed = JSON.parse(writtenLock!.content);
+    // Must not contain updatedAt — the schema has no such field
+    expect(parsed).not.toHaveProperty("updatedAt");
+    // Must validate cleanly against the schema
+    expect(() => LockFileSchema.parse(parsed)).not.toThrow();
   });
 
   it("does not write lock file when there are errors", async () => {

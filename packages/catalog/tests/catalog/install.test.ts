@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import path from "node:path";
 import fs from "node:fs";
 import { scanInstalled, type InstalledPackage } from "../../src/catalog/install.js";
 
