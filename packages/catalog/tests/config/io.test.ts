@@ -44,7 +44,7 @@ describe("readCatalog", () => {
       packages: {
         "my-skill": {
           source: "npm:@scope/my-skill",
-          rating: 5,
+          rating: "core",
           type: "skill",
         },
       },
@@ -56,7 +56,7 @@ describe("readCatalog", () => {
     const result = readCatalog(tmpDir);
     expect(result.meta.pi_version).toBe("1.0.0");
     expect(result.packages["my-skill"].source).toBe("npm:@scope/my-skill");
-    expect(result.packages["my-skill"].rating).toBe(5);
+    expect(result.packages["my-skill"].rating).toBe("core");
     expect(result.packages["my-skill"].type).toBe("skill");
   });
 
@@ -111,13 +111,13 @@ describe("writeCatalog", () => {
       packages: {
         "skill-a": {
           source: "git:https://github.com/example/skill-a#subpath",
-          rating: 4,
+          rating: "useful",
           type: "skill",
           profile: "work",
         },
         "skill-b": {
           source: "npm:skill-b",
-          rating: 3,
+          rating: "debatable",
         },
       },
     };
@@ -152,13 +152,13 @@ describe("writeCatalog", () => {
     const v1: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "old-skill": { source: "npm:old", rating: 1 },
+        "old-skill": { source: "npm:old", rating: "core" },
       },
     };
     const v2: CatalogYaml = {
       meta: { pi_version: "2.0.0" },
       packages: {
-        "new-skill": { source: "npm:new", rating: 5 },
+        "new-skill": { source: "npm:new", rating: "useful" },
       },
     };
 
