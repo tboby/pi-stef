@@ -26,11 +26,15 @@ export type VerifyCtx = CommandCtx;
 
 /**
  * Validate that a source string is well-formed.
- * Accepted formats: npm:<package-name>, git:<url-or-path>
+ * Accepted formats: npm:<package-name>, git:<url-or-path>, and local paths.
  */
 function isValidSource(source: string): boolean {
   if (!source) return false;
-  return /^npm:/.test(source) || /^git:/.test(source);
+  if (/^npm:/.test(source)) return true;
+  if (/^git:/.test(source)) return true;
+  // Local paths (relative or absolute) are also valid
+  if (source.startsWith("./") || source.startsWith("../") || source.startsWith("/")) return true;
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,26 +65,29 @@ export async function verifyCommand(
     }
   }
 
-  // --- 2. Check catalog packages are present in lock ---
-  for (const key of Object.keys(packages)) {
-    if (!(key in lock.packages)) {
-      issues.push(`Package "${key}" missing from lock file`);
+  // --- 2. Check catalog packages are present in lock (skip when no lock) ---
+  const hasLock = Object.keys(lock.packages).length > 0;
+  if (hasLock) {
+    for (const key of Object.keys(packages)) {
+      if (!(key in lock.packages)) {
+        issues.push(`Package "${key}" missing from lock file`);
+      }
     }
-  }
 
-  // --- 3. Check for stale lock entries ---
-  for (const key of Object.keys(lock.packages)) {
-    if (!(key in packages)) {
-      issues.push(`Lock entry "${key}" not in catalog`);
+    // --- 3. Check for stale lock entries ---
+    for (const key of Object.keys(lock.packages)) {
+      if (!(key in packages)) {
+        issues.push(`Lock entry "${key}" not in catalog`);
+      }
     }
-  }
 
-  // --- 4. Check sync states ---
-  for (const [key, lockPkg] of Object.entries(lock.packages)) {
-    if (lockPkg.syncState !== "synced") {
-      issues.push(
-        `Package "${key}" has sync state "${lockPkg.syncState}" (expected "synced")`,
-      );
+    // --- 4. Check sync states ---
+    for (const [key, lockPkg] of Object.entries(lock.packages)) {
+      if (lockPkg.syncState !== "synced") {
+        issues.push(
+          `Package "${key}" has sync state "${lockPkg.syncState}" (expected "synced")`,
+        );
+      }
     }
   }
 

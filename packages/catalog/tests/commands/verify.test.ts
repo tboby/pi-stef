@@ -141,8 +141,17 @@ describe("verifyCommand", () => {
   // -------------------------------------------------------------------------
 
   it("detects packages in catalog but missing from lock", async () => {
-    // Catalog has valid-npm but lock is empty
-    mockedReadLock.mockReturnValue({ packages: {} });
+    // Catalog has valid-npm + valid-git, but lock only has valid-git
+    mockedReadLock.mockReturnValue({
+      packages: {
+        "valid-git": {
+          version: "1.0.0",
+          contentHash: "sha256-abc",
+          installedAt: "2026-05-29T10:00:00Z",
+          syncState: "synced",
+        },
+      },
+    });
 
     const ctx = makeCtx();
     await verifyCommand({ positional: [], flags: {} }, ctx);
