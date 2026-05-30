@@ -24,8 +24,11 @@ import { reconcile, executeActions } from "../catalog/reconcile.js";
 // Types
 // ---------------------------------------------------------------------------
 
-/** Context for `syncCommand`. Uses the base `CommandCtx`. */
+/** Context for `syncCommand`, `pushCommand`, and `pullCommand`. */
 export type SyncCtx = CommandCtx;
+
+/** Alias used by push/pull test suite. */
+export type PushPullCtx = CommandCtx;
 
 /** Summary of a completed sync for user reporting. */
 interface SyncSummary {
@@ -193,4 +196,115 @@ export async function syncCommand(
   }
 
   ctx.ui.notify(`Synced: ${parts.join(" | ")}`, "info");
+}
+
+// ---------------------------------------------------------------------------
+// pushCommand  (ct push)
+// ---------------------------------------------------------------------------
+
+/**
+ * Execute the `ct push` subcommand.
+ *
+ * Reads the local catalog + lock and pushes them to a GitHub Gist.
+ * Reports the gist URL on success.
+ */
+export async function pushCommand(
+  args: CommandArgs,
+  ctx: PushPullCtx,
+): Promise<void> {
+  const { flags } = args;
+  const profile = typeof flags["profile"] === "string" ? flags["profile"] : "default";
+
+  const catalog = readCatalog(ctx.home);
+  const lock = readLock(ctx.home);
+
+  try {
+    const result = await pushCatalog(catalog, lock, profile, ctx.home);
+    ctx.ui.notify(`Pushed to gist: ${result.gistUrl}`, "info");
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    ctx.ui.notify(`Push failed: ${message}`, "error");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// pullCommand  (ct pull)
+// ---------------------------------------------------------------------------
+
+/**
+ * Execute the `ct pull` subcommand.
+ *
+ * Pulls the remote catalog from gist, writes it locally, then reconciles
+ * and executes any needed install/uninstall/upgrade actions.
+ */
+export async function pullCommand(
+  args: CommandArgs,
+  ctx: PushPullCtx,
+): Promise<void> {
+  const { flags } = args;
+  const profile = typeof flags["profile"] === "string" ? flags["profile"] : "default";
+
+  let pulledCatalog: CatalogYaml;
+  let pulledLock: LockFile;
+
+  // --- 1. Pull remote catalog ----------------------------------------------
+  try {
+    const result = await pullCatalog(profile, ctx.home);
+    pulledCatalog = result.catalog;
+    pulledLock = result.lock;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    ctx.ui.notify(`Pull failed: ${message}`, "error");
+    return;
+  }
+
+  // --- 2. Write pulled catalog locally ------------------------------------
+  writeCatalog(pulledCatalog, ctx.home);
+  writeLock(pulledLock, ctx.home);
+
+  // --- 3. Reconcile -------------------------------------------------------
+  const catalog = readCatalog(ctx.home);
+  const installed = scanInstalled(ctx.home);
+
+  const catalogEntries: Record<string, { source: string; enabled?: boolean }> = {};
+  for (const [key, pkg] of Object.entries(catalog.packages)) {
+    catalogEntries[key] = {
+      source: pkg.source,
+      enabled: pkg.enabled,
+    };
+  }
+
+  const plan = reconcile(catalogEntries, installed);
+
+  const actionCount =
+    plan.installs.length +
+    plan.uninstalls.length +
+    plan.upgrades.length;
+
+  // --- 4. Execute actions -------------------------------------------------
+  if (actionCount > 0) {
+    const result = await executeActions(plan, { home: ctx.home });
+
+    for (const { error } of result.errors) {
+      ctx.ui.notify(`Action error: ${error.message}`, "warning");
+    }
+
+    // Build summary
+    const parts: string[] = ["Pulled remote catalog."];
+    if (plan.installs.length > 0) {
+      parts.push(`${plan.installs.length} install(s): ${plan.installs.map((a) => a.key).join(", ")}`);
+    }
+    if (plan.uninstalls.length > 0) {
+      parts.push(`${plan.uninstalls.length} uninstall(s): ${plan.uninstalls.map((a) => a.key).join(", ")}`);
+    }
+    if (plan.upgrades.length > 0) {
+      parts.push(`${plan.upgrades.length} upgrade(s): ${plan.upgrades.map((a) => a.key).join(", ")}`);
+    }
+    if (result.errors.length > 0) {
+      parts.push(`${result.errors.length} error(s).`);
+    }
+    ctx.ui.notify(parts.join(" | "), "info");
+  } else {
+    ctx.ui.notify("Pulled: catalog is up to date.", "info");
+  }
 }
