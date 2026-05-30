@@ -201,7 +201,7 @@ describe("verifyCommand", () => {
 
     const notifyCalls = (ctx.ui.notify as ReturnType<typeof vi.fn>).mock.calls;
     const warningCalls = notifyCalls.filter(
-      (c: [string, ...unknown[]]) => c[1] === "warning",
+      (c) => c[1] === "warning",
     );
     expect(warningCalls.length).toBeGreaterThanOrEqual(2);
   });

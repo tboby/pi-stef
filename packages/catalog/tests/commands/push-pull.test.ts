@@ -561,7 +561,7 @@ describe("pullCommand", () => {
       uninstalls: [],
       upgrades: [],
       orphans: [
-        { type: "orphan", key: "orphan-pkg", source: "npm:orphan-pkg" },
+        { key: "orphan-pkg", source: "npm:orphan-pkg" },
       ],
     });
 

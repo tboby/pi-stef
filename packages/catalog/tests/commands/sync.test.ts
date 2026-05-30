@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { syncCommand } from "../../src/commands/sync.js";
 import type { CatalogYaml, LockFile } from "../../src/config/schema.js";
@@ -394,7 +394,7 @@ describe("syncCommand", () => {
 
     const notifyCalls = (ctx.ui.notify as ReturnType<typeof vi.fn>).mock.calls;
     const summaryCall = notifyCalls.find(
-      (c: [string, ...unknown[]]) =>
+      (c) =>
         typeof c[0] === "string" && c[0].includes("2") && c[0].includes("install"),
     );
     expect(summaryCall).toBeDefined();
@@ -494,7 +494,7 @@ describe("syncCommand", () => {
     await syncCommand({ positional: [], flags: {} }, ctx);
 
     const allNotifies = (ctx.ui.notify as ReturnType<typeof vi.fn>).mock.calls
-      .map((c: [string, ...unknown[]]) => c[0])
+      .map((c) => c[0])
       .join(" ");
     expect(allNotifies).toContain("push failed");
   });

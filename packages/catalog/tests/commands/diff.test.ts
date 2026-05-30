@@ -149,7 +149,7 @@ describe("diffCommand", () => {
     // Should show some diff output
     const notifyCalls = (ctx.ui.notify as ReturnType<typeof vi.fn>).mock.calls;
     const diffCall = notifyCalls.find(
-      (c: [string, ...unknown[]]) => typeof c[0] === "string" && c[0].includes("new-skill"),
+      (c) => typeof c[0] === "string" && c[0].includes("new-skill"),
     );
     expect(diffCall).toBeDefined();
   });

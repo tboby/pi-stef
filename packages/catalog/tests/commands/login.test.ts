@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import type { CommandArgs, CommandCtx } from "../../src/commands/types.js";
 
@@ -40,28 +40,20 @@ vi.mock("../../src/catalog/reconcile.js", () => ({
 
 import { checkAuth, getToken, isGhInstalled } from "../../src/sync/auth.js";
 import { pullCatalog } from "../../src/sync/pull.js";
-import { writeCachedGistId } from "../../src/sync/cache.js";
 
 const mockedCheckAuth = vi.mocked(checkAuth);
 const mockedGetToken = vi.mocked(getToken);
 const mockedIsGhInstalled = vi.mocked(isGhInstalled);
 const mockedPullCatalog = vi.mocked(pullCatalog);
-const mockedWriteCachedGistId = vi.mocked(writeCachedGistId);
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-interface LoginCtx extends CommandCtx {
-  ui: {
-    notify: ReturnType<typeof vi.fn>;
-  };
-}
-
-function makeCtx(): LoginCtx {
+function makeCtx(): CommandCtx {
   return {
     ui: {
-      notify: vi.fn(),
+      notify: vi.fn() as unknown as (msg: string, type?: "error" | "info" | "warning") => void,
     },
   };
 }

@@ -85,7 +85,6 @@ export async function syncCommand(
 
   // --- 2. Reconcile --------------------------------------------------------
   const catalog = readCatalog(ctx.home);
-  const lock = readLock(ctx.home);
   const installed = scanInstalled(ctx.home);
 
   // Build catalog entries for reconcile

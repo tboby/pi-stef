@@ -143,7 +143,7 @@ describe("statusCommand", () => {
 
     const notifyCalls = (ctx.ui.notify as ReturnType<typeof vi.fn>).mock.calls;
     const statusCall = notifyCalls.find(
-      (c: [string, ...unknown[]]) => typeof c[0] === "string" && c[0].includes("core"),
+      (c) => typeof c[0] === "string" && c[0].includes("core"),
     );
     expect(statusCall).toBeDefined();
     expect(statusCall![0]).toContain("core");

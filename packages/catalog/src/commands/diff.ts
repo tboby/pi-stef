@@ -8,7 +8,7 @@
 import yaml from "js-yaml";
 
 import type { CommandArgs, CommandCtx } from "./types.js";
-import { readCatalog, readLock } from "../config/io.js";
+import { readCatalog } from "../config/io.js";
 import { readCachedGistId } from "../sync/cache.js";
 import { readGist } from "../sync/gist.js";
 
@@ -96,13 +96,9 @@ function lineDiff(local: string, remote: string): DiffLine[] {
  * cat.yaml serialization. Shows added/removed lines.
  */
 export async function diffCommand(
-  args: CommandArgs,
+  _args: CommandArgs,
   ctx: DiffCtx,
 ): Promise<void> {
-  const { flags } = args;
-  const profile =
-    typeof flags["profile"] === "string" ? flags["profile"] : "default";
-
   // --- 1. Check for cached gist ID ---
   const gistId = readCachedGistId(ctx.home);
   if (!gistId) {

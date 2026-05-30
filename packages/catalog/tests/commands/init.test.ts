@@ -154,7 +154,7 @@ describe("initCommand", () => {
 
     expect(ctx.ui.notify).toHaveBeenCalled();
     const call = ctx.ui.notify.mock.calls.find(
-      (c: [string, ...unknown[]]) => typeof c[0] === "string" && c[0].includes("1"),
+      (c) => typeof c[0] === "string" && c[0].includes("1"),
     );
     expect(call).toBeDefined();
   });
