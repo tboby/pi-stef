@@ -30,6 +30,9 @@ import {
   type PushPullCtx,
 } from "./commands/sync.js";
 import { loginCommand, type LoginCtx } from "./commands/login.js";
+import { statusCommand, type StatusCtx } from "./commands/status.js";
+import { diffCommand, type DiffCtx } from "./commands/diff.js";
+import { verifyCommand, type VerifyCtx } from "./commands/verify.js";
 import type { CommandCtx } from "./commands/types.js";
 
 // ---------------------------------------------------------------------------
@@ -92,6 +95,15 @@ async function handleSubcommand(
       break;
     case "login":
       await loginCommand(parsed, ctx as LoginCtx);
+      break;
+    case "status":
+      await statusCommand(parsed, ctx as StatusCtx);
+      break;
+    case "diff":
+      await diffCommand(parsed, ctx as DiffCtx);
+      break;
+    case "verify":
+      await verifyCommand(parsed, ctx as VerifyCtx);
       break;
     default:
       ctx.ui.notify(`ct ${canonical}: not yet implemented`, "info");
