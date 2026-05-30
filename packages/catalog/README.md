@@ -4,8 +4,16 @@ Declarative package manager for the [pi](https://pi.dev) coding agent. Manage yo
 
 ## Installation
 
+From the monorepo root (while developing):
+
 ```bash
-pi install git:github.com/sfiorini/pi-stef#packages/catalog
+pi install packages/catalog
+```
+
+Once published to npm:
+
+```bash
+pi install npm:@pi-stef/catalog
 ```
 
 ## Quick Start
