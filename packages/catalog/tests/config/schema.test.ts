@@ -3,7 +3,9 @@ import yaml from "js-yaml";
 
 import {
   CatalogYamlSchema,
+  CatalogPackageSchema,
   LockFileSchema,
+  Rating,
   type CatalogYaml,
   type LockFile,
 } from "../../src/config/schema.js";
@@ -140,6 +142,76 @@ packages:
       },
     };
     expect(() => CatalogYamlSchema.parse(doc)).toThrow();
+  });
+
+  it("rejects a numeric rating — rating must be a string enum", () => {
+    const doc = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        bad: {
+          source: "https://github.com/example/bad",
+          rating: 5,
+        },
+      },
+    };
+    expect(() => CatalogYamlSchema.parse(doc)).toThrow();
+  });
+
+  it("round-trips all four valid rating values", () => {
+    const doc: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        a: { source: "npm:a", rating: "core" },
+        b: { source: "npm:b", rating: "useful" },
+        c: { source: "npm:c", rating: "debatable" },
+        d: { source: "npm:d", rating: "disabled" },
+      },
+    };
+    const parsed = CatalogYamlSchema.parse(doc);
+    expect(parsed.packages.a.rating).toBe("core");
+    expect(parsed.packages.b.rating).toBe("useful");
+    expect(parsed.packages.c.rating).toBe("debatable");
+    expect(parsed.packages.d.rating).toBe("disabled");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Rating enum — explicit string-enum validation
+// ---------------------------------------------------------------------------
+
+describe("Rating enum", () => {
+  it("accepts exactly four string values", () => {
+    expect(Rating.options).toEqual(["core", "useful", "debatable", "disabled"]);
+  });
+
+  it("rejects a numeric rating", () => {
+    expect(Rating.safeParse(5).success).toBe(false);
+  });
+
+  it("rejects an unknown string", () => {
+    expect(Rating.safeParse("unknown").success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CatalogPackageSchema — rating type guard
+// ---------------------------------------------------------------------------
+
+describe("CatalogPackageSchema", () => {
+  it("accepts a package with a string rating", () => {
+    const result = CatalogPackageSchema.safeParse({
+      source: "npm:my-pkg",
+      rating: "core",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a package with a numeric rating", () => {
+    const result = CatalogPackageSchema.safeParse({
+      source: "npm:my-pkg",
+      rating: 5,
+    });
+    expect(result.success).toBe(false);
   });
 });
 
