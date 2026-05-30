@@ -51,7 +51,7 @@ Use `ct sync` to install all catalog packages:
 /ct sync
 ```
 
-The legacy `scripts/install-all.sh` script is deprecated. See [migration notes](packages/catalog/README.md#migration-from-pi-depo--kityml).
+The legacy `scripts/install-all.sh` script is deprecated.
 
 ## Individual Install
 
