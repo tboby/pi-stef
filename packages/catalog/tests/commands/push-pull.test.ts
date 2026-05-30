@@ -429,4 +429,205 @@ describe("pullCommand", () => {
       "warning",
     );
   });
+
+  // -------------------------------------------------------------------------
+  // --dry-run: shows plan without executing
+  // -------------------------------------------------------------------------
+
+  it("dry-run shows what would be pulled without writing or executing", async () => {
+    const remoteCatalog: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "new-pkg": { source: "npm:new-pkg", rating: "core" },
+      },
+    };
+    const remoteLock: LockFile = {
+      packages: {
+        "new-pkg": {
+          version: "2.0.0",
+          contentHash: "sha256-new",
+          installedAt: "2025-06-01T00:00:00Z",
+          syncState: "synced",
+        },
+      },
+    };
+    mockedPull.mockResolvedValue({
+      catalog: remoteCatalog,
+      lock: remoteLock,
+    });
+
+    mockedReconcile.mockReturnValue({
+      installs: [
+        { type: "install", key: "new-pkg", source: "npm:new-pkg" },
+      ],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await pullCommand({ positional: [], flags: { "dry-run": true } }, ctx);
+
+    // Should NOT write to disk
+    expect(mockedWriteCatalog).not.toHaveBeenCalled();
+    expect(mockedWriteLock).not.toHaveBeenCalled();
+    // Should NOT execute actions
+    expect(mockedExecuteActions).not.toHaveBeenCalled();
+    // Should show dry-run message
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Dry run"),
+      "info",
+    );
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Would install"),
+      "info",
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // --dry-run pull with no changes
+  // -------------------------------------------------------------------------
+
+  it("dry-run pull reports 'no changes' when reconcile is empty", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await pullCommand({ positional: [], flags: { "dry-run": true } }, ctx);
+
+    expect(mockedWriteCatalog).not.toHaveBeenCalled();
+    expect(mockedExecuteActions).not.toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("No changes"),
+      "info",
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Pull handles uninstall and upgrade actions
+  // -------------------------------------------------------------------------
+
+  it("executes uninstall actions when remote removes packages", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [
+        { type: "uninstall", key: "old-pkg", source: "npm:old-pkg" },
+      ],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await pullCommand({ positional: [], flags: {} }, ctx);
+
+    expect(mockedExecuteActions).toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("1 uninstall"),
+      "info",
+    );
+  });
+
+  it("executes upgrade actions when remote has newer versions", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [
+        { type: "upgrade", key: "pkg-a", source: "npm:pkg-a@2.0.0" },
+      ],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await pullCommand({ positional: [], flags: {} }, ctx);
+
+    expect(mockedExecuteActions).toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("1 upgrade"),
+      "info",
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Pull reports orphan packages
+  // -------------------------------------------------------------------------
+
+  it("reports orphans found during reconcile after pull", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [
+        { type: "orphan", key: "orphan-pkg", source: "npm:orphan-pkg" },
+      ],
+    });
+
+    const ctx = makeCtx();
+    await pullCommand({ positional: [], flags: {} }, ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Pulled: catalog is up to date."),
+      "info",
+    );
+  });
+});
+
+// ===========================================================================
+// pushCommand --dry-run
+// ===========================================================================
+
+describe("pushCommand --dry-run", () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-catalog-push-dry-"));
+    vi.clearAllMocks();
+
+    mockedReadCatalog.mockReturnValue(sampleCatalog());
+    mockedReadLock.mockReturnValue(sampleLock());
+    mockedReadCachedGistId.mockReturnValue("cached-gist-123");
+    mockedPush.mockResolvedValue({
+      gistId: "cached-gist-123",
+      gistUrl: "https://gist.github.com/cached-gist-123",
+    });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("dry-run shows what would be pushed without uploading", async () => {
+    const ctx = makeCtx();
+    await pushCommand({ positional: [], flags: { "dry-run": true } }, ctx);
+
+    // Should NOT call pushCatalog
+    expect(mockedPush).not.toHaveBeenCalled();
+    // Should show dry-run message with package count
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Dry run"),
+      "info",
+    );
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("1 package(s)"),
+      "info",
+    );
+  });
+
+  it("dry-run shows 0 packages for empty catalog", async () => {
+    mockedReadCatalog.mockReturnValue({
+      meta: { pi_version: "0.0.0" },
+      packages: {},
+    });
+    mockedReadLock.mockReturnValue({ packages: {} });
+
+    const ctx = makeCtx();
+    await pushCommand({ positional: [], flags: { "dry-run": true } }, ctx);
+
+    expect(mockedPush).not.toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("0 package(s)"),
+      "info",
+    );
+  });
 });

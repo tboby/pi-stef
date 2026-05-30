@@ -231,6 +231,16 @@ export async function pushCommand(
   const catalog = readCatalog(ctx.home);
   const lock = readLock(ctx.home);
 
+  // --- --dry-run: show what would be pushed without uploading -------------
+  if ("dry-run" in flags) {
+    const pkgCount = Object.keys(catalog.packages).length;
+    ctx.ui.notify(
+      `Dry run — would push ${pkgCount} package(s) to gist (profile: ${profile}).`,
+      "info",
+    );
+    return;
+  }
+
   try {
     const result = await pushCatalog(catalog, lock, profile, ctx.home);
     ctx.ui.notify(`Pushed to gist: ${result.gistUrl}`, "info");
@@ -271,22 +281,16 @@ export async function pullCommand(
     return;
   }
 
-  // --- 2. Write pulled catalog locally ------------------------------------
-  writeCatalog(pulledCatalog, ctx.home);
-  writeLock(pulledLock, ctx.home);
-
-  // --- 3. Reconcile -------------------------------------------------------
-  const catalog = readCatalog(ctx.home);
-  const installed = scanInstalled(ctx.home);
-
+  // --- Reconcile against the pulled catalog ------------------------------
   const catalogEntries: Record<string, { source: string; enabled?: boolean }> = {};
-  for (const [key, pkg] of Object.entries(catalog.packages)) {
+  for (const [key, pkg] of Object.entries(pulledCatalog.packages)) {
     catalogEntries[key] = {
       source: pkg.source,
       enabled: pkg.enabled,
     };
   }
 
+  const installed = scanInstalled(ctx.home);
   const plan = reconcile(catalogEntries, installed);
 
   const actionCount =
@@ -294,7 +298,31 @@ export async function pullCommand(
     plan.uninstalls.length +
     plan.upgrades.length;
 
-  // --- 4. Execute actions -------------------------------------------------
+  // --- --dry-run: show plan without writing or executing -------------------
+  if ("dry-run" in flags) {
+    if (actionCount === 0) {
+      ctx.ui.notify("Dry run — pulled remote catalog. No changes needed.", "info");
+    } else {
+      const parts: string[] = ["Dry run — pulled remote catalog. Would execute:"];
+      if (plan.installs.length > 0) {
+        parts.push(`Would install: ${plan.installs.map((a) => a.key).join(", ")}`);
+      }
+      if (plan.uninstalls.length > 0) {
+        parts.push(`Would uninstall: ${plan.uninstalls.map((a) => a.key).join(", ")}`);
+      }
+      if (plan.upgrades.length > 0) {
+        parts.push(`Would upgrade: ${plan.upgrades.map((a) => a.key).join(", ")}`);
+      }
+      ctx.ui.notify(parts.join(" "), "info");
+    }
+    return;
+  }
+
+  // --- 2. Write pulled catalog locally ------------------------------------
+  writeCatalog(pulledCatalog, ctx.home);
+  writeLock(pulledLock, ctx.home);
+
+  // --- 3. Execute actions -------------------------------------------------
   if (actionCount > 0) {
     const result = await executeActions(plan, { home: ctx.home });
 
