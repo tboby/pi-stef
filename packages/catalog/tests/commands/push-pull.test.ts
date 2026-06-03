@@ -90,7 +90,7 @@ function sampleLock(): LockFile {
     packages: {
       "my-skill": {
         version: "1.0.0",
-        contentHash: "sha256-abc",
+        sourceHash: "sha256-abc",
         installedAt: "2025-01-01T00:00:00Z",
         syncState: "synced",
       },
@@ -270,7 +270,7 @@ describe("pullCommand", () => {
       packages: {
         "remote-skill": {
           version: "2.0.0",
-          contentHash: "sha256-remote",
+          sourceHash: "sha256-remote",
           installedAt: "2025-06-01T00:00:00Z",
           syncState: "synced",
         },
@@ -445,7 +445,7 @@ describe("pullCommand", () => {
       packages: {
         "new-pkg": {
           version: "2.0.0",
-          contentHash: "sha256-new",
+          sourceHash: "sha256-new",
           installedAt: "2025-06-01T00:00:00Z",
           syncState: "synced",
         },

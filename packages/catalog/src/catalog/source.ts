@@ -74,7 +74,7 @@ export function cleanGitName(raw: string): string {
   // Strip user@ prefix (e.g. git@)
   cleaned = cleaned.replace(/^[^@/]+@/, "");
   // Convert colon to slash for git@host:path style
-  cleaned = cleaned.replace(/:/, "/");
+  cleaned = cleaned.replace(/:/g, "/");
 
   // Strip trailing @ref
   const atIdx = cleaned.lastIndexOf("@");

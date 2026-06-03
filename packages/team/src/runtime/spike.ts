@@ -91,7 +91,7 @@ export function parseLineDelimitedJson(buffer: string): {
     try {
       const parsed = JSON.parse(trimmed) as Record<string, unknown>;
       events.push(parsed);
-    } catch {
+    } catch (_err) {
       // Pi never emits truncated JSON between newlines, so a parse failure here
       // is non-protocol output (warning, banner). Drop it silently.
     }

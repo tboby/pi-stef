@@ -40,7 +40,7 @@ export function resolveSkillPath(
           candidates.push(path.join(packagesDir, entry.name, "skills", name));
         }
       }
-    } catch {
+    } catch (_err) {
       // ignore — no packages dir
     }
   }
@@ -55,7 +55,7 @@ export function resolveSkillPath(
       try {
         const s = statSync(candidate);
         if (s.isDirectory() || s.isFile()) return candidate;
-      } catch {
+      } catch (_err) {
         // ignore stale entries
       }
     }
@@ -79,7 +79,7 @@ function findSkillByFrontmatterName(root: string, name: string): string | undefi
     let entries;
     try {
       entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
+    } catch (_err) {
       continue;
     }
 
@@ -100,7 +100,8 @@ function readSkillName(skillPath: string): string | undefined {
   let content: string;
   try {
     content = readFileSync(skillPath, "utf8");
-  } catch {
+  } catch (err) {
+    console.debug("[team]", err instanceof Error ? err.message : String(err));
     return undefined;
   }
 

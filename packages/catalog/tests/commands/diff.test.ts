@@ -57,7 +57,7 @@ function sampleLock(): LockFile {
     packages: {
       "my-skill": {
         version: "1.0.0",
-        contentHash: "sha256-abc",
+        sourceHash: "sha256-abc",
         installedAt: "2025-01-01T00:00:00Z",
         syncState: "synced",
       },

@@ -67,7 +67,7 @@ export function mountWidget(
       disposed = true;
       try {
         ui.setWidget(WIDGET_KEY, undefined);
-      } catch {
+      } catch (_err) {
         // best-effort
       }
     },

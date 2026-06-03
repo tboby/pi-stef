@@ -178,7 +178,7 @@ export async function loadAndResolveDefaults(
             ? err.message
             : String(err);
         opts.notify(`sf-team config: ${detail} — falling back to built-in defaults.`, "warning");
-      } catch {
+      } catch (_err) {
         // notify hook threw; swallow so we still fall back cleanly.
       }
     }

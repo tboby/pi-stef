@@ -74,7 +74,7 @@ export function detectPackageManager(cwd: string): "pnpm" | "npm" | "yarn" | "bu
       if (pm.startsWith("npm")) return "npm";
     }
     workspacesField = parsed.workspaces;
-  } catch {
+  } catch (_err) {
     // Missing or malformed package.json → fall through to lockfile detection.
     // packageScriptsAt() handles malformed-package.json escalation; we
     // shouldn't double-throw here.

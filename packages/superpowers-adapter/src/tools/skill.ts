@@ -18,6 +18,8 @@ type SkillInput = Static<typeof SkillSchema>;
 
 let skillCache: Map<string, SkillMeta> | null = null;
 
+const FRONTMATTER_RE = /^---\n([\s\S]*?)\n?---\n([\s\S]*)$/;
+
 export function resetSkillCache(): void {
   skillCache = null;
 }
@@ -26,7 +28,7 @@ export function parseSkillFrontmatter(
   content: string,
   path: string,
 ): SkillMeta | null {
-  const match = content.match(/^---\n([\s\S]*?)\n?---\n([\s\S]*)$/);
+  const match = content.match(FRONTMATTER_RE);
   if (!match) return null;
 
   const frontmatter = match[1];
@@ -50,16 +52,16 @@ export function parseSkillFrontmatter(
 }
 
 export function extractSkillContent(content: string): string {
-  const match = content.match(/^---\n[\s\S]*?\n?---\n([\s\S]*)$/);
-  return match ? match[1].trim() : content;
+  const match = content.match(FRONTMATTER_RE);
+  return match ? match[2].trim() : content;
 }
 
 export function readSkillContent(skillPath: string): string | null {
   try {
     const content = readFileSync(skillPath, "utf-8");
     return extractSkillContent(content);
-  } catch {
-    return null;
+  } catch (err) {
+    return `[pi-superpowers-adapter] Failed to read skill file "${skillPath}": ${err instanceof Error ? err.message : String(err)}`;
   }
 }
 
@@ -68,20 +70,27 @@ function findSkillsDirs(
   results: string[],
   depth = 0,
 ): void {
-  if (depth > 10) return;
+  const MAX_DEPTH = 10;
+  const MAX_BREADTH = 200;
+  if (depth > MAX_DEPTH) return;
+  let entries;
   try {
-    const entries = readdirSync(basePath, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const fullPath = join(basePath, entry.name);
-      if (entry.name === "skills") {
-        results.push(fullPath);
-      } else {
-        findSkillsDirs(fullPath, results, depth + 1);
-      }
+    entries = readdirSync(basePath, { withFileTypes: true });
+  } catch (err) {
+    throw new Error(
+      `[pi-superpowers-adapter] Failed to read directory "${basePath}": ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  let visited = 0;
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (++visited > MAX_BREADTH) break;
+    const fullPath = join(basePath, entry.name);
+    if (entry.name === "skills") {
+      results.push(fullPath);
+    } else {
+      findSkillsDirs(fullPath, results, depth + 1);
     }
-  } catch {
-    // Ignore permission errors
   }
 }
 
@@ -192,16 +201,16 @@ export function registerSkillTool(pi: ExtensionAPI): void {
       }
 
       const skillContent = readSkillContent(skill.path);
-      if (!skillContent) {
+      if (!skillContent || skillContent.startsWith("[pi-superpowers-adapter]")) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Error loading skill "${params.skill}": Failed to read skill file`,
+              text: skillContent ?? `[pi-superpowers-adapter] Error loading skill "${params.skill}": Failed to read skill file`,
             },
           ],
           isError: true,
-          details: { error: "Failed to read skill file", skillPath: skill.path },
+          details: { error: skillContent ?? "Failed to read skill file", skillPath: skill.path },
         };
       }
 

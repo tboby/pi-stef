@@ -1,10 +1,3 @@
-/**
- * Barrel file for @pi-stef/catalog.
- *
- * Re-exports the public API from internal modules so consumers can import
- * from `@pi-stef/catalog` directly.
- */
-
 // catalog
 export { scanInstalled, type InstalledPackage, type InstalledMap } from "./catalog/install.js";
 export {
@@ -44,6 +37,7 @@ export {
   CatalogPackageSchema,
   CatalogMetaSchema,
   CatalogYamlSchema,
+  ProfileSchema,
   SyncState,
   LockPackageSchema,
   LockFileSchema,

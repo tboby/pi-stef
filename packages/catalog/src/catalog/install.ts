@@ -104,8 +104,10 @@ function readPackagesFromSettings(
   let settings: Record<string, unknown>;
   try {
     settings = JSON.parse(settingsJson);
-  } catch {
-    return {};
+  } catch (parseErr: unknown) {
+    throw new Error(
+      `Malformed JSON in ${settingsPath}: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`,
+    );
   }
 
   const packages = settings.packages;

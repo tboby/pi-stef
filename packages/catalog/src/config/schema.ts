@@ -59,8 +59,8 @@ export const SyncState = z.enum(["synced", "outdated", "conflict"]);
 export const LockPackageSchema = z.object({
   /** Installed version string. */
   version: z.string().min(1),
-  /** SHA-256 (or similar) hash of the installed content. */
-  contentHash: z.string().min(1),
+  /** Deterministic hash derived from the source specifier (not installed file contents). */
+  sourceHash: z.string().min(1),
   /** ISO-8601 timestamp of when the package was installed. */
   installedAt: z.string().min(1),
   /** Current synchronization state relative to the source. */

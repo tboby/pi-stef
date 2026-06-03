@@ -772,7 +772,7 @@ export class TmuxManager {
     for (const paneId of [...this.panes.keys()]) {
       try {
         this.closeAgentPane(paneId);
-      } catch {
+      } catch (_err) {
         // Swallow; teardown must continue.
       }
     }

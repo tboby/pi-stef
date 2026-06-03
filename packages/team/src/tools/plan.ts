@@ -976,7 +976,7 @@ function extractExecutionStrategyJsonForTranscript(plan: string): unknown | unde
   for (const candidate of candidates) {
     try {
       return JSON.parse(candidate);
-    } catch {
+    } catch (_err) {
       // Keep scanning; transcripts should include the best parseable candidate.
     }
   }
@@ -1206,7 +1206,8 @@ function figmaIdentityFromUrl(rawUrl: string): string | undefined {
     if (!fileKey) return undefined;
     const nodeId = parsed.searchParams.get("node-id") ?? parsed.searchParams.get("node_id");
     return nodeId ? `${fileKey}:${nodeId.replace(/-/g, ":")}` : fileKey;
-  } catch {
+  } catch (err) {
+    console.debug("[team]", err instanceof Error ? err.message : String(err));
     return undefined;
   }
 }

@@ -1,4 +1,5 @@
 import { ConfluenceClient } from "./ConfluenceClient";
+import { asRecord, getNumber, getString } from "../internal/helpers";
 import { extractLinks, type ExtractedLinks } from "../links/extractLinks";
 
 export interface ConfluencePageOptions {
@@ -166,16 +167,4 @@ function extractHeadings(markdown: string): string[] {
     .split("\n")
     .filter((line) => /^#{1,6}\s+/.test(line))
     .map((line) => line.replace(/^#{1,6}\s+/, "").trim());
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-}
-
-function getString(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function getNumber(value: unknown): number | undefined {
-  return typeof value === "number" ? value : undefined;
 }

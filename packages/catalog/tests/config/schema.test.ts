@@ -268,7 +268,7 @@ describe("LockFileSchema (catalog.lock.json)", () => {
     packages: {
       "my-skill": {
         version: "1.2.3",
-        contentHash: "sha256-abcdef123456",
+        sourceHash: "sha256-abcdef123456",
         installedAt: "2026-05-29T10:00:00Z",
         syncState: "synced",
       },
@@ -278,7 +278,7 @@ describe("LockFileSchema (catalog.lock.json)", () => {
   it("parses a minimal valid lock file", () => {
     const parsed = LockFileSchema.parse(validMinimal);
     expect(parsed.packages["my-skill"].version).toBe("1.2.3");
-    expect(parsed.packages["my-skill"].contentHash).toBe(
+    expect(parsed.packages["my-skill"].sourceHash).toBe(
       "sha256-abcdef123456",
     );
     expect(parsed.packages["my-skill"].installedAt).toBe(
@@ -292,19 +292,19 @@ describe("LockFileSchema (catalog.lock.json)", () => {
       packages: {
         "skill-a": {
           version: "0.1.0",
-          contentHash: "sha256-aaa",
+          sourceHash: "sha256-aaa",
           installedAt: "2026-05-29T10:00:00Z",
           syncState: "synced",
         },
         "skill-b": {
           version: "2.0.0",
-          contentHash: "sha256-bbb",
+          sourceHash: "sha256-bbb",
           installedAt: "2026-05-28T08:30:00Z",
           syncState: "outdated",
         },
         "skill-c": {
           version: "3.0.0",
-          contentHash: "sha256-ccc",
+          sourceHash: "sha256-ccc",
           installedAt: "2026-05-27T12:00:00Z",
           syncState: "conflict",
         },
@@ -335,7 +335,7 @@ describe("LockFileSchema (catalog.lock.json)", () => {
     const doc = {
       packages: {
         bad: {
-          contentHash: "sha256-abc",
+          sourceHash: "sha256-abc",
           installedAt: "2026-05-29T10:00:00Z",
           syncState: "synced",
         },
@@ -344,7 +344,7 @@ describe("LockFileSchema (catalog.lock.json)", () => {
     expect(() => LockFileSchema.parse(doc)).toThrow();
   });
 
-  it("rejects a package entry missing contentHash", () => {
+  it("rejects a package entry missing sourceHash", () => {
     const doc = {
       packages: {
         bad: {
@@ -362,7 +362,7 @@ describe("LockFileSchema (catalog.lock.json)", () => {
       packages: {
         bad: {
           version: "1.0.0",
-          contentHash: "sha256-abc",
+          sourceHash: "sha256-abc",
           syncState: "synced",
         },
       },
@@ -375,7 +375,7 @@ describe("LockFileSchema (catalog.lock.json)", () => {
       packages: {
         bad: {
           version: "1.0.0",
-          contentHash: "sha256-abc",
+          sourceHash: "sha256-abc",
           installedAt: "2026-05-29T10:00:00Z",
         },
       },
@@ -388,7 +388,7 @@ describe("LockFileSchema (catalog.lock.json)", () => {
       packages: {
         bad: {
           version: "1.0.0",
-          contentHash: "sha256-abc",
+          sourceHash: "sha256-abc",
           installedAt: "2026-05-29T10:00:00Z",
           syncState: "invalid",
         },

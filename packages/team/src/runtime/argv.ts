@@ -318,7 +318,7 @@ export function defaultResolveAzureFoundryDeploymentIds(): string[] {
       out.push(id);
     }
     return out;
-  } catch {
+  } catch (_err) {
     return [];
   }
 }

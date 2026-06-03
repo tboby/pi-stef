@@ -435,7 +435,7 @@ async function readJsonl<T>(filePath: string): Promise<T[]> {
     if (line.trim().length === 0) continue;
     try {
       entries.push(JSON.parse(line) as T);
-    } catch {
+    } catch (_err) {
       // Malformed JSONL lines are ignored so one bad append cannot hide the
       // rest of the durable instruction history.
     }

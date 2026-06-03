@@ -86,7 +86,7 @@ async function tryReadAnswers(filePath: string): Promise<AnswersReadResult> {
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return { kind: "ok", value: parsed as Record<string, string> };
     }
-  } catch {
+  } catch (_err) {
     // fall through
   }
   return { kind: "corrupt" };

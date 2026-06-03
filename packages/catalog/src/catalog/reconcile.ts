@@ -305,7 +305,7 @@ export async function executeActions(
     for (const action of plan.installs) {
       lockPackages[action.key] = {
         version: extractVersionFromSource(action.source),
-        contentHash: contentHashForSource(action.source),
+        sourceHash: contentHashForSource(action.source),
         installedAt: now,
         syncState: "synced",
       };
@@ -315,7 +315,7 @@ export async function executeActions(
     for (const action of plan.upgrades) {
       lockPackages[action.key] = {
         version: extractVersionFromSource(action.source),
-        contentHash: contentHashForSource(action.source),
+        sourceHash: contentHashForSource(action.source),
         installedAt: now,
         syncState: "synced",
       };

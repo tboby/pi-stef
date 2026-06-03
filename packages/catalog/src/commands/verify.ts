@@ -12,6 +12,7 @@
 import type { CommandArgs, CommandCtx } from "./types.js";
 import { readCatalog, readLock } from "../config/io.js";
 import { scanInstalled } from "../catalog/install.js";
+import { isValidSource } from "../catalog/ratings.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,23 +20,6 @@ import { scanInstalled } from "../catalog/install.js";
 
 /** Context for `verifyCommand`. Uses the base `CommandCtx`. */
 export type VerifyCtx = CommandCtx;
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Validate that a source string is well-formed.
- * Accepted formats: npm:<package-name>, git:<url-or-path>, and local paths.
- */
-function isValidSource(source: string): boolean {
-  if (!source) return false;
-  if (/^npm:/.test(source)) return true;
-  if (/^git:/.test(source)) return true;
-  // Local paths (relative or absolute) are also valid
-  if (source.startsWith("./") || source.startsWith("../") || source.startsWith("/")) return true;
-  return false;
-}
 
 // ---------------------------------------------------------------------------
 // verifyCommand

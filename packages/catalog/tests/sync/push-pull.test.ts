@@ -99,7 +99,7 @@ function sampleLock() {
     packages: {
       "my-skill": {
         version: "1.2.3",
-        contentHash: "sha256-abc123",
+        sourceHash: "sha256-abc123",
         installedAt: "2025-01-01T00:00:00Z",
         syncState: "synced" as const,
       },
@@ -275,7 +275,7 @@ describe("pushCatalog", () => {
     expect(capturedStdin).toContain("cat.yaml");
     expect(capturedStdin).toContain("catalog.lock.json");
     expect(capturedStdin).toContain("pi_version");
-    expect(capturedStdin).toContain("contentHash");
+    expect(capturedStdin).toContain("sourceHash");
   });
 });
 
@@ -407,7 +407,7 @@ describe("pullCatalog", () => {
       packages: {
         "pkg-x": {
           version: "3.1.4",
-          contentHash: "sha256-deadbeef",
+          sourceHash: "sha256-deadbeef",
           installedAt: "2025-06-15T12:00:00Z",
           syncState: "outdated" as const,
         },

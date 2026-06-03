@@ -53,13 +53,13 @@ function sampleLock(): LockFile {
     packages: {
       "valid-npm": {
         version: "1.0.0",
-        contentHash: "sha256-abc",
+        sourceHash: "sha256-abc",
         installedAt: "2025-01-01T00:00:00Z",
         syncState: "synced",
       },
       "valid-git": {
         version: "unknown",
-        contentHash: "sha256-def",
+        sourceHash: "sha256-def",
         installedAt: "2025-01-01T00:00:00Z",
         syncState: "synced",
       },
@@ -146,7 +146,7 @@ describe("verifyCommand", () => {
       packages: {
         "valid-git": {
           version: "1.0.0",
-          contentHash: "sha256-abc",
+          sourceHash: "sha256-abc",
           installedAt: "2026-05-29T10:00:00Z",
           syncState: "synced",
         },
@@ -192,13 +192,13 @@ describe("verifyCommand", () => {
       packages: {
         "valid-npm": {
           version: "1.0.0",
-          contentHash: "sha256-abc",
+          sourceHash: "sha256-abc",
           installedAt: "2025-01-01T00:00:00Z",
           syncState: "outdated",
         },
         "valid-git": {
           version: "unknown",
-          contentHash: "sha256-def",
+          sourceHash: "sha256-def",
           installedAt: "2025-01-01T00:00:00Z",
           syncState: "conflict",
         },

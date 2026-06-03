@@ -185,7 +185,7 @@ describe("readLock", () => {
       packages: {
         "my-skill": {
           version: "1.2.3",
-          contentHash: "sha256-abc123",
+          sourceHash: "sha256-abc123",
           installedAt: "2026-05-29T10:00:00Z",
           syncState: "synced",
         },
@@ -235,13 +235,13 @@ describe("writeLock", () => {
       packages: {
         "skill-a": {
           version: "0.1.0",
-          contentHash: "sha256-aaa",
+          sourceHash: "sha256-aaa",
           installedAt: "2026-05-29T10:00:00Z",
           syncState: "synced",
         },
         "skill-b": {
           version: "2.0.0",
-          contentHash: "sha256-bbb",
+          sourceHash: "sha256-bbb",
           installedAt: "2026-05-28T08:30:00Z",
           syncState: "outdated",
         },
@@ -274,7 +274,7 @@ describe("writeLock", () => {
       packages: {
         "old": {
           version: "1.0.0",
-          contentHash: "sha256-old",
+          sourceHash: "sha256-old",
           installedAt: "2026-01-01T00:00:00Z",
           syncState: "synced",
         },
@@ -284,7 +284,7 @@ describe("writeLock", () => {
       packages: {
         "new": {
           version: "2.0.0",
-          contentHash: "sha256-new",
+          sourceHash: "sha256-new",
           installedAt: "2026-06-01T00:00:00Z",
           syncState: "outdated",
         },

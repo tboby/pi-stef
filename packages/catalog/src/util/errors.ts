@@ -129,9 +129,9 @@ export function formatUserError(err: unknown): string {
   // Network errors
   if (isNetworkError(err)) {
     if (msg.toLowerCase().includes("timed out")) {
-      return `${msg}\nNetwork request timed out. Check your internet connection and retry, or use \`--offline\` to work locally.`;
+      return `${msg}\nNetwork request timed out. Check your internet connection and retry.`;
     }
-    return `${msg}\nA network error occurred. Check your internet connection and retry, or use \`--offline\` to work locally.`;
+    return `${msg}\nA network error occurred. Check your internet connection and retry.`;
   }
 
   // File not found

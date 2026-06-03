@@ -67,7 +67,7 @@ async function summaryFromTracker(planRoot: string, slug: string): Promise<strin
     const milestoneCount = t.milestones.length;
     const approvedCount = t.milestones.filter((m) => m.approvalStatus?.startsWith("approved")).length;
     return `${completed}/${total} stories complete across ${approvedCount}/${milestoneCount} approved milestones.`;
-  } catch {
+  } catch (_err) {
     return "(no story-tracker.md found)";
   }
 }

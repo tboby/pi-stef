@@ -67,16 +67,13 @@ export async function syncCommand(
     errors: [],
   };
 
-  // --- 1. Pull remote catalog ----------------------------------------------
+  // --- 1. Pull remote catalog (into memory only) ---------------------------
   let remoteCatalog = false;
+  let pulledData: { catalog: CatalogYaml; lock: LockFile } | undefined;
   try {
-    const pulled = await pullCatalog(profile, ctx.home);
+    pulledData = await pullCatalog(profile, ctx.home);
     remoteCatalog = true;
     summary.pulled = true;
-
-    // Write the pulled catalog as the local catalog
-    writeCatalog(pulled.catalog, ctx.home);
-    writeLock(pulled.lock, ctx.home);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     ctx.ui.notify(`Pull failed: ${message}`, "warning");
@@ -84,7 +81,8 @@ export async function syncCommand(
   }
 
   // --- 2. Reconcile --------------------------------------------------------
-  const catalog = readCatalog(ctx.home);
+  // Use pulled catalog if available, otherwise read from disk
+  const catalog = pulledData ? pulledData.catalog : readCatalog(ctx.home);
   const installed = scanInstalled(ctx.home);
 
   // Build catalog entries for reconcile
@@ -127,12 +125,22 @@ export async function syncCommand(
 
   // --- 4. Execute actions --------------------------------------------------
   if (summary.actionCount > 0) {
+    // Write pulled catalog to disk before executing actions (pull-then-execute)
+    if (pulledData) {
+      writeCatalog(pulledData.catalog, ctx.home);
+      writeLock(pulledData.lock, ctx.home);
+    }
+
     const result = await executeActions(plan, { home: ctx.home });
 
     for (const { error } of result.errors) {
       ctx.ui.notify(`Action error: ${error.message}`, "warning");
       summary.errors.push(error.message);
     }
+  } else if (pulledData) {
+    // No actions needed — still write the pulled catalog to keep local in sync
+    writeCatalog(pulledData.catalog, ctx.home);
+    writeLock(pulledData.lock, ctx.home);
   }
 
   // --- 5. Push if changed --------------------------------------------------

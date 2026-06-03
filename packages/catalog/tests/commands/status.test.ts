@@ -73,13 +73,13 @@ function sampleLock(): LockFile {
     packages: {
       "core-skill": {
         version: "1.0.0",
-        contentHash: "sha256-abc",
+        sourceHash: "sha256-abc",
         installedAt: "2025-01-15T10:30:00Z",
         syncState: "synced",
       },
       "useful-skill": {
         version: "2.0.0",
-        contentHash: "sha256-def",
+        sourceHash: "sha256-def",
         installedAt: "2025-01-14T08:00:00Z",
         syncState: "synced",
       },

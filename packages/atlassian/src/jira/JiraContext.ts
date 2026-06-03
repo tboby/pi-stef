@@ -1,4 +1,5 @@
 import { extractLinks, type ExtractedLinks } from "../links/extractLinks";
+import { asRecord, getString } from "../internal/helpers";
 import { adfToPlainText } from "../text/adf";
 import { JiraPlatformClient } from "./JiraPlatformClient";
 
@@ -264,12 +265,4 @@ function stringRecord(value: unknown): Record<string, string> {
 
 function unique(values: string[]): string[] {
   return [...new Set(values.filter((value) => value.trim().length > 0))];
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-}
-
-function getString(value: unknown): string {
-  return typeof value === "string" ? value : "";
 }

@@ -54,7 +54,8 @@ export async function loadBaseline(planRoot: string, slug: string): Promise<Base
   try {
     const raw = await readFile(baselinePath, "utf8");
     return JSON.parse(raw) as Baseline;
-  } catch {
+  } catch (err) {
+    console.debug("[team]", err instanceof Error ? err.message : String(err));
     return undefined;
   }
 }
