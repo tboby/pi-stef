@@ -1,9 +1,11 @@
 {
   "name": "@pi-stef/web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Pi extension for no-key web search, URL fetch, rendered scraping, browser sessions, login flows, and CloakBrowser-backed page access.",
   "type": "module",
+  "license": "MIT",
+  "files": ["src/", "extensions/", "bin/"],
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json"
@@ -18,6 +20,8 @@
     "browser-automation"
   ],
   "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "check-runtime": "node bin/check-runtime.mjs",
     "install-browser": "npx cloakbrowser install"
   },

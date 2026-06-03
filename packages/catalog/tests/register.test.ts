@@ -265,71 +265,119 @@ describe("registerCatalog", () => {
   });
 
   // -------------------------------------------------------------------------
-  // S19: LLM tool integration tests (success + error paths)
+  // S19: LLM tool integration tests (delegation verification)
   // -------------------------------------------------------------------------
 
   describe("ct_sync tool execute", () => {
-    it("delegates to syncCommand (not a stub)", async () => {
+    it("delegates to syncCommand — calls notify (success path)", async () => {
       const { pi, tools } = mockPi();
       registerCatalog(pi);
       const execute = tools.get("ct_sync")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
       const notify = vi.fn();
       const result = await execute("id", {}, undefined, undefined, { ui: { notify } });
       expect(result).toHaveProperty("content");
+      // syncCommand called notify => delegation happened
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_sync")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      // Pass ctx with a notify that throws to force the error path
+      const result = await execute("id", {}, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
       const text = (result.content as Array<{ text: string }>)[0].text;
-      expect(text).not.toContain("not yet implemented");
+      expect(text).toContain("Sync failed:");
     });
   });
 
   describe("ct_add tool execute", () => {
-    it("delegates to addCommand with params", async () => {
+    it("delegates to addCommand — calls notify", async () => {
       const { pi, tools } = mockPi();
       registerCatalog(pi);
       const execute = tools.get("ct_add")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
       const notify = vi.fn();
-      const result = await execute("id", { name: "test", source: "npm:test" }, undefined, undefined, { ui: { notify } });
-      expect(result).toHaveProperty("content");
+      await execute("id", { name: "test", source: "npm:test" }, undefined, undefined, { ui: { notify } });
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_add")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const result = await execute("id", { name: "test", source: "npm:test" }, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
       const text = (result.content as Array<{ text: string }>)[0].text;
-      expect(text).not.toContain("not yet implemented");
+      expect(text).toContain("Add failed:");
     });
   });
 
   describe("ct_remove tool execute", () => {
-    it("delegates to removeCommand with params", async () => {
+    it("delegates to removeCommand — calls notify", async () => {
       const { pi, tools } = mockPi();
       registerCatalog(pi);
       const execute = tools.get("ct_remove")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
       const notify = vi.fn();
-      const result = await execute("id", { name: "nonexistent" }, undefined, undefined, { ui: { notify } });
-      expect(result).toHaveProperty("content");
+      await execute("id", { name: "pkg" }, undefined, undefined, { ui: { notify } });
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_remove")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const result = await execute("id", { name: "pkg" }, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
       const text = (result.content as Array<{ text: string }>)[0].text;
-      expect(text).not.toContain("not yet implemented");
+      expect(text).toContain("Remove failed:");
     });
   });
 
   describe("ct_toggle tool execute", () => {
-    it("delegates to toggleCommand with params", async () => {
+    it("delegates to toggleCommand — calls notify", async () => {
       const { pi, tools } = mockPi();
       registerCatalog(pi);
       const execute = tools.get("ct_toggle")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
       const notify = vi.fn();
-      const result = await execute("id", { name: "nonexistent" }, undefined, undefined, { ui: { notify } });
-      expect(result).toHaveProperty("content");
+      await execute("id", { name: "pkg" }, undefined, undefined, { ui: { notify } });
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_toggle")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const result = await execute("id", { name: "pkg" }, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
       const text = (result.content as Array<{ text: string }>)[0].text;
-      expect(text).not.toContain("not yet implemented");
+      expect(text).toContain("Toggle failed:");
     });
   });
 
   describe("ct_status tool execute", () => {
-    it("delegates to statusCommand", async () => {
+    it("delegates to statusCommand — calls notify", async () => {
       const { pi, tools } = mockPi();
       registerCatalog(pi);
       const execute = tools.get("ct_status")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
       const notify = vi.fn();
-      const result = await execute("id", {}, undefined, undefined, { ui: { notify } });
-      expect(result).toHaveProperty("content");
+      await execute("id", {}, undefined, undefined, { ui: { notify } });
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_status")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const result = await execute("id", {}, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
       const text = (result.content as Array<{ text: string }>)[0].text;
-      expect(text).not.toContain("not yet implemented");
+      expect(text).toContain("Status failed:");
     });
   });
 });

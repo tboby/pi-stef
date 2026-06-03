@@ -1,6 +1,4 @@
 import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 
 import { globalConfig } from "@pi-stef/paths";
 import { z } from "zod";

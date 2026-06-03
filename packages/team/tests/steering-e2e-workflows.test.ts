@@ -94,7 +94,7 @@ function decision(instructionId: string): SteeringDecision {
 
 function makeSpawnAgent(root: string, instructionId: string) {
   let developerCalls = 0;
-  return vi.fn(async (member: TeamMember, task: AgentTask) => {
+  return vi.fn(async (member: TeamMember, _task: AgentTask) => {
     // Length-1 batches delegate to the legacy single-instruction decider
     // (backward-compat per milestone spec), which expects a raw
     // SteeringDecision JSON in the spawn output.

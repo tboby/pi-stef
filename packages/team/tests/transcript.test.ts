@@ -11,10 +11,10 @@ describe("createTranscript: per-orchestrator-run agent handoff log", () => {
     try {
       const t = createTranscript(root, "demo");
       const p1 = await t.record({ role: "researcher", label: "analysis", body: "{}", status: "OK" });
-      const p2 = await t.record({ role: "planner", label: "draft", body: "draft body" });
-      const p3 = await t.record({ role: "reviewer", label: "review", round: 1, body: "verdict body", status: "REVISE" });
-      const p4 = await t.record({ role: "planner", label: "revision", round: 1, body: "revised body" });
-      const p5 = await t.record({ role: "reviewer", label: "review", round: 2, body: "verdict 2", status: "APPROVED" });
+      await t.record({ role: "planner", label: "draft", body: "draft body" });
+      await t.record({ role: "reviewer", label: "review", round: 1, body: "verdict body", status: "REVISE" });
+      await t.record({ role: "planner", label: "revision", round: 1, body: "revised body" });
+      await t.record({ role: "reviewer", label: "review", round: 2, body: "verdict 2", status: "APPROVED" });
 
       expect(p1).toBeDefined();
       const folder = path.join(root, "ai_plan", "demo", "transcript", "planning");

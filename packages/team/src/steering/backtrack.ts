@@ -3,9 +3,9 @@ import { appendFile, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { buildSequentialExecutionStrategyArtifact, loadExecutionStrategyForPlanFolder, type ResolvedExecutionStrategy } from "../plan/execution-strategy";
+import { buildSequentialExecutionStrategyArtifact, loadExecutionStrategyForPlanFolder } from "../plan/execution-strategy";
 import { PLAN_FOLDER_ROOT, planFolderPathFromRoot } from "../plan/paths";
-import { parseStoryTracker, parseTrackerText, type ParsedTracker } from "../plan/tracker";
+import { parseStoryTracker, parseTrackerText } from "../plan/tracker";
 import type { TeamMember } from "../runtime/types";
 import { revisePlanWithPatchOrFallback } from "../tools/plan-revision";
 import type { SpawnAgentReturning } from "../tools/shared";
@@ -203,7 +203,6 @@ function deriveStoryTrackerFromPlan(plan: string): string {
 }
 
 export function mergeDerivedTrackerWithExisting(derivedRaw: string, existingRaw: string): string {
-  const derived = parseTrackerText(derivedRaw);
   const existing = parseTrackerText(existingRaw);
   const storyState = new Map<string, { status: string; notes: string }>();
   const approvals = new Map<string, string>();

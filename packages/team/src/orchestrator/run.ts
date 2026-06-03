@@ -192,7 +192,7 @@ export interface OrchestratorBodyContext {
 export type OrchestratorBody<T> = (ctx: OrchestratorBodyContext) => Promise<T>;
 
 export interface OrchestratorResult<T> {
-  result: T;
+  result: T | undefined;
   /** Set when the resume prompt returned `false` and the orchestrator short-circuited. */
   declinedResume?: boolean;
   /** Success-path timing artifact under `ai_plan/<slug>/`, when it could be written. */
@@ -734,7 +734,7 @@ export async function runOrchestrator<T>(
   return {
     result: workflow.result,
     declinedResume: workflow.declinedResume,
-    performanceReportPath: workflow.artifacts?.performanceReportPath,
+    performanceReportPath: !workflow.declinedResume ? workflow.artifacts?.performanceReportPath : undefined,
     costSummary: getCostSummary(),
   };
 

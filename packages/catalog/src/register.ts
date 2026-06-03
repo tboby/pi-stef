@@ -38,7 +38,7 @@ import {
   profileCommand,
   type ProfilesCtx,
 } from "./commands/profiles.js";
-import type { CommandCtx } from "./commands/types.js";
+import type { CommandArgs, CommandCtx } from "./commands/types.js";
 
 // ---------------------------------------------------------------------------
 // Alias map (derived from shared definitions)
@@ -179,8 +179,8 @@ export function registerCatalog(pi: ExtensionAPI): void {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
-        const args = params.force ? { positional: [], flags: { force: true as const } } : { positional: [], flags: {} };
-        await syncCommand(args, ctx as SyncCtx);
+        const args: CommandArgs = { positional: [], flags: params.force ? { force: true } : {} };
+        await syncCommand(args, ctx as unknown as SyncCtx);
         return { content: [{ type: "text" as const, text: "Sync completed." }], details: undefined as unknown };
       } catch (err) {
         return { content: [{ type: "text" as const, text: `Sync failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
@@ -204,11 +204,11 @@ export function registerCatalog(pi: ExtensionAPI): void {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
-        const args = {
+        const args: CommandArgs = {
           positional: [params.name, params.source],
           flags: params.rating ? { rating: params.rating } : {},
         };
-        await addCommand(args, ctx as AddCtx);
+        await addCommand(args, ctx as unknown as AddCtx);
         return { content: [{ type: "text" as const, text: `Added ${params.name}.` }], details: undefined as unknown };
       } catch (err) {
         return { content: [{ type: "text" as const, text: `Add failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
@@ -229,8 +229,8 @@ export function registerCatalog(pi: ExtensionAPI): void {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
-        const args = { positional: [params.name], flags: {} };
-        await removeCommand(args, ctx as RemoveCtx);
+        const args: CommandArgs = { positional: [params.name], flags: {} };
+        await removeCommand(args, ctx as unknown as RemoveCtx);
         return { content: [{ type: "text" as const, text: `Removed ${params.name}.` }], details: undefined as unknown };
       } catch (err) {
         return { content: [{ type: "text" as const, text: `Remove failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
@@ -252,8 +252,8 @@ export function registerCatalog(pi: ExtensionAPI): void {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
-        const args = { positional: [params.name], flags: {} };
-        await toggleCommand(args, ctx as ToggleCtx);
+        const args: CommandArgs = { positional: [params.name], flags: {} };
+        await toggleCommand(args, ctx as unknown as ToggleCtx);
         return { content: [{ type: "text" as const, text: `Toggled ${params.name}.` }], details: undefined as unknown };
       } catch (err) {
         return { content: [{ type: "text" as const, text: `Toggle failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
@@ -274,8 +274,8 @@ export function registerCatalog(pi: ExtensionAPI): void {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
-        const args = params.verbose ? { positional: [], flags: { verbose: true as const } } : { positional: [], flags: {} };
-        await statusCommand(args, ctx as StatusCtx);
+        const args: CommandArgs = { positional: [], flags: params.verbose ? { verbose: true } : {} };
+        await statusCommand(args, ctx as unknown as StatusCtx);
         return { content: [{ type: "text" as const, text: "Status displayed." }], details: undefined as unknown };
       } catch (err) {
         return { content: [{ type: "text" as const, text: `Status failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };

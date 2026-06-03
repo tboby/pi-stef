@@ -100,7 +100,7 @@ describe("resolveParentPlan: parentPlan input accepts slug | absolute path | rel
 
 // --- D/E: ownership boundary -----------------------------------------------
 
-function makeGitRepoWithPlan(slug: string, ownerTool: WorkflowToolName): { root: string; dispose: () => void } {
+function makeGitRepoWithPlan(slug: string, _ownerTool: WorkflowToolName): { root: string; dispose: () => void } {
   const root = mkdtempSync(path.join(tmpdir(), "ct-followup-owner-"));
   spawnSync("git", ["init", "-q", "-b", "main"], { cwd: root });
   spawnSync("git", ["config", "user.email", "a@b"], { cwd: root });

@@ -13,7 +13,6 @@ import {
   RESTART_TASK_CAP_BYTES,
 } from "../src/tools/impl-summary";
 import {
-  PLAN_PAYLOAD_CAP_BYTES,
   SPAWN_TASK_CAP_BYTES,
   truncateWithTranscriptHint,
 } from "../src/tools/shared";

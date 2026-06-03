@@ -8,7 +8,7 @@ import { createSfTeamPlan } from "../../src/tools/plan";
 import { EmptyPlanError } from "../../src/orchestrator/empty-plan-error";
 import { slugify } from "../../src/plan/slug";
 import { planFolderPath } from "../../src/plan/paths";
-import type { AgentRun, AgentTask, TeamMember } from "../../src/runtime/types";
+import type { AgentRun, TeamMember } from "../../src/runtime/types";
 
 /* M8 S-802: end-to-end rejection of the user's actual failing PID-40957
  * refusal transcript through the validators. Asserts EmptyPlanError +

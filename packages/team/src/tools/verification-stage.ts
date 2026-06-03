@@ -9,7 +9,6 @@ import {
   type VerificationConfigInput,
   type VerificationPhase,
   type VerificationRunCache,
-  type VerificationStageSpec,
   type WorkflowCheckpointRuntime,
   type WorkflowReporter,
 } from "@pi-stef/agent-workflows";

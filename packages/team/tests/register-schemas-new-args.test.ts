@@ -5,7 +5,7 @@
  * have the correct optional fields for the new no-git mode arguments.
  */
 import { describe, expect, it } from "vitest";
-import { registerSfTeam, TEAM_BASE_TOOL_NAMES, TEAM_STEER_TOOL_NAME } from "../src/register";
+import { registerSfTeam, TEAM_STEER_TOOL_NAME } from "../src/register";
 
 class FakePi {
   tools: Array<{ name: string; parameters: any }> = [];

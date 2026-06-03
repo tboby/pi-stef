@@ -9,7 +9,6 @@ import {
   getJiraIssueContext,
   renderJiraIssueMarkdown,
   type JiraIssueContext,
-  type JiraIssueReference,
 } from "../jira/JiraContext";
 
 export const DEFAULT_JIRA_CONTEXT_OPTIONS = {

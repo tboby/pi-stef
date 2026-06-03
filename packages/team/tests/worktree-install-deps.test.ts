@@ -13,18 +13,6 @@ vi.mock("node:child_process", async (importOriginal) => {
 const { installDependenciesIfMissing } = await import("../src/worktree/install-deps");
 const { WorktreeCreationError } = await import("../src/worktree/errors");
 
-interface CapturedCall {
-  cmd: string;
-  args: string[];
-}
-
-function capturedCalls(): CapturedCall[] {
-  return spawnSyncMock.mock.calls.map(([cmd, args]) => ({
-    cmd: cmd as string,
-    args: (args as string[]) ?? [],
-  }));
-}
-
 function makeFixture(opts: {
   packageJson?: Record<string, unknown> | undefined;
   files?: string[];
