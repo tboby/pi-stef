@@ -263,7 +263,7 @@ function parseJsonCandidate(candidate: string): ExecutionStrategy | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(candidate);
-  } catch {
+  } catch (_err) {
     return null;
   }
   if (

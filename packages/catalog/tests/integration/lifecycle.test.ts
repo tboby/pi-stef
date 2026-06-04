@@ -302,7 +302,7 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
         packages: {
           "skill-a": {
             version: "1.2.0",
-            contentHash: "sha256-abc123",
+            sourceHash: "sha256-abc123",
             installedAt: "2025-06-01T00:00:00Z",
             syncState: "synced",
           },

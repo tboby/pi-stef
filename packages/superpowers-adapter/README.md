@@ -9,7 +9,6 @@ Pi ships with 4 built-in tools: `read`, `bash`, `edit`, `write`. The superpowers
 | Tool | Pi Built-in | Superpowers Needs | Provided By |
 |------|-------------|-------------------|-------------|
 | TodoWrite | No | Yes | This extension |
-| Task | No | Yes | This extension (Agent alias) |
 | Skill | No | Yes | This extension |
 | Agent | No | Yes | `@tintinweb/pi-subagents` |
 
@@ -25,11 +24,8 @@ While pi natively supports skill discovery (listing them in the system prompt), 
 # 1. Install superpowers (official skill pack)
 pi install https://github.com/obra/superpowers
 
-# 2. Install pi-subagents (required for Task/Agent tool)
-pi install npm:@tintinweb/pi-subagents
-
-# 3. Install this extension
-pi install git:github.com/<USER>/pi-stef#packages/superpowers-adapter
+# 2. Install this extension
+pi install git:github.com/sfiorini/pi-stef#packages/superpowers-adapter
 ```
 
 ## Tools
@@ -56,21 +52,6 @@ TodoWrite({
 })
 ```
 
-### Task
-
-Dispatch subagents for isolated work. This is an alias for the `Agent` tool from `@tintinweb/pi-subagents`.
-
-**Parameters:**
-- `subagent_type` (string, required) — Agent type (e.g., `general-purpose`, `Explore`, `Plan`)
-- `prompt` (string, required) — Task description for the subagent
-- `description` (string, required) — Short 3-5 word summary
-- `model` (string, optional) — Model override
-- `run_in_background` (boolean, optional) — Non-blocking execution
-
-**Prerequisite:** `pi install npm:@tintinweb/pi-subagents`
-
-**Limitation:** Pi's ExtensionAPI does not support tool-to-tool invocation. The Task tool returns a message directing the LLM to call the Agent tool directly rather than forwarding the call programmatically. This matches the behavior of the original upstream implementation.
-
 ### Skill
 
 Load skill instructions by name. Discovers skills from standard pi skill directories.
@@ -79,13 +60,13 @@ Load skill instructions by name. Discovers skills from standard pi skill directo
 - `skill` (string, required) — Skill name (e.g., `brainstorming`, `test-driven-development`)
 
 **Discovery paths** (searched in order):
-- `~/.pi/agent/skills/`
-- `~/.agents/skills/`
 - `<cwd>/.pi/skills/`
 - `<cwd>/.agents/skills/`
+- `~/.pi/agent/skills/`
+- `~/.agents/skills/`
 - Recursively under `~/.pi/agent/git/` (depth 10)
 
-**Limitation:** The YAML frontmatter parser handles simple `key: value` pairs only. Description values containing colons will be truncated at the first colon. This matches the upstream implementation and is not an issue in practice — all known superpowers SKILL.md files use single-line descriptions without internal colons.
+**Limitation:** The YAML frontmatter parser handles simple `key: value` pairs only. Nested values, multi-line values, and quoted strings with complex escaping are not supported.
 
 ## Commands
 
@@ -101,7 +82,6 @@ src/
   types.ts           — Shared type definitions
   tools/
     todo-write.ts    — TodoWrite tool + state management
-    task.ts          — Task tool (Agent shim)
     skill.ts         — Skill discovery, parsing, loading
   commands.ts        — /todos and /todo-clear
   index.ts           — Extension entry point + lifecycle hooks
@@ -113,9 +93,6 @@ The extension auto-injects the `using-superpowers` skill content into the system
 
 **"using-superpowers skill not found"**
 → Install superpowers: `pi install https://github.com/obra/superpowers`
-
-**"Task tool requires pi-subagents"**
-→ Install subagents: `pi install npm:@tintinweb/pi-subagents`
 
 **Skills not discovered**
 → Check that skill directories contain `SKILL.md` files with valid YAML frontmatter.

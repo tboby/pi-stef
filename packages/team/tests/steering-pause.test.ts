@@ -93,7 +93,7 @@ describe("M4 latched pauseState", () => {
     const wrapped = new Proxy(store, {
       get(target, prop, receiver) {
         if (prop === "setPauseState") {
-          return async (state: unknown) => {
+          return async (_state: unknown) => {
             setCalls += 1;
             throw new Error("simulated state.json write failure");
           };

@@ -14,7 +14,6 @@ import { describe, expect, it } from "vitest";
 import { composeDeveloperBrief, composeDevRevise } from "../../src/tools/run-task-workflow";
 import {
   composeMilestoneBrief,
-  composeStoryBrief,
   composeMilestoneRevise,
 } from "../../src/tools/implement";
 import { composeTddContract, REVIEWER_TDD_POLICY } from "../../src/tools/tdd-policy";

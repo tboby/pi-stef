@@ -121,7 +121,7 @@ export function createDefaultExternalFetcher(
           // scanRefs no longer emits this; programmatic callers get null.
           return null;
       }
-    } catch {
+    } catch (_err) {
       return null;
     }
   };

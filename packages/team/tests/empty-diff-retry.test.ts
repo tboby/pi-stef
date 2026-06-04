@@ -306,7 +306,7 @@ describe("S-M36 milestone empty-diff retry policy", () => {
     const { root, slug, dispose } = makeRepoSequential();
     try {
       const developerCalls: Array<{ model: string }> = [];
-      const spawnAgent = vi.fn(async (member: TeamMember, task: AgentTask) => {
+      const spawnAgent = vi.fn(async (member: TeamMember, _task: AgentTask) => {
         if (member.role === "developer") {
           developerCalls.push({ model: member.model });
           return fakeRun("still nothing");

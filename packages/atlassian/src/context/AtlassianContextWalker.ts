@@ -1,6 +1,7 @@
 import { getConfluencePageContext, renderConfluencePageMarkdown, type ConfluencePageContext } from "../confluence/ConfluenceContext";
 import { FigmaAuthorization, buildFigmaContextForMode, renderFigmaContext } from "@pi-stef/figma";
 import { ConfluenceClient } from "../confluence/ConfluenceClient";
+import { errorMessage } from "../internal/helpers";
 import { extractLinks, unique } from "../links/extractLinks";
 import { resolveAtlassianLinks } from "../links/resolveAtlassianLinks";
 import { JiraPlatformClient } from "../jira/JiraPlatformClient";
@@ -9,7 +10,6 @@ import {
   getJiraIssueContext,
   renderJiraIssueMarkdown,
   type JiraIssueContext,
-  type JiraIssueReference,
 } from "../jira/JiraContext";
 
 export const DEFAULT_JIRA_CONTEXT_OPTIONS = {
@@ -430,10 +430,6 @@ function issueSummaryBlock(issue: JiraIssueContext): string {
 
 function firstLine(value: string): string {
   return value.split("\n").find((line) => line.trim().length > 0)?.trim() ?? "";
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 export const getStoryContext = buildStoryContext;

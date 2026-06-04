@@ -1,5 +1,15 @@
 import type { FigmaNode } from '../schemas';
 
+/** Check if a node has any visible IMAGE fills with an imageRef. */
+export function hasImageFill(node: FigmaNode): boolean {
+  return (
+    Array.isArray(node.fills) &&
+    node.fills.some(
+      (fill) => fill.type === 'IMAGE' && fill.visible !== false && Boolean(fill.imageRef),
+    )
+  );
+}
+
 export interface CompactNode {
   id: string;
   name: string;

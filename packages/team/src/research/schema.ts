@@ -70,7 +70,7 @@ function extractBodyString(obj: Record<string, unknown>): string {
   // Last resort: JSON-stringify so the planner at least sees the raw payload.
   try {
     return JSON.stringify(obj);
-  } catch {
+  } catch (_err) {
     return String(obj);
   }
 }

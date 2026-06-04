@@ -136,7 +136,7 @@ export async function readHistoricalCostSummary(
   let names: string[];
   try {
     names = await readdir(folder);
-  } catch {
+  } catch (_err) {
     return { usage: emptyUsageTotal(), reportCount: 0 };
   }
 

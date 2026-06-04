@@ -7,7 +7,7 @@
  *   - No pr-description.md (git is off; no PR)
  *   - The plan folder is NOT written under <repoRoot>/ai_plan/
  */
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";

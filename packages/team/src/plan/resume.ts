@@ -39,7 +39,7 @@ export async function detectResumeState(repoRoot: string, slug: string): Promise
     firstPendingMilestone = parsed.milestones.find((m) =>
       m.stories.some((s) => s.status === "pending" || s.status === "in-dev" || s.status === "needs-rework"),
     );
-  } catch {
+  } catch (_err) {
     // tracker missing or unparseable; resume detection still useful via baseline.
   }
   const planRoot = path.join(repoRoot, PLAN_FOLDER_ROOT); // migration-allowed: legacy

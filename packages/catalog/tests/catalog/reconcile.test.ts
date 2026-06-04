@@ -802,7 +802,7 @@ describe("executeActions", () => {
     const parsed = JSON.parse(writtenLock!.content);
     expect(parsed.packages).toHaveProperty("pkg-a");
     expect(parsed.packages["pkg-a"].version).toBe("1.2.3");
-    expect(parsed.packages["pkg-a"].contentHash).toMatch(/^sha256-/);
+    expect(parsed.packages["pkg-a"].sourceHash).toMatch(/^sha256-/);
     expect(parsed.packages["pkg-a"].installedAt).toBeDefined();
     expect(parsed.packages["pkg-a"].syncState).toBe("synced");
     // Must validate against the schema

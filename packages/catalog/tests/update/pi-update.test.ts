@@ -31,18 +31,20 @@ const mockedWriteLock = vi.mocked(writeLock);
 
 function mockNpmView(version: string): void {
   mockedExecFile.mockImplementation(
-    (_cmd: string, _args: string[], _opts: unknown, cb: Function) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((_cmd: any, _args: any, _opts: any, cb: Function) => {
       cb(null, `${version}\n`, "");
-    },
+    }) as typeof mockedExecFile,
   );
 }
 
 function mockNpmViewError(message: string): void {
   mockedExecFile.mockImplementation(
-    (_cmd: string, _args: string[], _opts: unknown, cb: Function) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((_cmd: any, _args: any, _opts: any, cb: Function) => {
       const err = new Error(message);
       cb(err, "", message);
-    },
+    }) as typeof mockedExecFile,
   );
 }
 

@@ -1,5 +1,6 @@
 import { AtlassianClient } from "../http/AtlassianClient";
 import type { QueryValue } from "../http/AtlassianClient";
+import { asRecord, clean, errorMessage, options as httpOptions } from "../internal/helpers";
 
 export interface JiraSoftwareHttp {
   get<T>(path: string, options?: { query?: Record<string, QueryValue>; signal?: AbortSignal }): Promise<T>;
@@ -15,7 +16,7 @@ export class JiraSoftwareClient {
 
   async getAgileBoards(params: { startAt?: number; maxResults?: number; type?: "scrum" | "kanban" | "simple"; name?: string; projectKeyOrId?: string; accountIdLocation?: string; projectLocation?: string; includePrivate?: boolean; negateLocationFiltering?: boolean; orderBy?: string; signal?: AbortSignal } = {}): Promise<unknown> {
     const { signal, ...query } = params;
-    return this.http.get("/rest/agile/1.0/board", options(query, signal));
+    return this.http.get("/rest/agile/1.0/board", httpOptions(query, signal));
   }
 
   async createBoard(params: { name: string; type: "scrum" | "kanban"; filterId?: number; filterName?: string; filterJql?: string; filterDescription?: string; filterFavourite?: boolean; signal?: AbortSignal }): Promise<unknown> {
@@ -48,17 +49,17 @@ export class JiraSoftwareClient {
 
   async getBoardIssues(params: { boardId: number; startAt?: number; maxResults?: number; jql?: string; fields?: string[]; expand?: string[]; signal?: AbortSignal }): Promise<unknown> {
     const { boardId, signal, ...query } = params;
-    return this.http.get(`/rest/agile/1.0/board/${boardId}/issue`, options(query, signal));
+    return this.http.get(`/rest/agile/1.0/board/${boardId}/issue`, httpOptions(query, signal));
   }
 
   async getSprintsFromBoard(params: { boardId: number; startAt?: number; maxResults?: number; state?: string[]; signal?: AbortSignal }): Promise<unknown> {
     const { boardId, signal, ...query } = params;
-    return this.http.get(`/rest/agile/1.0/board/${boardId}/sprint`, options(query, signal));
+    return this.http.get(`/rest/agile/1.0/board/${boardId}/sprint`, httpOptions(query, signal));
   }
 
   async getSprintIssues(params: { sprintId: number; startAt?: number; maxResults?: number; jql?: string; fields?: string[]; expand?: string[]; signal?: AbortSignal }): Promise<unknown> {
     const { sprintId, signal, ...query } = params;
-    return this.http.get(`/rest/agile/1.0/sprint/${sprintId}/issue`, options(query, signal));
+    return this.http.get(`/rest/agile/1.0/sprint/${sprintId}/issue`, httpOptions(query, signal));
   }
 
   async createSprint(params: { name: string; originBoardId: number; startDate?: string; endDate?: string; goal?: string; signal?: AbortSignal }): Promise<unknown> {
@@ -82,7 +83,7 @@ export class JiraSoftwareClient {
 
   async getBacklogIssues(params: { boardId: number; startAt?: number; maxResults?: number; jql?: string; fields?: string[]; expand?: string[]; signal?: AbortSignal }): Promise<unknown> {
     const { boardId, signal, ...query } = params;
-    return this.http.get(`/rest/agile/1.0/board/${boardId}/backlog`, options(query, signal));
+    return this.http.get(`/rest/agile/1.0/board/${boardId}/backlog`, httpOptions(query, signal));
   }
 
   async rankBacklogIssues(params: { issues: string[]; rankBeforeIssue?: string; rankAfterIssue?: string; rankCustomFieldId?: number; signal?: AbortSignal }): Promise<void> {
@@ -92,7 +93,7 @@ export class JiraSoftwareClient {
 
   async getEpicIssues(params: { epicIdOrKey: string; startAt?: number; maxResults?: number; jql?: string; fields?: string[]; expand?: string[]; signal?: AbortSignal }): Promise<unknown> {
     const { epicIdOrKey, signal, ...query } = params;
-    return this.http.get(`/rest/agile/1.0/epic/${encodeURIComponent(epicIdOrKey)}/issue`, options(query, signal));
+    return this.http.get(`/rest/agile/1.0/epic/${encodeURIComponent(epicIdOrKey)}/issue`, httpOptions(query, signal));
   }
 
   async linkToEpic(params: { epicIdOrKey: string; issueKeys: string[]; mode?: EpicLinkMode; signal?: AbortSignal }): Promise<unknown> {
@@ -151,21 +152,4 @@ function parseFilterId(value: unknown): number {
 function isClassicEpicNotApplicable(error: unknown): boolean {
   const status = typeof asRecord(error).status === "number" ? asRecord(error).status : undefined;
   return status === 400 || status === 404;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function options(query: Record<string, unknown>, signal?: AbortSignal): { query?: Record<string, QueryValue>; signal?: AbortSignal } {
-  const cleaned = clean(query) as Record<string, QueryValue>;
-  return Object.keys(cleaned).length ? { query: cleaned, signal } : { signal };
-}
-
-function clean<T extends Record<string, unknown>>(value: T): T {
-  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
 }

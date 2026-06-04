@@ -5,7 +5,6 @@ import type { WorkflowReporter } from "@pi-stef/agent-workflows";
 import { applyAgentControlDecision, type WorktreeDiscardSummary } from "../agent-control";
 import {
   BatchValidationError,
-  decideSteeringInstruction,
   decideSteeringInstructions,
   isDecisionSnapshotStale,
   isDestructiveDecision,

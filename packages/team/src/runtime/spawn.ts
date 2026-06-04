@@ -164,7 +164,7 @@ async function _spawnAgentInternal(
   if (opts.onSpawn) {
     try {
       opts.onSpawn({ pid: child.pid, startedAtMs: metrics.spawnedAtMs });
-    } catch {
+    } catch (_err) {
       // Lifecycle observers must not break the agent spawn path.
     }
   }
@@ -196,7 +196,7 @@ async function _spawnAgentInternal(
   const recordEvent = (e: AgentEvent): void => {
     retainEvent(e);
     if (opts.onEvent) {
-      try { opts.onEvent(e); } catch { /* swallow */ }
+      try { opts.onEvent(e); } catch (_err) { /* swallow */ }
     }
   };
   const toolCalls: ToolCallObservation[] = [];
@@ -307,10 +307,10 @@ async function _spawnAgentInternal(
       if (openSources === 0) file.end();
     };
     child.stdout?.on("data", (chunk: string) => {
-      try { file.write(chunk); } catch { /* swallow */ }
+      try { file.write(chunk); } catch (_err) { /* swallow */ }
     });
     child.stderr?.on("data", (chunk: string) => {
-      try { file.write(chunk); } catch { /* swallow */ }
+      try { file.write(chunk); } catch (_err) { /* swallow */ }
     });
     child.stdout?.on("end", closeIfDone);
     child.stderr?.on("end", closeIfDone);
@@ -459,7 +459,7 @@ async function _spawnAgentInternal(
   if (pendingKill) {
     try {
       await pendingKill;
-    } catch {
+    } catch (_err) {
       // best-effort; killTree itself swallows ESRCH internally.
     }
   }
@@ -471,7 +471,7 @@ async function _spawnAgentInternal(
   if (rawLogClose) {
     try {
       await rawLogClose;
-    } catch {
+    } catch (_err) {
       // best-effort; a write error must not block the spawn return.
     }
   }
@@ -675,10 +675,10 @@ export async function killTree(child: ChildProcess): Promise<void> {
   // Phase 1: SIGTERM the group (or the direct child if the group is gone).
   try {
     process.kill(-pid, "SIGTERM");
-  } catch {
+  } catch (_err) {
     try {
       child.kill("SIGTERM");
-    } catch {
+    } catch (_err) {
       // ignore — the child may already be dead, but grandchildren under the
       // group could still be alive, so we still issue the SIGKILL below.
     }
@@ -699,10 +699,10 @@ export async function killTree(child: ChildProcess): Promise<void> {
   // SIGKILL on a now-empty group raises ESRCH which we swallow.
   try {
     process.kill(-pid, "SIGKILL");
-  } catch {
+  } catch (_err) {
     try {
       if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
-    } catch {
+    } catch (_err) {
       // ignore
     }
   }

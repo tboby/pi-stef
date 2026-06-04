@@ -29,7 +29,6 @@ import { normalOrResumeValue, resolveToolResume } from "./resume";
 import {
   composeDeveloperSystemPreamble,
   composePlanVerifyFixesPrompt,
-  defaultDeps,
   DEV_DIFF_CAP_BYTES,
   DEV_PLAN_CAP_BYTES,
   makeReviewer,

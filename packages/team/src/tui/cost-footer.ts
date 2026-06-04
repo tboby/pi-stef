@@ -65,7 +65,7 @@ export function mountCostFooter(
       disposed = true;
       try {
         setFooter(undefined);
-      } catch {
+      } catch (_err) {
         // best-effort
       }
     },

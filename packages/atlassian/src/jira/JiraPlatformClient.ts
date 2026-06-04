@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { AtlassianClient } from "../http/AtlassianClient";
 import type { QueryValue } from "../http/AtlassianClient";
+import { asRecord, clean, getNumber, getString, options as httpOptions } from "../internal/helpers";
 import { plainTextToAdf, textOrAdfToAdf } from "../text/adf";
 
 export interface JiraHttp {
@@ -51,7 +52,7 @@ export class JiraPlatformClient {
 
   async listProjects(params: { startAt?: number; maxResults?: number; orderBy?: string; query?: string; typeKey?: string; categoryId?: number; action?: string; signal?: AbortSignal } = {}): Promise<unknown> {
     const { signal, ...query } = params;
-    return this.http.get("/rest/api/3/project/search", options(query, signal));
+    return this.http.get("/rest/api/3/project/search", httpOptions(query, signal));
   }
 
   async searchIssues(params: { jql: string; fields?: string[]; expand?: string[]; properties?: string[]; maxResults?: number; nextPageToken?: string; fieldsByKeys?: boolean; reconcileIssues?: number[]; signal?: AbortSignal }): Promise<unknown> {
@@ -69,23 +70,23 @@ export class JiraPlatformClient {
     await this.http.put(
       `/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}`,
       clean({ fields: buildIssueFields(fieldInput), update }),
-      options({ notifyUsers, overrideScreenSecurity, overrideEditableFlag }, signal),
+      httpOptions({ notifyUsers, overrideScreenSecurity, overrideEditableFlag }, signal),
     );
   }
 
   async deleteIssue(params: { issueIdOrKey: string; deleteSubtasks?: boolean; signal?: AbortSignal }): Promise<void> {
     const { issueIdOrKey, deleteSubtasks, signal } = params;
-    await this.http.delete(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}`, options({ deleteSubtasks }, signal));
+    await this.http.delete(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}`, httpOptions({ deleteSubtasks }, signal));
   }
 
   async getIssue(params: { issueIdOrKey: string; fields?: string[]; expand?: string[]; properties?: string[]; fieldsByKeys?: boolean; updateHistory?: boolean; signal?: AbortSignal }): Promise<unknown> {
     const { issueIdOrKey, signal, ...query } = params;
-    return this.http.get(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}`, options(query, signal));
+    return this.http.get(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}`, httpOptions(query, signal));
   }
 
   async getTransitions(params: { issueIdOrKey: string; transitionId?: string; includeUnavailableTransitions?: boolean; skipRemoteOnlyCondition?: boolean; signal?: AbortSignal }): Promise<unknown> {
     const { issueIdOrKey, signal, ...query } = params;
-    return this.http.get(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/transitions`, options(query, signal));
+    return this.http.get(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/transitions`, httpOptions(query, signal));
   }
 
   async transitionIssue(params: { issueIdOrKey: string; transitionId: string; fields?: Record<string, unknown>; update?: Record<string, unknown>; historyMetadata?: Record<string, unknown>; comment?: string | unknown; signal?: AbortSignal }): Promise<void> {
@@ -112,17 +113,17 @@ export class JiraPlatformClient {
 
   async getComments(params: { issueIdOrKey: string; startAt?: number; maxResults?: number; orderBy?: string; expand?: string[]; signal?: AbortSignal }): Promise<unknown> {
     const { issueIdOrKey, signal, ...query } = params;
-    return this.http.get(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/comment`, options(query, signal));
+    return this.http.get(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/comment`, httpOptions(query, signal));
   }
 
   async getRemoteLinks(params: { issueIdOrKey: string; globalId?: string; signal?: AbortSignal }): Promise<unknown> {
     const { issueIdOrKey, signal, ...query } = params;
-    return this.http.get(`/rest/api/2/issue/${encodeURIComponent(issueIdOrKey)}/remotelink`, options(query, signal));
+    return this.http.get(`/rest/api/2/issue/${encodeURIComponent(issueIdOrKey)}/remotelink`, httpOptions(query, signal));
   }
 
   async getWorklog(params: { issueIdOrKey: string; startAt?: number; maxResults?: number; startedAfter?: number; startedBefore?: number; expand?: string[]; signal?: AbortSignal }): Promise<unknown> {
     const { issueIdOrKey, signal, ...query } = params;
-    return this.http.get(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/worklog`, options(query, signal));
+    return this.http.get(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/worklog`, httpOptions(query, signal));
   }
 
   async addWorklog(params: { issueIdOrKey: string; timeSpent?: string; timeSpentSeconds?: number; started: string; comment?: string | unknown; adjustEstimate?: string; newEstimate?: string; reduceBy?: string; signal?: AbortSignal }): Promise<unknown> {
@@ -133,7 +134,7 @@ export class JiraPlatformClient {
     return this.http.post(
       `/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/worklog`,
       clean({ ...body, comment: comment === undefined ? undefined : textOrAdfToAdf(comment) }),
-      options({ adjustEstimate, newEstimate, reduceBy }, signal),
+      httpOptions({ adjustEstimate, newEstimate, reduceBy }, signal),
     );
   }
 
@@ -161,7 +162,7 @@ export class JiraPlatformClient {
 
   async getProjectVersions(params: { projectIdOrKey: string; expand?: string; signal?: AbortSignal }): Promise<unknown> {
     const { projectIdOrKey, signal, ...query } = params;
-    return this.http.get(`/rest/api/3/project/${encodeURIComponent(projectIdOrKey)}/versions`, options(query, signal));
+    return this.http.get(`/rest/api/3/project/${encodeURIComponent(projectIdOrKey)}/versions`, httpOptions(query, signal));
   }
 
   async createVersion(params: { projectId?: number; project?: string; name: string; description?: string; archived?: boolean; released?: boolean; releaseDate?: string; startDate?: string; signal?: AbortSignal }): Promise<unknown> {
@@ -176,12 +177,12 @@ export class JiraPlatformClient {
 
   async searchFields(params: { startAt?: number; maxResults?: number; type?: string; id?: string[]; query?: string; orderBy?: string; expand?: string[]; signal?: AbortSignal } = {}): Promise<unknown> {
     const { signal, ...query } = params;
-    return this.http.get("/rest/api/3/field/search", options(query, signal));
+    return this.http.get("/rest/api/3/field/search", httpOptions(query, signal));
   }
 
   async getUserProfile(params: { accountId?: string; username?: string; key?: string; expand?: string; signal?: AbortSignal }): Promise<unknown> {
     const { signal, ...query } = params;
-    return this.http.get("/rest/api/3/user", options(query, signal));
+    return this.http.get("/rest/api/3/user", httpOptions(query, signal));
   }
 
   async batchGetChangelogs(params: { issueIdsOrKeys: string[]; fieldIds?: string[]; maxResults?: number; nextPageToken?: string; signal?: AbortSignal }): Promise<unknown> {
@@ -271,15 +272,6 @@ function mergeCommentUpdate(update: Record<string, unknown> | undefined, comment
   return { ...existing, comment: [...comments, { add: { body: textOrAdfToAdf(comment) } }] };
 }
 
-function clean<T extends Record<string, unknown>>(value: T): T {
-  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
-}
-
-function options(query: Record<string, unknown>, signal?: AbortSignal): { query?: Record<string, QueryValue>; signal?: AbortSignal } {
-  const cleaned = clean(query) as Record<string, QueryValue>;
-  return Object.keys(cleaned).length ? { query: cleaned, signal } : { signal };
-}
-
 function sanitizeFilename(value: string): string {
   const sanitized = value.replace(/[\\/]/g, "_").replace(/[^A-Za-z0-9._-]/g, "_").replace(/^_+/, "");
   return sanitized || "attachment";
@@ -301,18 +293,6 @@ function uniqueFilename(filename: string, usedNames: Set<string>): string {
 
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-}
-
-function getString(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function getNumber(value: unknown): number | undefined {
-  return typeof value === "number" ? value : undefined;
 }
 
 export { plainTextToAdf };

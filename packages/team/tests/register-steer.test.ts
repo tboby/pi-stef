@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createActiveWorkflowRegistry } from "../src/steering/active-workflows";
 import { resolvePlanSteeringRoot } from "../src/steering/path-safety";
-import { registerSfTeam, TEAM_STEER_TOOL_NAME, TEAM_TOOL_NAMES } from "../src/register";
+import { registerSfTeam, TEAM_TOOL_NAMES } from "../src/register";
 
 class FakePi {
   tools: Array<{ name: string; parameters: unknown; execute: (...args: any[]) => Promise<any> }> = [];

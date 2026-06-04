@@ -344,7 +344,7 @@ describe("Bug fix #2: same-role re-spawns re-use one card and increment round", 
         },
       } as never;
       let firstSub: { onEvent: (e: any) => void } | undefined;
-      let secondSub: { onEvent: (e: any) => void } | undefined;
+      const subs: { onEvent: (e: any) => void }[] = [];
       await runOrchestrator(
         {
           repoRoot: root,
@@ -357,7 +357,7 @@ describe("Bug fix #2: same-role re-spawns re-use one card and increment round", 
           // Round 1 subscription.
           firstSub = bodyCtx.subscribeAgent({ role: "planner", model: "x" });
           // Round 2 subscription — ROUND on the card is now 2.
-          secondSub = bodyCtx.subscribeAgent({ role: "planner", model: "x" });
+          subs.push(bodyCtx.subscribeAgent({ role: "planner", model: "x" }));
           // Late terminal event from round 1 — should be ignored by guard.
           firstSub.onEvent({ kind: "stdout-json", raw: { type: "agent_end", messages: [] } });
           return "done";

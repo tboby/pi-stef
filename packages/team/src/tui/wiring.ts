@@ -128,13 +128,13 @@ export function watchTrackerFile(
       // Kernel notifier died (EMFILE, ENOSPC, etc). Drop the watcher and poll.
       try {
         watcher?.close();
-      } catch {
+      } catch (_err) {
         // ignore
       }
       watcher = undefined;
       startPolling();
     });
-  } catch {
+  } catch (_err) {
     // Couldn't start fs.watch at all — go straight to polling.
     startPolling();
   }
@@ -143,7 +143,7 @@ export function watchTrackerFile(
     stopped = true;
     try {
       watcher?.close();
-    } catch {
+    } catch (_err) {
       // already closed
     }
     if (pollTimer) {

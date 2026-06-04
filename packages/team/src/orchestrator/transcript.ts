@@ -100,7 +100,8 @@ export function createTranscriptFromFolder(planFolder: string): TranscriptHandle
         await mkdir(folder, { recursive: true });
         await writeFile(filePath, body, "utf8");
         return filePath;
-      } catch {
+      } catch (err) {
+        console.debug("[team]", err instanceof Error ? err.message : String(err));
         return undefined;
       }
     },
@@ -138,7 +139,8 @@ export function createTranscript(repoRoot: string, slug: string): TranscriptHand
         await mkdir(folder, { recursive: true });
         await writeFile(filePath, body, "utf8");
         return filePath;
-      } catch {
+      } catch (err) {
+        console.debug("[team]", err instanceof Error ? err.message : String(err));
         return undefined;
       }
     },
@@ -156,7 +158,7 @@ function scanExistingMaxSeqFromFolder(folder: string): number {
         if (Number.isFinite(value) && value > max) max = value;
       }
     }
-  } catch {
+  } catch (_err) {
     // ignore
   }
   return max;

@@ -62,7 +62,7 @@ describe("S-105: sf_team_auto propagates EmptyPlanError from sf_team_plan", () =
         fakeRun(member.role === "planner" ? REFUSAL_PROSE : APPROVED),
       );
       const runReviewLoop = (await import("../src/review/loop")).runReviewLoop;
-      const planTool = createSfTeamPlan({ spawnAgent: spawnAgent as never, runReviewLoop });
+      createSfTeamPlan({ spawnAgent: spawnAgent as never, runReviewLoop });
       const implementTool = vi.fn(async () => ({
         slug: "x",
         mode: "all-milestones" as const,

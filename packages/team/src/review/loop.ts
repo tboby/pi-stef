@@ -243,7 +243,7 @@ function serializeForCompare<P>(payload: P): string {
   if (payload instanceof Uint8Array) return Buffer.from(payload).toString("base64");
   try {
     return JSON.stringify(payload);
-  } catch {
+  } catch (_err) {
     return String(payload);
   }
 }

@@ -192,7 +192,7 @@ export interface OrchestratorBodyContext {
 export type OrchestratorBody<T> = (ctx: OrchestratorBodyContext) => Promise<T>;
 
 export interface OrchestratorResult<T> {
-  result: T;
+  result: T | undefined;
   /** Set when the resume prompt returned `false` and the orchestrator short-circuited. */
   declinedResume?: boolean;
   /** Success-path timing artifact under `ai_plan/<slug>/`, when it could be written. */
@@ -363,7 +363,7 @@ export async function runOrchestrator<T>(
       } else {
         tmuxManager.decorateSession({ sessionName: tmuxSessionName });
       }
-    } catch {
+    } catch (_err) {
       // tmux decoration failed — disable subsequent pane ops so we
       // don't surface partial state.
       tmuxManager = undefined;
@@ -445,7 +445,7 @@ export async function runOrchestrator<T>(
           });
           agentRawLogPath = r.logPath;
           agentPaneId = r.paneId;
-        } catch {
+        } catch (_err) {
           // Failure to open a pane MUST NOT break the run — the agent
           // still spawns, just without a tmux mirror.
         }
@@ -469,7 +469,7 @@ export async function runOrchestrator<T>(
         const stateFromEvent = agentStateFromTerminalEvent(e);
         if (stateFromEvent && isTerminalState(stateFromEvent)) {
           settleInFlightUsage(spawnKey);
-          try { tmuxManager.closeAgentPane(agentPaneId); } catch { /* swallow */ }
+          try { tmuxManager.closeAgentPane(agentPaneId); } catch (_err) { /* swallow */ }
           agentPaneId = undefined;
         }
       }
@@ -497,7 +497,7 @@ export async function runOrchestrator<T>(
     // up paneIds via tracked agentIds.
     if (tmuxManager) {
       for (const card of widgetState.agents) {
-        try { tmuxManager.closeAgentPane(card.id); } catch { /* swallow */ }
+        try { tmuxManager.closeAgentPane(card.id); } catch (_err) { /* swallow */ }
       }
     }
     widgetState = clearAgents(widgetState);
@@ -602,7 +602,7 @@ export async function runOrchestrator<T>(
         if (tmuxManager) {
           try {
             tmuxManager.closeAllPanes(tmuxSessionName);
-          } catch {
+          } catch (_err) {
             // ignore
           }
         }
@@ -614,14 +614,14 @@ export async function runOrchestrator<T>(
         clearSteeringTick();
         try {
           costFooter?.dispose();
-        } catch {
+        } catch (_err) {
           // ignore
         }
       },
       afterReporterDispose() {
         try {
           widget?.dispose();
-        } catch {
+        } catch (_err) {
           // ignore
         }
       },
@@ -630,7 +630,7 @@ export async function runOrchestrator<T>(
         const status = error ? `failed (${describeError(error)})` : "completed";
         try {
           notifyTelegram(`${ctx.toolName} ${ctx.slug}: ${status}`, ctx.telegram);
-        } catch {
+        } catch (_err) {
           // ignore — telegram never blocks
         }
       },
@@ -734,7 +734,7 @@ export async function runOrchestrator<T>(
   return {
     result: workflow.result,
     declinedResume: workflow.declinedResume,
-    performanceReportPath: workflow.artifacts?.performanceReportPath,
+    performanceReportPath: !workflow.declinedResume ? workflow.artifacts?.performanceReportPath : undefined,
     costSummary: getCostSummary(),
   };
 

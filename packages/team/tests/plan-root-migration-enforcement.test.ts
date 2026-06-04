@@ -101,7 +101,7 @@ describe("S-311 plan-root migration enforcement", () => {
   });
 
   it("named imports of planFolderPath (the shim) are all annotated migration-allowed: legacy", () => {
-    const violations = scanFiles(
+    scanFiles(
       files,
       (line) =>
         /import\s*\{[^}]*\bplanFolderPath\b[^}]*\}/.test(line) &&

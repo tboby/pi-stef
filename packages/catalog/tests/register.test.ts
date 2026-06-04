@@ -247,6 +247,8 @@ describe("registerCatalog", () => {
     const { pi, tools } = mockPi();
     registerCatalog(pi);
 
+    const mockCtx = { ui: { notify: vi.fn() } };
+
     for (const [name, def] of tools) {
       const execute = def.execute as (
         toolCallId: string,
@@ -256,9 +258,126 @@ describe("registerCatalog", () => {
         ctx: unknown,
       ) => Promise<Record<string, unknown>>;
 
-      const result = await execute("test-id", {}, undefined, undefined, undefined);
+      const result = await execute("test-id", {}, undefined, undefined, mockCtx);
       expect(result, `tool ${name} result`).toHaveProperty("content");
       expect(result, `tool ${name} result must have details`).toHaveProperty("details");
     }
+  });
+
+  // -------------------------------------------------------------------------
+  // S19: LLM tool integration tests (delegation verification)
+  // -------------------------------------------------------------------------
+
+  describe("ct_sync tool execute", () => {
+    it("delegates to syncCommand — calls notify (success path)", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_sync")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const notify = vi.fn();
+      const result = await execute("id", {}, undefined, undefined, { ui: { notify } });
+      expect(result).toHaveProperty("content");
+      // syncCommand called notify => delegation happened
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_sync")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      // Pass ctx with a notify that throws to force the error path
+      const result = await execute("id", {}, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
+      const text = (result.content as Array<{ text: string }>)[0].text;
+      expect(text).toContain("Sync failed:");
+    });
+  });
+
+  describe("ct_add tool execute", () => {
+    it("delegates to addCommand — calls notify", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_add")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const notify = vi.fn();
+      await execute("id", { name: "test", source: "npm:test" }, undefined, undefined, { ui: { notify } });
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_add")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const result = await execute("id", { name: "test", source: "npm:test" }, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
+      const text = (result.content as Array<{ text: string }>)[0].text;
+      expect(text).toContain("Add failed:");
+    });
+  });
+
+  describe("ct_remove tool execute", () => {
+    it("delegates to removeCommand — calls notify", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_remove")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const notify = vi.fn();
+      await execute("id", { name: "pkg" }, undefined, undefined, { ui: { notify } });
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_remove")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const result = await execute("id", { name: "pkg" }, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
+      const text = (result.content as Array<{ text: string }>)[0].text;
+      expect(text).toContain("Remove failed:");
+    });
+  });
+
+  describe("ct_toggle tool execute", () => {
+    it("delegates to toggleCommand — calls notify", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_toggle")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const notify = vi.fn();
+      await execute("id", { name: "pkg" }, undefined, undefined, { ui: { notify } });
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_toggle")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const result = await execute("id", { name: "pkg" }, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
+      const text = (result.content as Array<{ text: string }>)[0].text;
+      expect(text).toContain("Toggle failed:");
+    });
+  });
+
+  describe("ct_status tool execute", () => {
+    it("delegates to statusCommand — calls notify", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_status")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const notify = vi.fn();
+      await execute("id", {}, undefined, undefined, { ui: { notify } });
+      expect(notify).toHaveBeenCalled();
+    });
+
+    it("catches thrown errors gracefully", async () => {
+      const { pi, tools } = mockPi();
+      registerCatalog(pi);
+      const execute = tools.get("ct_status")!.execute as (...args: unknown[]) => Promise<Record<string, unknown>>;
+      const result = await execute("id", {}, undefined, undefined, {
+        ui: { notify: () => { throw new Error("forced"); } },
+      });
+      const text = (result.content as Array<{ text: string }>)[0].text;
+      expect(text).toContain("Status failed:");
+    });
   });
 });

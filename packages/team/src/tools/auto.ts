@@ -29,7 +29,8 @@ function resolveAutoSessionAlias(): string | undefined {
   try {
     if (!getActiveSession()) return undefined;
     return new TmuxManager().nextSessionAlias("sf_team_auto");
-  } catch {
+  } catch (err) {
+    console.debug("[team]", err instanceof Error ? err.message : String(err));
     return undefined;
   }
 }

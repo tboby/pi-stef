@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import type { WorkflowCheckpointRuntime, WorkflowReporter, WorkflowToolName } from "@pi-stef/agent-workflows";
 
-import { EmptyDiffError, SfTeamToolError, IncompatibleModeError, MergeFailedError, WorkflowStateError } from "../errors";
+import { EmptyDiffError, IncompatibleModeError, MergeFailedError, WorkflowStateError } from "../errors";
 import { runOrchestrator } from "../orchestrator/run";
 import { generatePrDescription } from "../orchestrator/pr-description";
 import { createWorktree, ensureLaneWorktree } from "../worktree/create";
@@ -9,7 +9,6 @@ import { requireGitOrSkip } from "../worktree/validate";
 import { mergeBranchIntoWorktree } from "../worktree/merge";
 import { removeRolledUpWorktree, tryDeleteBranch, type BranchCleanupWarning } from "../worktree/cleanup";
 import { type ParsedMilestone, type ParsedStory, updateMilestoneApproval, updateStoryTracker } from "../plan/tracker";
-import { detectPackageManager, packageScriptsAt } from "../runtime/package-manager";
 import { DEFAULT_CONFIG, type ResolvedDefaults } from "../config/schema";
 import { effectiveTmuxManager, effectiveUi, implementationReviewMaxRounds, workflowProfile } from "../config/workflow";
 import type { TeamMember } from "../runtime/types";

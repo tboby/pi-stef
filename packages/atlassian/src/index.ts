@@ -1,7 +1,6 @@
 export * from "./auth/AtlassianAuth";
 export * from "./http/AtlassianClient";
 export * from "./http/errors";
-export * from "./http/pagination";
 export * from "./endpointVerification";
 export * from "./confluence/ConfluenceClient";
 export * from "./confluence/ConfluenceContext";

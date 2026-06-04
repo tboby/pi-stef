@@ -38,7 +38,7 @@ import {
   profileCommand,
   type ProfilesCtx,
 } from "./commands/profiles.js";
-import type { CommandCtx } from "./commands/types.js";
+import type { CommandArgs, CommandCtx } from "./commands/types.js";
 
 // ---------------------------------------------------------------------------
 // Alias map (derived from shared definitions)
@@ -177,12 +177,14 @@ export function registerCatalog(pi: ExtensionAPI): void {
     parameters: Type.Object({
       force: Type.Optional(Type.Boolean({ description: "Force sync even if no changes detected" })),
     }),
-    async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
-      // Implementation delegation wired in later milestone
-      return {
-        content: [{ type: "text" as const, text: "ct_sync: not yet implemented" }],
-        details: undefined as unknown,
-      };
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      try {
+        const args: CommandArgs = { positional: [], flags: params.force ? { force: true } : {} };
+        await syncCommand(args, ctx as unknown as SyncCtx);
+        return { content: [{ type: "text" as const, text: "Sync completed." }], details: undefined as unknown };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: `Sync failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
+      }
     },
   });
 
@@ -200,11 +202,17 @@ export function registerCatalog(pi: ExtensionAPI): void {
       source: Type.String({ description: "Package source (npm:… or git:…)" }),
       rating: Type.Optional(Type.String({ description: "Initial rating (core, useful, debatable)" })),
     }),
-    async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
-      return {
-        content: [{ type: "text" as const, text: "ct_add: not yet implemented" }],
-        details: undefined as unknown,
-      };
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      try {
+        const args: CommandArgs = {
+          positional: [params.name, params.source],
+          flags: params.rating ? { rating: params.rating } : {},
+        };
+        await addCommand(args, ctx as unknown as AddCtx);
+        return { content: [{ type: "text" as const, text: `Added ${params.name}.` }], details: undefined as unknown };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: `Add failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
+      }
     },
   });
 
@@ -219,11 +227,14 @@ export function registerCatalog(pi: ExtensionAPI): void {
     parameters: Type.Object({
       name: Type.String({ description: "Package name to remove" }),
     }),
-    async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
-      return {
-        content: [{ type: "text" as const, text: "ct_remove: not yet implemented" }],
-        details: undefined as unknown,
-      };
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      try {
+        const args: CommandArgs = { positional: [params.name], flags: {} };
+        await removeCommand(args, ctx as unknown as RemoveCtx);
+        return { content: [{ type: "text" as const, text: `Removed ${params.name}.` }], details: undefined as unknown };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: `Remove failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
+      }
     },
   });
 
@@ -239,11 +250,14 @@ export function registerCatalog(pi: ExtensionAPI): void {
     parameters: Type.Object({
       name: Type.String({ description: "Package name to toggle" }),
     }),
-    async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
-      return {
-        content: [{ type: "text" as const, text: "ct_toggle: not yet implemented" }],
-        details: undefined as unknown,
-      };
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      try {
+        const args: CommandArgs = { positional: [params.name], flags: {} };
+        await toggleCommand(args, ctx as unknown as ToggleCtx);
+        return { content: [{ type: "text" as const, text: `Toggled ${params.name}.` }], details: undefined as unknown };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: `Toggle failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
+      }
     },
   });
 
@@ -258,11 +272,14 @@ export function registerCatalog(pi: ExtensionAPI): void {
     parameters: Type.Object({
       verbose: Type.Optional(Type.Boolean({ description: "Show detailed status" })),
     }),
-    async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
-      return {
-        content: [{ type: "text" as const, text: "ct_status: not yet implemented" }],
-        details: undefined as unknown,
-      };
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      try {
+        const args: CommandArgs = { positional: [], flags: params.verbose ? { verbose: true } : {} };
+        await statusCommand(args, ctx as unknown as StatusCtx);
+        return { content: [{ type: "text" as const, text: "Status displayed." }], details: undefined as unknown };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: `Status failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
+      }
     },
   });
 }

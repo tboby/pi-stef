@@ -1,5 +1,3 @@
-import type { WebSearchProviderName } from "../types";
-
 export interface WebSearchResult {
   publishedAt?: string;
   snippet?: string;

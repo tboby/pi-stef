@@ -1,36 +1,26 @@
 import type { FigmaNode, FigmaRectangle, FigmaTypeStyle } from '../schemas';
+import { hasImageFill } from '../transform/compactNode';
 
-// =============================================================================
-// OUTPUT TYPES
-// =============================================================================
-
-/**
- * Image reference extracted from node fills
- */
+/** Image reference extracted from node fills. */
 export interface ImageRef {
   nodeId: string;
   nodeName: string;
-  imageRef?: string; // Figma image hash
+  imageRef?: string;
   scaleMode?: 'FILL' | 'FIT' | 'CROP' | 'TILE' | 'STRETCH';
   width?: number;
   height?: number;
 }
 
-/**
- * Parsed component data from Figma node
- */
+/** Parsed component data from a Figma node. */
 export interface ParsedComponent {
   name: string;
   type: string;
   nodeId: string;
   visible?: boolean;
   absoluteBoundingBox?: FigmaRectangle;
-  componentId?: string; // for INSTANCE nodes
+  componentId?: string;
   properties?: Record<string, unknown>;
-  /**
-   * Raw componentProperties from Figma (before key normalization / style merging).
-   * Useful for debugging and for consumers that need full fidelity.
-   */
+  /** Raw componentProperties before key normalization / style merging. */
   propertiesRaw?: Record<string, unknown>;
   text?: string[];
   textStyle?: FigmaTypeStyle;
@@ -41,9 +31,7 @@ export interface ParsedComponent {
   children?: ParsedComponent[];
 }
 
-/**
- * Full parsed tree with metadata
- */
+/** Full parsed tree with metadata. */
 export interface ParsedComponentTree {
   root: ParsedComponent;
   metadata: {
@@ -54,10 +42,6 @@ export interface ParsedComponentTree {
     maxDepth: number;
   };
 }
-
-// =============================================================================
-// PARSER OPTIONS
-// =============================================================================
 
 export interface ParseOptions {
   /** Include hidden (visible=false) nodes. Default: false */
@@ -77,14 +61,7 @@ const DEFAULT_OPTIONS: Required<ParseOptions> = {
   includeStyles: false,
 };
 
-// =============================================================================
-// FIGMA NODE PARSER
-// =============================================================================
-
-/**
- * Parser for extracting structured data from Figma nodes.
- * Handles component instances, text content, and image fills.
- */
+/** Parser for extracting structured data from Figma nodes. */
 export class FigmaNodeParser {
   private options: Required<ParseOptions>;
 
@@ -92,10 +69,7 @@ export class FigmaNodeParser {
     this.options = { ...DEFAULT_OPTIONS, ...options };
   }
 
-  /**
-   * Parse a single node into ParsedComponent.
-   * Does not recurse into children.
-   */
+  /** Parse a single node without recursing into children. */
   parseNode(node: FigmaNode): ParsedComponent {
     const parsed: ParsedComponent = {
       name: node.name,
@@ -105,26 +79,22 @@ export class FigmaNodeParser {
       absoluteBoundingBox: node.absoluteBoundingBox,
     };
 
-    // Component instance properties
     if (node.type === 'INSTANCE' && node.componentId) {
       parsed.componentId = node.componentId;
     }
 
-    // Extract properties for component instances
     if (this.options.includeProperties && node.componentProperties) {
       const { normalized, raw } = this.extractComponentProperties(node);
       parsed.properties = normalized;
       parsed.propertiesRaw = raw;
     }
 
-    // Extract text if TEXT node
     if (node.type === 'TEXT' && node.characters) {
       parsed.text = [node.characters];
       parsed.textStyle = node.style;
       parsed.hyperlink = node.style?.hyperlink;
     }
 
-    // Prototype/interaction metadata (best-effort; not always present in REST payloads)
     const nodeWithInteractions = node as unknown as {
       reactions?: unknown[];
       interactions?: unknown[];
@@ -136,13 +106,11 @@ export class FigmaNodeParser {
       parsed.interactions = nodeWithInteractions.interactions;
     }
 
-    // Extract images from fills
     const images = this.extractImagesFromNode(node);
     if (images.length > 0) {
       parsed.images = images;
     }
 
-    // Include styles if requested
     if (this.options.includeStyles) {
       parsed.properties = {
         ...parsed.properties,
@@ -153,62 +121,20 @@ export class FigmaNodeParser {
     return parsed;
   }
 
-  /**
-   * Extract all text content from a node tree.
-   * Returns array of text strings in tree order.
-   */
-  extractText(node: FigmaNode, depth = 0): string[] {
-    const texts: string[] = [];
-
-    // Skip hidden nodes unless configured otherwise
-    if (!this.options.includeHidden && node.visible === false) {
-      return texts;
-    }
-
-    // Check depth limit
-    if (depth > this.options.maxDepth) {
-      return texts;
-    }
-
-    // Extract text from TEXT nodes
-    if (node.type === 'TEXT' && node.characters) {
-      const trimmed = node.characters.trim();
-      if (trimmed) {
-        texts.push(trimmed);
-      }
-    }
-
-    // Recurse into children
-    if (node.children) {
-      for (const child of node.children) {
-        texts.push(...this.extractText(child, depth + 1));
-      }
-    }
-
-    return texts;
-  }
-
-  /**
-   * Extract all image references from a node tree.
-   * Returns array of ImageRef objects.
-   */
+  /** Extract all image references from a node tree. */
   extractImages(node: FigmaNode, depth = 0): ImageRef[] {
     const images: ImageRef[] = [];
 
-    // Skip hidden nodes unless configured otherwise
     if (!this.options.includeHidden && node.visible === false) {
       return images;
     }
 
-    // Check depth limit
     if (depth > this.options.maxDepth) {
       return images;
     }
 
-    // Extract images from this node
     images.push(...this.extractImagesFromNode(node));
 
-    // Recurse into children
     if (node.children) {
       for (const child of node.children) {
         images.push(...this.extractImages(child, depth + 1));
@@ -218,10 +144,7 @@ export class FigmaNodeParser {
     return images;
   }
 
-  /**
-   * Parse entire node tree recursively.
-   * Returns ParsedComponentTree with metadata.
-   */
+  /** Parse entire node tree recursively with stats. */
   parseTree(node: FigmaNode): ParsedComponentTree {
     const stats = {
       totalNodes: 0,
@@ -239,35 +162,24 @@ export class FigmaNodeParser {
     };
   }
 
-  // ===========================================================================
-  // PRIVATE METHODS
-  // ===========================================================================
-
-  /**
-   * Recursively parse node and children, collecting stats.
-   */
   private parseNodeRecursive(
     node: FigmaNode,
     depth: number,
     stats: ParsedComponentTree['metadata'],
   ): ParsedComponent {
-    // Update stats
     stats.totalNodes++;
     stats.maxDepth = Math.max(stats.maxDepth, depth);
 
     if (node.type === 'TEXT') stats.textNodes++;
     if (node.type === 'INSTANCE') stats.instanceNodes++;
-    if (this.hasImageFill(node)) stats.imageNodes++;
+    if (hasImageFill(node)) stats.imageNodes++;
 
-    // Parse current node
     const parsed = this.parseNode(node);
 
-    // Check depth limit and visibility before recursing
     if (depth < this.options.maxDepth && node.children) {
       const children: ParsedComponent[] = [];
 
       for (const child of node.children) {
-        // Skip hidden nodes
         if (!this.options.includeHidden && child.visible === false) {
           continue;
         }
@@ -283,9 +195,6 @@ export class FigmaNodeParser {
     return parsed;
   }
 
-  /**
-   * Extract images from a single node's fills.
-   */
   private extractImagesFromNode(node: FigmaNode): ImageRef[] {
     const images: ImageRef[] = [];
 
@@ -294,7 +203,6 @@ export class FigmaNodeParser {
     }
 
     for (const fill of node.fills) {
-      // Only process visible IMAGE fills with imageRef
       if (fill.type === 'IMAGE' && fill.visible !== false && fill.imageRef) {
         const imageRef: ImageRef = {
           nodeId: node.id,
@@ -306,7 +214,6 @@ export class FigmaNodeParser {
           imageRef.scaleMode = fill.scaleMode;
         }
 
-        // Get dimensions from bounding box
         if (node.absoluteBoundingBox) {
           imageRef.width = node.absoluteBoundingBox.width;
           imageRef.height = node.absoluteBoundingBox.height;
@@ -319,23 +226,6 @@ export class FigmaNodeParser {
     return images;
   }
 
-  /**
-   * Check if node has any image fills.
-   */
-  private hasImageFill(node: FigmaNode): boolean {
-    if (!node.fills || !Array.isArray(node.fills)) {
-      return false;
-    }
-
-    return node.fills.some(
-      (fill) =>
-        fill.type === 'IMAGE' && fill.visible !== false && fill.imageRef,
-    );
-  }
-
-  /**
-   * Extract component properties from INSTANCE node.
-   */
   private extractComponentProperties(node: FigmaNode): {
     normalized: Record<string, unknown>;
     raw: Record<string, unknown>;
@@ -347,7 +237,6 @@ export class FigmaNodeParser {
       return { normalized, raw };
     }
 
-    // componentProperties is Record<string, unknown> with value objects
     for (const [key, value] of Object.entries(node.componentProperties)) {
       const normalizedKey = key.split('#')[0]?.trim() || key;
       const extracted =
@@ -356,20 +245,12 @@ export class FigmaNodeParser {
           : value;
 
       raw[key] = extracted;
-
-      if (typeof value === 'object' && value !== null && 'value' in value) {
-        normalized[normalizedKey] = extracted;
-      } else {
-        normalized[normalizedKey] = extracted;
-      }
+      normalized[normalizedKey] = extracted;
     }
 
     return { normalized, raw };
   }
 
-  /**
-   * Extract style properties for inclusion in parsed output.
-   */
   private extractStyleProperties(node: FigmaNode): Record<string, unknown> {
     const styles: Record<string, unknown> = {};
 
@@ -390,7 +271,6 @@ export class FigmaNodeParser {
       if (node.paddingBottom) styles.paddingBottom = node.paddingBottom;
     }
 
-    // Text styles
     if (node.type === 'TEXT' && node.style) {
       styles.textStyle = {
         fontFamily: node.style.fontFamily,
@@ -404,13 +284,7 @@ export class FigmaNodeParser {
   }
 }
 
-// =============================================================================
-// CONVENIENCE FUNCTIONS
-// =============================================================================
-
-/**
- * Parse a Figma node tree with default options.
- */
+/** Parse a Figma node tree with default options. */
 export function parseTree(
   node: FigmaNode,
   options?: ParseOptions,
@@ -419,17 +293,7 @@ export function parseTree(
   return parser.parseTree(node);
 }
 
-/**
- * Extract all text from a Figma node tree.
- */
-export function extractText(node: FigmaNode, options?: ParseOptions): string[] {
-  const parser = new FigmaNodeParser(options);
-  return parser.extractText(node);
-}
-
-/**
- * Extract all images from a Figma node tree.
- */
+/** Extract all images from a Figma node tree. */
 export function extractImages(
   node: FigmaNode,
   options?: ParseOptions,

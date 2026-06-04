@@ -23,7 +23,7 @@ export function parseLineDelimitedJson(buffer: string): ParseResult {
     if (!trimmed.startsWith("{")) continue;
     try {
       events.push(JSON.parse(trimmed) as Record<string, unknown>);
-    } catch {
+    } catch (_err) {
       // Best-effort: pi never emits truncated JSON inside a line, so a parse
       // failure here is treated as non-protocol output and dropped.
     }

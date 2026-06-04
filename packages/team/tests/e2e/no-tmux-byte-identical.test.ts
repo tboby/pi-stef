@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { runOrchestrator } from "../../src/orchestrator/run";
 import { renderAgentCards } from "../../src/tui/agent-card";
-import type { TmuxManager } from "../../src/tmux/manager";
 
 /* M8 S-804 — when no `tmuxManager` is injected AND no `$TMUX` env is
  * present (the production no-tmux path), runOrchestrator MUST NOT
@@ -91,12 +90,6 @@ describe("S-804 no-tmux path: zero manager calls + widget snapshot unchanged", (
 
   it("orchestrator with `tmuxManager: null` (explicit disable): same — manager is never instantiated", async () => {
     const stubCalls: string[] = [];
-    const stub = {
-      ensureRightSplit() { stubCalls.push("ensureRightSplit"); },
-      openAgentPane() { stubCalls.push("openAgentPane"); },
-      closeAgentPane() { stubCalls.push("closeAgentPane"); },
-      closeAllPanes() { stubCalls.push("closeAllPanes"); },
-    } as unknown as TmuxManager;
     await runOrchestrator(
       {
         repoRoot: repo.root,

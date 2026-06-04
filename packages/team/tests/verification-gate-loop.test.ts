@@ -18,7 +18,6 @@ vi.mock("../src/tools/verification-stage", async () => {
 import {
   runVerificationGateWithFixLoop,
   VerificationGateFixUnapprovedError,
-  type ReviewerCheck,
 } from "../src/tools/verification-gate-loop";
 import {
   runConfiguredVerification,

@@ -153,7 +153,7 @@ function parsePatchJson(raw: string): PlanPatch {
   const trimmed = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
     return JSON.parse(trimmed) as PlanPatch;
-  } catch {
+  } catch (_err) {
     const start = trimmed.indexOf("{");
     const end = trimmed.lastIndexOf("}");
     if (start === -1 || end <= start) throw new PlanPatchError("planner output was not valid JSON");

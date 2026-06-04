@@ -17,7 +17,7 @@ describe("FigmaApi.parseUrl", () => {
   });
 
   it("rejects invalid URLs", () => {
-    expect(() => api.parseUrl("not a url")).toThrow("Invalid URL");
+    expect(() => api.parseUrl("not a url")).toThrow("node ID is required");
   });
 
   it("rejects non-Figma hosts", () => {
@@ -25,6 +25,6 @@ describe("FigmaApi.parseUrl", () => {
   });
 
   it("rejects Figma URLs without a node-id query parameter", () => {
-    expect(() => api.parseUrl("https://www.figma.com/design/abc/FH")).toThrow("missing node-id");
+    expect(() => api.parseUrl("https://www.figma.com/design/abc/FH")).toThrow("node ID is required");
   });
 });

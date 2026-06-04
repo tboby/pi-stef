@@ -340,7 +340,7 @@ describe("scanInstalled", () => {
     expect(result["global-only"]).toBeDefined();
   });
 
-  it("returns empty map when settings.json has malformed JSON", () => {
+  it("throws on malformed JSON in settings.json", () => {
     readFileSyncSpy.mockImplementation((p: string | Buffer) => {
       const fp = typeof p === "string" ? p : p.toString();
       if (fp.endsWith("settings.json")) {
@@ -349,8 +349,7 @@ describe("scanInstalled", () => {
       throw new Error(`unexpected read: ${fp}`);
     });
 
-    const result = scanInstalled("/fake/home");
-    expect(result).toEqual({});
+    expect(() => scanInstalled("/fake/home")).toThrow(/malformed JSON/i);
   });
 
   it("returns empty map when packages is not an array", () => {

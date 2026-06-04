@@ -23,11 +23,10 @@ describe("extension entry point", () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it("registers all three tools", () => {
+  it("registers both tools", () => {
     extension(mockApi as any);
     const names = mockApi.tools.map((t) => t.name);
     expect(names).toContain("TodoWrite");
-    expect(names).toContain("Task");
     expect(names).toContain("Skill");
   });
 
@@ -68,14 +67,16 @@ describe("extension entry point", () => {
     extension(mockApi as any);
     const handler = mockApi.eventHandlers.get("session_start")!;
     await handler();
-    expect(true).toBe(true);
+    // Verify the handler exists and was registered (no throw = success)
+    expect(mockApi.eventHandlers.has("session_start")).toBe(true);
   });
 
   it("resources_discover resets skill cache", async () => {
     extension(mockApi as any);
     const handler = mockApi.eventHandlers.get("resources_discover")!;
     await handler();
-    expect(true).toBe(true);
+    // Verify the handler exists and was registered (no throw = success)
+    expect(mockApi.eventHandlers.has("resources_discover")).toBe(true);
   });
 
   it("discoverSkills gives cwd skills priority over home skills", () => {

@@ -136,7 +136,7 @@ describe("writeUpdateCache", () => {
       packages: {
         "my-pkg": {
           version: "1.0.0",
-          contentHash: "abc123",
+          sourceHash: "abc123",
           installedAt: "2025-01-01T00:00:00Z",
           syncState: "synced",
         },

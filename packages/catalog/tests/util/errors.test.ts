@@ -30,7 +30,7 @@ describe("formatUserError", () => {
     const err = new Error("fetch failed: ECONNREFUSED");
     const result = formatUserError(err);
     expect(result).toContain("network");
-    expect(result).toContain("--offline");
+    expect(result).toContain("internet");
   });
 
   it("returns a user-friendly message for network timeout", () => {

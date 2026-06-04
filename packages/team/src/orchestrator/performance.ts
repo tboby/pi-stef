@@ -66,7 +66,8 @@ export async function writePerformanceReport(
     await writeFile(filePath, composePerformanceReport(input), "utf8");
     await writeFile(jsonPath, `${JSON.stringify(composePerformanceReportSidecar(input), null, 2)}\n`, "utf8");
     return filePath;
-  } catch {
+  } catch (err) {
+    console.debug("[team]", err instanceof Error ? err.message : String(err));
     return undefined;
   }
 }

@@ -7,8 +7,6 @@ import type {
 import type { ResolvedDefaults } from "../config/schema";
 import {
   TASK_WORKFLOW_PROFILE,
-  composeDeveloperBrief,
-  composeDevRevise,
   runTaskWorkflow,
 } from "./run-task-workflow";
 import { defaultDeps, type ToolDeps } from "./shared";

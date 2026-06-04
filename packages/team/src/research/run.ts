@@ -196,7 +196,7 @@ function previewValue(v: unknown): string {
   try {
     const s = JSON.stringify(v);
     return s.length > 200 ? `${s.slice(0, 200)}…` : s;
-  } catch {
+  } catch (_err) {
     return String(v);
   }
 }
@@ -229,7 +229,7 @@ async function persistRejection(
     lines.push("```json");
     try {
       lines.push(JSON.stringify(detail.parsed, null, 2));
-    } catch {
+    } catch (_err) {
       lines.push(String(detail.parsed));
     }
     lines.push("```");
@@ -242,7 +242,7 @@ async function persistRejection(
   try {
     await mkdir(folder, { recursive: true });
     await writeFile(file, lines.join("\n"), "utf8");
-  } catch {
+  } catch (_err) {
     // best-effort; missing diagnostics shouldn't break the run
   }
 }
@@ -286,7 +286,7 @@ function parseLooseJson(text: string): unknown {
   const slice = candidate.slice(first, last + 1);
   try {
     return JSON.parse(slice);
-  } catch {
+  } catch (_err) {
     return null;
   }
 }

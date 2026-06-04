@@ -1,5 +1,4 @@
 import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -319,7 +318,7 @@ export function defaultResolveAzureFoundryDeploymentIds(): string[] {
       out.push(id);
     }
     return out;
-  } catch {
+  } catch (_err) {
     return [];
   }
 }

@@ -1,6 +1,5 @@
 import type { ExtensionAPI, BeforeAgentStartEvent, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { registerTodoWriteTool, clearTodos } from "./tools/todo-write.js";
-import { registerTaskTool } from "./tools/task.js";
 import { registerSkillTool, resetSkillCache, readSkillContent, discoverSkills } from "./tools/skill.js";
 import { registerCommands } from "./commands.js";
 
@@ -8,7 +7,6 @@ const USING_SUPERPOWERS_SKILL = "using-superpowers";
 
 export default function (pi: ExtensionAPI): void {
   registerTodoWriteTool(pi);
-  registerTaskTool(pi);
   registerSkillTool(pi);
   registerCommands(pi);
 
@@ -41,10 +39,10 @@ export default function (pi: ExtensionAPI): void {
       }
 
       const skillContent = readSkillContent(skill.path);
-      if (!skillContent) {
+      if (!skillContent || skillContent.startsWith("[pi-superpowers-adapter]")) {
         if (ctx.hasUI && ctx.ui) {
           ctx.ui.notify(
-            `[pi-superpowers-adapter] Failed to read using-superpowers skill from ${skill.path}`,
+            skillContent ?? `[pi-superpowers-adapter] Failed to read using-superpowers skill from ${skill.path}`,
             "error",
           );
         }
