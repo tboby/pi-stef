@@ -51,8 +51,6 @@ Use `ct sync` to install all catalog packages:
 /ct sync
 ```
 
-The legacy `scripts/install-all.sh` script is deprecated.
-
 ## Individual Install
 
 ```bash
