@@ -1,6 +1,7 @@
 import { FigmaApi } from './FigmaApi';
 import { FigmaNodeParser, ParsedComponent } from './FigmaNodeParser';
 import type { FigmaNode } from '../schemas';
+import { hasImageFill } from '../transform/compactNode';
 
 export type FigmaContextFormat = 'json' | 'markdown';
 export type FigmaContextMode = 'screen' | 'overview';
@@ -290,16 +291,6 @@ async function fetchFigmaNode(
 
 function isVisibleNode(node: FigmaNode, includeHidden: boolean): boolean {
   return includeHidden || node.visible !== false;
-}
-
-function hasImageFill(node: FigmaNode): boolean {
-  return (
-    Array.isArray(node.fills) &&
-    node.fills.some(
-      (fill) =>
-        fill.type === 'IMAGE' && fill.visible !== false && Boolean(fill.imageRef),
-    )
-  );
 }
 
 function summarizeRawNode(

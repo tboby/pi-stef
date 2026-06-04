@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { ExecuteFn } from "./types";
 
 /**
  * Register a simple tool that JSON-serializes the execute result.
@@ -10,7 +10,7 @@ export function registerTool(
   name: string,
   description: string,
   parameters: unknown,
-  execute: ExecuteFn,
+  execute: (params: any, signal?: AbortSignal) => Promise<unknown>,
   options?: { promptSnippet?: string },
 ): void {
   pi.registerTool({
@@ -19,8 +19,8 @@ export function registerTool(
     description,
     promptSnippet: options?.promptSnippet,
     parameters: parameters as never,
-    async execute(_toolCallId, params, signal) {
-      const result = await execute(params as Record<string, unknown>, signal);
+    async execute(_toolCallId: string, params: any, signal: AbortSignal | undefined) {
+      const result = await execute(params, signal);
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
