@@ -802,7 +802,7 @@ export function composeDevRevise(
 export const TASK_WORKFLOW_PROFILE: RunTaskWorkflowProfile = {
   toolName: "sf_team_task",
   ownerTool: "sf_team_task",
-  resumeToolName: "sf_team_task_resume",
+  resumeToolName: "sf_team_resume",
   resolveConfigDefaults: (defaults) => {
     const t = defaults?.task;
     if (!t) return undefined;
@@ -820,7 +820,7 @@ export const TASK_WORKFLOW_PROFILE: RunTaskWorkflowProfile = {
 export const FOLLOWUP_WORKFLOW_PROFILE: RunTaskWorkflowProfile = {
   toolName: "sf_team_followup",
   ownerTool: "sf_team_followup",
-  resumeToolName: "sf_team_followup_resume",
+  resumeToolName: "sf_team_resume",
   resolveConfigDefaults: (defaults) => {
     const f = defaults?.followup;
     if (!f) return undefined;

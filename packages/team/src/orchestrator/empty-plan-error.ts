@@ -30,7 +30,7 @@ export interface EmptyPlanErrorOptions {
   toolName?: string;
   /** Slug used for the `RESUME: invoke <resumeTool> { resume: '...' }` hint. */
   slug?: string;
-  /** `_resume` tool to recommend; defaults to `sf_team_plan_resume`. */
+  /** Resume tool to recommend; defaults to `sf_team_resume`. */
   resumeTool?: string;
 }
 
@@ -41,7 +41,7 @@ export class EmptyPlanError extends SfTeamToolError {
 
   constructor(opts: EmptyPlanErrorOptions) {
     const toolName = opts.toolName ?? "sf_team_plan";
-    const resumeTool = opts.resumeTool ?? "sf_team_plan_resume";
+    const resumeTool = opts.resumeTool ?? "sf_team_resume";
     const slug = opts.slug;
     const description = `Planner output failed plan-shape validation: ${opts.reason}`;
     const resumeHint = slug
