@@ -1,17 +1,12 @@
-import { stat } from "node:fs/promises";
-import path from "node:path";
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
 
-import { SfTeamToolError, WorkflowStateError } from "../errors";
-import { createSfTeamPlan, type AgentSettingsDetails, type AgentSettingsSource, type SfTeamPlanInput, type SfTeamPlanResult, type ResearcherDecision } from "./plan";
+import { SfTeamToolError } from "../errors";
+import { createSfTeamPlan, type AgentSettingsDetails, type SfTeamPlanInput, type ResearcherDecision } from "./plan";
 import { createSfTeamImplement, type SfTeamImplementInput, type SfTeamImplementResult } from "./implement";
 import { DEFAULT_CONFIG } from "../config/schema";
 import { effectiveUi, isHeadlessWorkflow } from "../config/workflow";
-import { PLAN_FOLDER_ROOT, planFolderPathFromRoot } from "../plan/paths";
-import type { AgentRole } from "../runtime/types";
 import { getActiveSession, TmuxManager } from "../tmux/manager";
 import { requireGitOrSkip } from "../worktree/validate";
-import { readImplementPlanFolder, type PlanFolderRead } from "./implement-reader";
 import { normalOrResumeValue, resolveToolResume } from "./resume";
 import { defaultDeps, type ToolDeps } from "./shared";
 import { verificationDefaultsForAutoImplement, verificationDefaultsForPlanPhase, type SfTeamVerificationConfigInput } from "./verification-stage";
@@ -100,7 +95,7 @@ export function createSfTeamAuto(rawDeps: Partial<ToolDeps> = {}) {
     },
   ): Promise<SfTeamAutoResult> {
     const autoToolName = ctx.toolName ?? "sf_team_auto";
-    const autoResumeTool = "sf_team_auto_resume";
+    const autoResumeTool = "sf_team_resume";
     // Preflight: auto chains plan + implement; the implement phase WILL
     // create a worktree and commit in git mode. Fail fast here BEFORE
     // the planner runs so the user doesn't burn a full plan-review loop
@@ -146,21 +141,15 @@ export function createSfTeamAuto(rawDeps: Partial<ToolDeps> = {}) {
     };
     const baseDefaults = ctx.configDefaults ?? DEFAULT_CONFIG;
 
-    const resumeSlug = resume?.target.slug;
-    const resumePlanFolder = resumeSlug
-      ? await readResumeImplementPlanFolder(ctx.repoRoot, resumeSlug, resume.metadata?.currentTool, autoToolName, effectivePlanRoot)
-      : undefined;
-    const planInput: SfTeamPlanInput = resume && !resumePlanFolder
+    const planInput: SfTeamPlanInput = resume
       ? { resume: resume.target.slug, maxRounds: input.maxRounds }
       : { title, brief: input.brief, maxRounds: input.maxRounds };
-    const plan = resumePlanFolder
-      ? resumedPlanSummary(resumePlanFolder, baseDefaults, ctx.configDefaults !== undefined)
-      : await planTool(planInput, {
+    const plan = await planTool(planInput, {
         ...innerCtx,
         configDefaults: verificationDefaultsForPlanPhase(baseDefaults, { invokedByAuto: true }),
         suppressPlanVerification: true,
       });
-    const implementInput: Pick<SfTeamImplementInput, "resume" | "slug"> = resumePlanFolder
+    const implementInput: Pick<SfTeamImplementInput, "resume" | "slug"> = resume
       ? { resume: plan.slug }
       : { slug: plan.slug };
     let implement: SfTeamImplementResult;
@@ -217,110 +206,4 @@ export function createSfTeamAuto(rawDeps: Partial<ToolDeps> = {}) {
   };
 }
 
-async function readResumeImplementPlanFolder(
-  repoRoot: string,
-  slug: string,
-  currentTool: import("@pi-stef/agent-workflows").WorkflowToolName | undefined,
-  autoToolName: string,
-  planRoot?: string,
-): Promise<PlanFolderRead | undefined> {
-  const resolvedPlanRoot = planRoot ?? path.join(repoRoot, PLAN_FOLDER_ROOT); // migration-allowed: legacy
-  const folder = planFolderPathFromRoot(resolvedPlanRoot, slug);
-  try {
-    const folderStat = await stat(folder);
-    if (!folderStat.isDirectory()) {
-      throw new WorkflowStateError({
-        toolName: autoToolName,
-        description: `resume target is not a directory: ${folder}`,
-        resumeHint: `verify ${folder} exists as a plan folder, then retry`,
-        details: { slug, folder },
-      });
-    }
-  } catch (err) {
-    if (err instanceof SfTeamToolError) throw err;
-    if (errorCode(err) === "ENOENT") return undefined;
-    throw new WorkflowStateError({
-      toolName: autoToolName,
-      description: `cannot inspect resume plan folder at ${folder}: ${errorMessage(err)}`,
-      resumeHint: `confirm ${folder} is readable and retry`,
-      details: { slug, folder },
-      cause: err,
-    });
-  }
 
-  try {
-    return await readImplementPlanFolder(repoRoot, slug, planRoot);
-  } catch (err) {
-    if (errorCode(err) === "ENOENT" && currentTool === "sf_team_plan") {
-      return undefined;
-    }
-    throw new WorkflowStateError({
-      toolName: autoToolName,
-      description: `cannot read implementable plan files at ${folder}; refusing to rerun planner on resume: ${errorMessage(err)}`,
-      resumeHint: `inspect the plan folder under ${folder}, restore missing files, then retry`,
-      details: { slug, folder },
-      cause: err,
-    });
-  }
-}
-
-function resumedPlanSummary(
-  folder: PlanFolderRead,
-  config: import("../config/schema").ResolvedDefaults,
-  fromResolvedConfig: boolean,
-): SfTeamPlanResult {
-  return {
-    slug: folder.slug,
-    approved: true,
-    rounds: 0,
-    finalPlan: folder.milestonePlan,
-    folderPath: folder.folder,
-    agentSettings: agentSettingsFromConfig(config, fromResolvedConfig),
-    researcherDecision: {
-      policy: config.performance.researcher,
-      action: "skipped",
-      reason: "auto resume bypassed the plan phase because the target already has an implementable plan folder; researcher was not consulted",
-      externalRefs: 0,
-      signals: [],
-    },
-    revisionMetrics: [],
-  };
-}
-
-function errorCode(err: unknown): string | undefined {
-  return typeof err === "object" && err !== null && "code" in err
-    ? String((err as { code?: unknown }).code)
-    : undefined;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
-
-function agentSettingsFromConfig(
-  config: import("../config/schema").ResolvedDefaults,
-  fromResolvedConfig: boolean,
-): AgentSettingsDetails {
-  // Auto resume bypasses plan inputs, so every displayed setting comes from
-  // either the resolved config object or the built-in defaults.
-  const source: AgentSettingsSource = fromResolvedConfig ? "resolved-config" : "default";
-  const describe = (role: AgentRole) => {
-    const member = config.agents[role];
-    return {
-      model: member.model,
-      thinking: member.thinking,
-      heartbeatMs: member.heartbeatMs,
-      source: {
-        model: source,
-        thinking: source,
-        heartbeatMs: source,
-      },
-    };
-  };
-  return {
-    planner: describe("planner"),
-    reviewer: describe("reviewer"),
-    developer: describe("developer"),
-    researcher: describe("researcher"),
-  };
-}

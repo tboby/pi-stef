@@ -10,7 +10,8 @@ export type ActiveWorkflowToolName =
   | "sf_team_implement"
   | "sf_team_auto"
   | "sf_team_task"
-  | "sf_team_followup";
+  | "sf_team_followup"
+  | "sf_team_resume";
 
 export interface ActiveWorkflowRecord {
   workflowId: string;
@@ -90,20 +91,17 @@ export function createActiveWorkflowRegistry(repoRoot: string): ActiveWorkflowRe
 export function workflowKindFromToolName(toolName: string): SteeringWorkflowKind | undefined {
   switch (toolName) {
     case "sf_team_plan":
-    case "sf_team_plan_resume":
       return "plan";
     case "sf_team_implement":
-    case "sf_team_implement_resume":
       return "implement";
     case "sf_team_auto":
-    case "sf_team_auto_resume":
       return "auto";
     case "sf_team_task":
-    case "sf_team_task_resume":
       return "task";
     case "sf_team_followup":
-    case "sf_team_followup_resume":
       return "followup";
+    case "sf_team_resume":
+      return undefined; // determined at dispatch time from ownerTool
     default:
       return undefined;
   }

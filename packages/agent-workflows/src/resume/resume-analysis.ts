@@ -33,14 +33,13 @@ export async function analyzeResumeTarget(input: AnalyzeResumeTargetInput): Prom
     target,
     invokedTool: input.invokedTool,
   });
-  const metadata = ownership.kind === "metadata" ? ownership.metadata : undefined;
   return {
     target,
     ownership,
-    metadata,
-    legacy: ownership.kind === "legacy-five-file",
-    phase: metadata?.phase,
-    currentStepId: metadata?.currentStepId,
-    lastCompletedStepId: metadata?.lastCompletedStepId,
+    metadata: ownership.metadata,
+    legacy: false,
+    phase: ownership.metadata.phase,
+    currentStepId: ownership.metadata.currentStepId,
+    lastCompletedStepId: ownership.metadata.lastCompletedStepId,
   };
 }

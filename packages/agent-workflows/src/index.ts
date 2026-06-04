@@ -8,7 +8,6 @@ export * from "./orchestrator/reporter";
 export * from "./resume/errors";
 export * from "./resume/plan-index";
 export * from "./resume/resolve-plan-target";
-export * from "./resume/checkpoint-evidence";
 export * from "./resume/resume-analysis";
 export * from "./resume/resume-policy";
 export * from "./state/checkpoint-runtime";

@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
 
-import { planFolderPath, planFolderPathFromRoot, WORKFLOW_FOLDER_NAME, WORKFLOW_METADATA_FILE } from "../artifacts/paths"; // migration-allowed: legacy
+import { planFolderPathFromRoot, WORKFLOW_FOLDER_NAME, WORKFLOW_METADATA_FILE } from "../artifacts/paths";
 import { lookupEntries } from "./plan-index";
 import { ResumeTargetNotFoundError } from "./errors";
 
@@ -13,8 +13,7 @@ export interface ResolvePlanTargetInput {
   cwd?: string;
   /**
    * Ordered list of planRoot directories to check for `<root>/<slug>/.pi/sf/agent-workflows/workflow.json`
-   * before falling through to the global plan-index. When omitted, falls back to the legacy
-   * `<repoRoot>/ai_plan/<slug>/` behavior for back-compat.
+   * before falling through to the global plan-index.
    */
   candidatePlanRoots?: string[];
 }
@@ -86,18 +85,26 @@ export async function resolvePlanTarget(input: ResolvePlanTargetInput): Promise<
     });
   }
 
-  // Legacy back-compat: no candidatePlanRoots → old behavior
-  const folderPath = planFolderPath(input.repoRoot, slug); // migration-allowed: legacy
-  let folderStat: Awaited<ReturnType<typeof stat>>;
-  try {
-    folderStat = await stat(folderPath);
-  } catch {
-    throw new Error(`resume target not found: ${slug} (resolved to ${folderPath})`);
+  // No candidatePlanRoots: use global index only
+  const liveEntries = lookupEntries(slug);
+  if (liveEntries.length === 1) {
+    const folderPath = planFolderPathFromRoot(liveEntries[0].planRoot, slug);
+    return { slug, folderPath, target, targetKind };
   }
-  if (!folderStat.isDirectory()) {
-    throw new Error(`resume target is not a plan folder: ${slug} (resolved to ${folderPath})`);
+  if (liveEntries.length >= 2) {
+    throw new ResumeTargetNotFoundError({
+      kind: "ambiguous",
+      slug,
+      candidates: liveEntries.map((e) => e.planRoot),
+      message: `slug \`${slug}\` found at multiple planRoots; pass \`aiPlanPath\` explicitly.`,
+    });
   }
-  return { slug, folderPath, target, targetKind };
+  throw new ResumeTargetNotFoundError({
+    kind: "not-found",
+    slug,
+    candidates: [],
+    message: `resume target not found: ${slug}`,
+  });
 }
 
 async function fileExists(filePath: string): Promise<boolean> {
