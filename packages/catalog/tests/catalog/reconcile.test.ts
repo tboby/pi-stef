@@ -1,3 +1,5 @@
+import path from "node:path";
+import os from "node:os";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
   reconcile,
@@ -863,7 +865,9 @@ describe("executeActions", () => {
       orphans: [],
     };
 
-    await executeActions(plan, { lockFileWriter: mockLockWriter });
+    // Use an isolated home so the real ~/.pi lock file is not read
+    const isolatedHome = path.join(os.tmpdir(), `reconcile-test-${Date.now()}`);
+    await executeActions(plan, { home: isolatedHome, lockFileWriter: mockLockWriter });
 
     const parsed = JSON.parse(writtenLock!.content);
     expect(Object.keys(parsed.packages)).toHaveLength(2);

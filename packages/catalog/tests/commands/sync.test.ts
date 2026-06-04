@@ -498,4 +498,115 @@ describe("syncCommand", () => {
       .join(" ");
     expect(allNotifies).toContain("push failed");
   });
+
+  // -------------------------------------------------------------------------
+  // Lock file written when zero actions and no remote pull
+  // -------------------------------------------------------------------------
+
+  it("writes populated lock file when no actions needed and no remote pull", async () => {
+    mockedPull.mockRejectedValue(new Error('No gist found for profile "default"'));
+    mockedReadCachedGistId.mockReturnValue(undefined);
+
+    mockedReadCatalog.mockReturnValue(sampleCatalog());
+
+    mockedScanInstalled.mockReturnValue({
+      "my-skill": {
+        source: "npm:my-skill",
+        name: "my-skill",
+        version: "1.2.3",
+      },
+    });
+
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await syncCommand({ positional: [], flags: {} }, ctx);
+
+    expect(mockedWriteLock).toHaveBeenCalled();
+
+    const writtenLock = mockedWriteLock.mock.calls[0][0] as LockFile;
+    expect(Object.keys(writtenLock.packages)).toContain("my-skill");
+    expect(writtenLock.packages["my-skill"].syncState).toBe("synced");
+    expect(writtenLock.packages["my-skill"].version).toBe("1.2.3");
+    expect(writtenLock.packages["my-skill"].sourceHash).toBeDefined();
+    expect(writtenLock.packages["my-skill"].installedAt).toBeDefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // Lock file written from installed state when pull succeeds but no actions
+  // -------------------------------------------------------------------------
+
+  it("writes populated lock from installed state when pull succeeds but no actions needed", async () => {
+    mockedPull.mockResolvedValue({
+      catalog: sampleCatalog(),
+      lock: { packages: {} },
+    });
+
+    mockedScanInstalled.mockReturnValue({
+      "my-skill": {
+        source: "npm:my-skill",
+        name: "my-skill",
+        version: "2.0.0",
+      },
+    });
+
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await syncCommand({ positional: [], flags: {} }, ctx);
+
+    expect(mockedWriteLock).toHaveBeenCalled();
+
+    const writtenLock = mockedWriteLock.mock.calls[0][0] as LockFile;
+    expect(Object.keys(writtenLock.packages)).toContain("my-skill");
+    expect(writtenLock.packages["my-skill"].version).toBe("2.0.0");
+    expect(writtenLock.packages["my-skill"].syncState).toBe("synced");
+  });
+
+  // -------------------------------------------------------------------------
+  // Disabled packages excluded from no-action lock
+  // -------------------------------------------------------------------------
+
+  it("excludes disabled packages from the no-action lock file", async () => {
+    mockedPull.mockRejectedValue(new Error('No gist found for profile "default"'));
+    mockedReadCachedGistId.mockReturnValue(undefined);
+
+    const catWithDisabled: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "active-skill": { source: "npm:active-skill", rating: "core" },
+        "disabled-skill": { source: "npm:disabled-skill", rating: "core", enabled: false },
+      },
+    };
+    mockedReadCatalog.mockReturnValue(catWithDisabled);
+
+    mockedScanInstalled.mockReturnValue({
+      "active-skill": { source: "npm:active-skill", name: "active-skill", version: "1.0.0" },
+      "disabled-skill": { source: "npm:disabled-skill", name: "disabled-skill", version: "1.0.0" },
+    });
+
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await syncCommand({ positional: [], flags: {} }, ctx);
+
+    const writtenLock = mockedWriteLock.mock.calls[0][0] as LockFile;
+    expect(Object.keys(writtenLock.packages)).toEqual(["active-skill"]);
+    expect(writtenLock.packages).not.toHaveProperty("disabled-skill");
+  });
 });

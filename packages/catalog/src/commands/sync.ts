@@ -13,12 +13,15 @@
 
 import type { CommandArgs, CommandCtx } from "./types.js";
 import type { CatalogYaml, LockFile } from "../config/schema.js";
+import type { InstalledMap } from "../catalog/install.js";
 import { readCatalog, writeCatalog, readLock, writeLock } from "../config/io.js";
 import { pullCatalog } from "../sync/pull.js";
 import { pushCatalog } from "../sync/push.js";
 import { readCachedGistId } from "../sync/cache.js";
 import { scanInstalled } from "../catalog/install.js";
 import { reconcile, executeActions } from "../catalog/reconcile.js";
+import { extractVersionFromSource } from "../catalog/source.js";
+import { createHash } from "node:crypto";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,6 +41,47 @@ interface SyncSummary {
   pushed: boolean;
   gistUrl?: string;
   errors: string[];
+}
+
+// ---------------------------------------------------------------------------
+// buildSyncedLock
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a populated lock file from the catalog and installed state.
+ * Used when reconcile returns zero actions to ensure the lock file
+ * carries real installed versions and timestamps.
+ */
+function buildSyncedLock(
+  catalog: CatalogYaml,
+  installed: InstalledMap,
+): LockFile {
+  const now = new Date().toISOString();
+  const packages: LockFile["packages"] = {};
+
+  for (const [key, pkg] of Object.entries(catalog.packages)) {
+    if (pkg.enabled === false) continue;
+
+    const sourceHash =
+      "sha256-" +
+      createHash("sha256").update(pkg.source).digest("hex").slice(0, 16);
+
+    // Prefer installed version when available
+    const installedPkg = Object.values(installed).find(
+      (ip) => ip.source === pkg.source,
+    );
+    const version =
+      installedPkg?.version ?? extractVersionFromSource(pkg.source);
+
+    packages[key] = {
+      version: version ?? "unknown",
+      sourceHash,
+      installedAt: now,
+      syncState: "synced",
+    };
+  }
+
+  return { packages };
 }
 
 // ---------------------------------------------------------------------------
@@ -137,10 +181,14 @@ export async function syncCommand(
       ctx.ui.notify(`Action error: ${error.message}`, "warning");
       summary.errors.push(error.message);
     }
-  } else if (pulledData) {
-    // No actions needed — still write the pulled catalog to keep local in sync
-    writeCatalog(pulledData.catalog, ctx.home);
-    writeLock(pulledData.lock, ctx.home);
+  } else {
+    // No actions needed — write catalog (pulled or local) and build/populate lock
+    if (pulledData) {
+      writeCatalog(pulledData.catalog, ctx.home);
+    }
+    // Always write a populated lock so "last sync" is accurate
+    const syncedLock = buildSyncedLock(catalog, installed);
+    writeLock(syncedLock, ctx.home);
   }
 
   // --- 5. Push if changed --------------------------------------------------
