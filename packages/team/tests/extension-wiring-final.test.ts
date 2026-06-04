@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { Value } from "@sinclair/typebox/value";
 
 import sfTeamExtension from "../extensions/team";
-import { TEAM_BASE_TOOL_NAMES, TEAM_TOOL_NAMES } from "../src/register";
+import { TEAM_TOOL_NAMES } from "../src/register";
 
 class FakePi {
   tools: Array<{ name: string; description: string; parameters: unknown; execute: (...args: any[]) => Promise<any> }> = [];
@@ -16,8 +16,8 @@ class FakePi {
   sendUserMessage(_content: string): void {}
 }
 
-describe("final boundary test (post-collapse): 11-tool surface, real schemas, no legacy aliases", () => {
-  it("registers all 11 tool names in the canonical order", () => {
+describe("final boundary test (post-collapse): 7-tool surface, real schemas, no legacy aliases", () => {
+  it("registers all 7 tool names in the canonical order", () => {
     const pi = new FakePi();
     sfTeamExtension(pi as never);
     expect(pi.tools.map((t) => t.name)).toEqual([...TEAM_TOOL_NAMES]);
@@ -50,7 +50,7 @@ describe("final boundary test (post-collapse): 11-tool surface, real schemas, no
     }
   });
 
-  it("`<base>` and `<base>_resume` schemas are flat single-objects, not anyOf unions", () => {
+  it("`<base>` schemas are flat single-objects and `sf_team_resume` accepts { resume } or {} (latest)", () => {
     const pi = new FakePi();
     sfTeamExtension(pi as never);
     const startInputs: Record<string, Record<string, unknown>> = {
@@ -69,15 +69,12 @@ describe("final boundary test (post-collapse): 11-tool surface, real schemas, no
       // rejects empty object (the required key is missing)
       expect(Value.Check(t.parameters as never, {}), `${name} should reject {}`).toBe(false);
     }
-    for (const base of TEAM_BASE_TOOL_NAMES) {
-      const resumeName = `${base}_resume`;
-      const t = pi.tools.find((x) => x.name === resumeName)!;
-      expect(Value.Check(t.parameters as never, { resume: "2026-05-06-plan" }), `${resumeName} should accept { resume }`).toBe(true);
-      // rejects normal start-shaped input on a _resume tool
-      expect(Value.Check(t.parameters as never, { title: "x" }), `${resumeName} should reject normal input`).toBe(false);
-      // resume key is required
-      expect(Value.Check(t.parameters as never, {}), `${resumeName} should reject {}`).toBe(false);
-    }
+    // Unified sf_team_resume accepts { resume } and {} (latest-workflow fallback)
+    const resumeTool = pi.tools.find((x) => x.name === "sf_team_resume")!;
+    expect(Value.Check(resumeTool.parameters as never, { resume: "2026-05-06-plan" }), "sf_team_resume should accept { resume }").toBe(true);
+    expect(Value.Check(resumeTool.parameters as never, {}), "sf_team_resume should accept {} (latest workflow)").toBe(true);
+    // rejects start-only input (title has no meaning on resume)
+    expect(Value.Check(resumeTool.parameters as never, { title: "x" }), "sf_team_resume should reject start-only input").toBe(false);
   });
 
   it("invoking each `<base>` (start) tool in an isolated empty cwd fails fast or aborts (never returns the stub payload)", async () => {
@@ -113,9 +110,9 @@ describe("final boundary test (post-collapse): 11-tool surface, real schemas, no
         compact: () => undefined,
         getSystemPrompt: () => "",
       };
-      // Only test `<base>` (start) tools — `_resume` requires existing slugs
+      // Only test `<base>` (start) tools — `sf_team_resume` requires existing slugs
       // (would fail before reaching the real handler).
-      const startTools = pi.tools.filter((t) => !t.name.endsWith("_resume"));
+      const startTools = pi.tools.filter((t) => t.name !== "sf_team_resume" && t.name !== "sf_team_steer");
       for (const t of startTools) {
         const minimalParams: Record<string, unknown> = { title: "x", slug: "x", brief: "x" };
         let outcome: unknown;

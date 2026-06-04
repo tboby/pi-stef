@@ -142,7 +142,7 @@ export function createSfTeamAuto(rawDeps: Partial<ToolDeps> = {}) {
     const baseDefaults = ctx.configDefaults ?? DEFAULT_CONFIG;
 
     const planInput: SfTeamPlanInput = resume
-      ? { resume: resume.target.slug, maxRounds: input.maxRounds }
+      ? { resume: resume.target.slug, maxRounds: input.maxRounds, writeFolder: false }
       : { title, brief: input.brief, maxRounds: input.maxRounds };
     const plan = await planTool(planInput, {
         ...innerCtx,

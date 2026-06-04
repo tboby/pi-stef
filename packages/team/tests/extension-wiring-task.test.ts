@@ -12,8 +12,8 @@ class FakePi {
   sendUserMessage(_content: string): void {}
 }
 
-describe("extension wiring: sf_team_plan / sf_team_task surface as `<base>` + `<base>_resume`", () => {
-  it("registers all 10 tool names from TEAM_TOOL_NAMES", () => {
+describe("extension wiring: sf_team_plan / sf_team_task surface as `<base>` + unified `sf_team_resume`", () => {
+  it("registers all 7 tool names from TEAM_TOOL_NAMES", () => {
     const pi = new FakePi();
     sfTeamExtension(pi as never);
     expect(pi.tools.map((t) => t.name)).toEqual([...TEAM_TOOL_NAMES]);

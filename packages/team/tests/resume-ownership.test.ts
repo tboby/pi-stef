@@ -39,7 +39,7 @@ describe("resume ownership", () => {
       const spawnAgent = vi.fn();
       const tool = createSfTeamPlan({ spawnAgent: spawnAgent as never });
 
-      await expect(tool({ resume: slug } as never, { repoRoot: root })).rejects.toThrow(
+      await expect(tool({ resume: slug } as never, { repoRoot: root, planRoot: path.join(root, "ai_plan") })).rejects.toThrow(
         /owned by sf_team_task.*sf_team_plan/,
       );
       expect(spawnAgent).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe("resume ownership", () => {
       const spawnAgent = vi.fn();
       const tool = createSfTeamImplement({ spawnAgent: spawnAgent as never });
 
-      await expect(tool({ resume: slug, verifyCommand: false } as never, { repoRoot: root })).rejects.toThrow(
+      await expect(tool({ resume: slug, verifyCommand: false } as never, { repoRoot: root, planRoot: path.join(root, "ai_plan") })).rejects.toThrow(
         /owned by sf_team_auto.*sf_team_implement/,
       );
       expect(spawnAgent).not.toHaveBeenCalled();

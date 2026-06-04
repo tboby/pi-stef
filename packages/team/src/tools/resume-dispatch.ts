@@ -119,7 +119,7 @@ export function createSfTeamResume() {
     input: UnifiedResumeInput,
     ctx: ResumeHandlerContext,
   ): Promise<{ ownerTool: string; result: HandlerResult }> {
-    const planRoot = ctx.planRoot ?? path.join(ctx.repoRoot, PLAN_FOLDER_ROOT);
+    const planRoot = ctx.planRoot ?? path.join(ctx.repoRoot, PLAN_FOLDER_ROOT); // migration-allowed: legacy
 
     // Resolve target: explicit resume or latest workflow
     let slug: string;

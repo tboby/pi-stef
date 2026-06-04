@@ -58,7 +58,7 @@ describe("sf_team_followup resume parent-context", () => {
       await plantFollowupMetadata(root, "2026-05-08-followup-orphan", undefined);
       const tool = createSfTeamFollowup();
       await expect(
-        tool({ resume: "2026-05-08-followup-orphan" }, { repoRoot: root }),
+        tool({ resume: "2026-05-08-followup-orphan" }, { repoRoot: root, planRoot: path.join(root, "ai_plan") }),
       ).rejects.toThrow(/missing parentSlug/i);
     } finally {
       dispose();
@@ -81,7 +81,7 @@ describe("sf_team_followup resume parent-context", () => {
       await writeWorkflowMetadata(root, meta);
       const tool = createSfTeamFollowup();
       await expect(
-        tool({ resume: slug }, { repoRoot: root }),
+        tool({ resume: slug }, { repoRoot: root, planRoot: path.join(root, "ai_plan") }),
       // The ownership check fires in resume-target analysis (upstream of
       // followup.ts), so the error wording is "owned by X; Y cannot
       // resume it". Either upstream message is acceptable as long as it
@@ -102,7 +102,7 @@ describe("sf_team_followup resume parent-context", () => {
       mkdirSync(planFolderPath(root, "2026-05-01-missing-parent"), { recursive: true });
       const tool = createSfTeamFollowup();
       await expect(
-        tool({ resume: "2026-05-08-followup-orphan2" }, { repoRoot: root }),
+        tool({ resume: "2026-05-08-followup-orphan2" }, { repoRoot: root, planRoot: path.join(root, "ai_plan") }),
       ).rejects.toThrow(/parent milestone-plan\.md not found/i);
     } finally {
       dispose();
@@ -125,7 +125,7 @@ describe("sf_team_followup resume parent-context", () => {
       // the FIRST guard it hits is the metadata read. We assert the
       // error is NOT one of the contract checks above.
       await expect(
-        tool({ resume: absolutePath }, { repoRoot: root }),
+        tool({ resume: absolutePath }, { repoRoot: root, planRoot: path.join(root, "ai_plan") }),
       ).rejects.not.toThrow(/missing parentSlug|owned by|parent milestone-plan\.md not found/i);
     } finally {
       dispose();

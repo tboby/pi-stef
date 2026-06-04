@@ -42,7 +42,7 @@ class FakePiNoSendUserMessage {
 }
 
 describe("M1 smoke: extension entry registers the production tool surface", () => {
-  it("registers all 10 sf_team_* tools (5 base + 5 _resume)", () => {
+  it("registers all 7 sf_team_* tools (5 base + 1 unified resume + steer)", () => {
     const pi = new FakePi();
     sfTeamExtension(pi as never);
     expect(pi.tools.map((t) => t.name)).toEqual([...TEAM_TOOL_NAMES]);

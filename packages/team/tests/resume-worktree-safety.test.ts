@@ -166,6 +166,7 @@ describe("resume worktree safety", () => {
         {
           repoRoot: root,
           configDefaults: resolveDefaults({ parallel: { enabled: false } }),
+          planRoot: path.join(root, "ai_plan"),
         },
       );
 

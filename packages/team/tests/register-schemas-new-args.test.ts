@@ -1,8 +1,9 @@
 /**
- * S-519: Assert that schemas for all 5 tools accept aiPlanPath, gitMode, tddMode.
+ * S-519: Assert that schemas for all tools accept aiPlanPath, gitMode, tddMode.
  *
- * Checks that the registered tool schemas (both start and resume variants)
- * have the correct optional fields for the new no-git mode arguments.
+ * Checks that the registered tool schemas (start variants and unified
+ * sf_team_resume) have the correct optional fields for the new no-git
+ * mode arguments.
  */
 import { describe, expect, it } from "vitest";
 import { registerSfTeam, TEAM_STEER_TOOL_NAME } from "../src/register";
@@ -40,8 +41,8 @@ describe("S-519: tool schemas accept gitMode and tddMode", () => {
     expect(props).toHaveProperty("aiPlanPath");
   });
 
-  it("sf_team_plan_resume schema has gitMode and tddMode", () => {
-    const props = schemaProperties(getToolSchema(pi, "sf_team_plan_resume"));
+  it("sf_team_resume schema has gitMode, tddMode, and aiPlanPath", () => {
+    const props = schemaProperties(getToolSchema(pi, "sf_team_resume"));
     expect(props).toHaveProperty("gitMode");
     expect(props).toHaveProperty("tddMode");
     expect(props).toHaveProperty("aiPlanPath");
@@ -54,22 +55,8 @@ describe("S-519: tool schemas accept gitMode and tddMode", () => {
     expect(props).toHaveProperty("aiPlanPath");
   });
 
-  it("sf_team_task_resume schema has gitMode, tddMode, and aiPlanPath", () => {
-    const props = schemaProperties(getToolSchema(pi, "sf_team_task_resume"));
-    expect(props).toHaveProperty("gitMode");
-    expect(props).toHaveProperty("tddMode");
-    expect(props).toHaveProperty("aiPlanPath");
-  });
-
   it("sf_team_implement start schema has gitMode, tddMode, and aiPlanPath", () => {
     const props = schemaProperties(getToolSchema(pi, "sf_team_implement"));
-    expect(props).toHaveProperty("gitMode");
-    expect(props).toHaveProperty("tddMode");
-    expect(props).toHaveProperty("aiPlanPath");
-  });
-
-  it("sf_team_implement_resume schema has gitMode, tddMode, and aiPlanPath", () => {
-    const props = schemaProperties(getToolSchema(pi, "sf_team_implement_resume"));
     expect(props).toHaveProperty("gitMode");
     expect(props).toHaveProperty("tddMode");
     expect(props).toHaveProperty("aiPlanPath");
@@ -82,22 +69,8 @@ describe("S-519: tool schemas accept gitMode and tddMode", () => {
     expect(props).toHaveProperty("aiPlanPath");
   });
 
-  it("sf_team_auto_resume schema has gitMode, tddMode, and aiPlanPath", () => {
-    const props = schemaProperties(getToolSchema(pi, "sf_team_auto_resume"));
-    expect(props).toHaveProperty("gitMode");
-    expect(props).toHaveProperty("tddMode");
-    expect(props).toHaveProperty("aiPlanPath");
-  });
-
   it("sf_team_followup start schema has gitMode, tddMode, and aiPlanPath", () => {
     const props = schemaProperties(getToolSchema(pi, "sf_team_followup"));
-    expect(props).toHaveProperty("gitMode");
-    expect(props).toHaveProperty("tddMode");
-    expect(props).toHaveProperty("aiPlanPath");
-  });
-
-  it("sf_team_followup_resume schema has gitMode, tddMode, and aiPlanPath", () => {
-    const props = schemaProperties(getToolSchema(pi, "sf_team_followup_resume"));
     expect(props).toHaveProperty("gitMode");
     expect(props).toHaveProperty("tddMode");
     expect(props).toHaveProperty("aiPlanPath");

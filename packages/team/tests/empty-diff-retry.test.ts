@@ -293,9 +293,9 @@ describe("S-M36 milestone empty-diff retry policy", () => {
       // 1 initial + 2 retries = 3 attempts.
       expect(e.details.attempts).toBe(3);
       expect(e.details.slug).toBe(slug);
-      expect(e.resumeTool).toBe("sf_team_implement_resume");
+      expect(e.resumeTool).toBe("sf_team_resume");
       expect(e.message.startsWith("FAILED: sf_team_implement empty_diff:")).toBe(true);
-      expect(e.message).toContain("RESUME: invoke sf_team_implement_resume { resume: '" + slug + "' }");
+      expect(e.message).toContain("RESUME: invoke sf_team_resume { resume: '" + slug + "' }");
       expect(developerCalls.length).toBe(3);
     } finally {
       dispose();

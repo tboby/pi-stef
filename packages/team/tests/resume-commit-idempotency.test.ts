@@ -103,7 +103,7 @@ describe("resume commit idempotency", () => {
         phase: "commit",
       }));
 
-      await tool({ resume: slug, useWorktree: false, verifyCommand: false }, { repoRoot: root });
+      await tool({ resume: slug, useWorktree: false, verifyCommand: false }, { repoRoot: root, planRoot: path.join(root, "ai_plan") });
       const secondCount = git(root, ["log", "--oneline", "--grep=feat(M1): One"]).split("\n").filter(Boolean).length;
       expect(secondCount).toBe(1);
     } finally {

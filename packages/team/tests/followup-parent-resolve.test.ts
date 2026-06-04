@@ -193,8 +193,8 @@ describe("sf_team_followup ownership: takeover allowed from prior workflow tools
       const tool = createSfTeamFollowup({ spawnAgent: spawnAgent as never });
       // resume input → resume policy enforces ownerTool === "sf_team_followup"
       // and rejects because there's no prior followup_start to resume.
-      await expect(tool({ resume: slug } as never, { repoRoot: root })).rejects.toThrow(
-        /owned by sf_team_auto.*sf_team_followup cannot resume it/,
+      await expect(tool({ resume: slug } as never, { repoRoot: root, planRoot: path.join(root, "ai_plan") })).rejects.toThrow(
+        /owned by sf_team_auto.*sf_team_followup/,
       );
       expect(spawnAgent).not.toHaveBeenCalled();
     } finally {

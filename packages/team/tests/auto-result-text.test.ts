@@ -165,7 +165,7 @@ describe("sf_team_auto result text: SUCCESS / PARTIAL / NO-OP prefix", () => {
     }
   });
 
-  it("PARTIAL — run approves some but plan still has pending milestones, includes a Next: hint with the pending milestone id and a `sf_team_auto_resume` invocation example", async () => {
+  it("PARTIAL — run approves some but plan still has pending milestones, includes a Next: hint with the pending milestone id and a `sf_team_resume` invocation example", async () => {
     const root = mkdtempSync(path.join(tmpdir(), "ct-auto-text-partial-"));
     const slug = "demo-partial";
     try {
@@ -193,7 +193,7 @@ describe("sf_team_auto result text: SUCCESS / PARTIAL / NO-OP prefix", () => {
           expect(text).toContain("sf_team_auto: PARTIAL");
           expect(text).toContain("1/1 milestone(s) approved this run on branch auto/demo-partial");
           expect(text).toContain("Plan status: 1/3 milestone(s) approved; 2 pending (M2, M3).");
-          expect(text).toContain("Next: invoke sf_team_auto_resume { resume: 'demo-partial' } to continue with M2.");
+          expect(text).toContain("Next: invoke sf_team_resume { resume: 'demo-partial' } to continue with M2.");
         } finally {
           process.chdir(prevCwd);
         }
