@@ -660,7 +660,7 @@ export function createSfTeamPlan(rawDeps: Partial<ToolDeps> = {}) {
             reason: validationFailure.reason,
             toolName: ctx.toolName ?? "sf_team_plan",
             slug,
-            resumeTool: ctx.toolName?.startsWith("sf_team_auto") ? "sf_team_auto_resume" : "sf_team_plan_resume",
+            resumeTool: "sf_team_resume",
           });
         }
 

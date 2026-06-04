@@ -1947,14 +1947,8 @@ function resolveEmptyDiffRetryModel(piToolName: string, configDefaults: Resolved
   return configDefaults?.implement.empty_diff_retry_model;
 }
 
-export function resolveResumeTool(toolName: string | undefined): string {
-  if (!toolName) return "sf_team_implement_resume";
-  if (toolName.startsWith("sf_team_auto")) return "sf_team_auto_resume";
-  if (toolName.startsWith("sf_team_implement")) return "sf_team_implement_resume";
-  if (toolName.startsWith("sf_team_followup")) return "sf_team_followup_resume";
-  if (toolName.startsWith("sf_team_task")) return "sf_team_task_resume";
-  if (toolName.startsWith("sf_team_plan")) return "sf_team_plan_resume";
-  return "sf_team_implement_resume";
+export function resolveResumeTool(_toolName: string | undefined): string {
+  return "sf_team_resume";
 }
 
 function commitTitle(text: string): string {

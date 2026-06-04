@@ -221,7 +221,7 @@ export class EmptyDiffError extends SfTeamToolError {
       attempts: typeof d.attempts === "number" ? d.attempts : 1,
       slug: typeof d.slug === "string" ? d.slug : "<slug>",
       worktreePath: typeof d.worktreePath === "string" ? d.worktreePath : undefined,
-      resumeTool: overrides.resumeTool ?? this.resumeTool ?? "sf_team_implement_resume",
+      resumeTool: overrides.resumeTool ?? this.resumeTool ?? "sf_team_resume",
       cause: (this as Error & { cause?: unknown }).cause,
     });
     // Constructor only seeds canonical fields into `details`; preserve any
@@ -484,26 +484,23 @@ export type SfTeamExecuteFn<TParams, TResult> = (
 ) => Promise<TResult>;
 
 /**
- * Map a registered Pi tool name (`sf_team_auto`, `sf_team_auto_resume`,
- * etc.) to the matching `_resume` tool name. Used by `wrapExecute` to
- * compose a resume hint that names the recovery tool directly instead of
- * the generic transcript-only copy. Returns `undefined` for unrecognized
- * names so callers can fall back to the generic hint without conjuring
- * fake tool names. Both `sf_team_<base>` (start) and
- * `sf_team_<base>_resume` map to `sf_team_<base>_resume`.
+ * Map a registered Pi tool name to the unified `sf_team_resume` tool.
+ * Used by `wrapExecute` to compose a resume hint that names the recovery
+ * tool directly instead of the generic transcript-only copy. Returns
+ * `undefined` for unrecognized names so callers can fall back to the
+ * generic hint without conjuring fake tool names.
  */
 function resolveResumeToolForBoundary(toolName: string): string | undefined {
-  const KNOWN_BASES = [
+  const KNOWN_TOOLS = [
     "sf_team_plan",
     "sf_team_implement",
     "sf_team_task",
     "sf_team_auto",
     "sf_team_followup",
+    "sf_team_resume",
   ] as const;
-  for (const base of KNOWN_BASES) {
-    if (toolName === base || toolName === `${base}_resume`) {
-      return `${base}_resume`;
-    }
+  if (KNOWN_TOOLS.includes(toolName as any)) {
+    return "sf_team_resume";
   }
   return undefined;
 }

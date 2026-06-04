@@ -8,13 +8,14 @@ import { effectiveUi } from "./config/workflow";
 import { wrapExecute } from "./errors";
 import { formatFinalCostSentence, type CostSummary } from "./orchestrator/cost";
 import { parseStoryTracker, type ParsedMilestone } from "./plan/tracker";
-import { createSfTeamAuto } from "./tools/auto";
+import { createSfTeamAuto, type SfTeamAutoResult } from "./tools/auto";
 import { createSfTeamFollowup } from "./tools/followup";
 import { createSfTeamImplement, type SfTeamImplementResult } from "./tools/implement";
 import { createDefaultExternalFetcher } from "./research/default-fetcher";
-import { createSfTeamPlan } from "./tools/plan";
+import { createSfTeamPlan, type SfTeamPlanResult } from "./tools/plan";
 import { createSfTeamSteer, SfTeamSteerSchema, type SfTeamSteerParams, type SfTeamSteerResult } from "./tools/steer";
-import { createSfTeamTask } from "./tools/task";
+import { createSfTeamTask, type SfTeamTaskResult } from "./tools/task";
+import { createSfTeamResume } from "./tools/resume-dispatch";
 
 /**
  * Resolve config (~/.pi/sf/team/config.json + repo .pi/sf/team/config.json
@@ -54,21 +55,15 @@ export type TeamBaseToolName = (typeof TEAM_BASE_TOOL_NAMES)[number];
 
 export const TEAM_STEER_TOOL_NAME = "sf_team_steer" as const;
 
+export const TEAM_RESUME_TOOL_NAME = "sf_team_resume" as const;
+
 /**
- * Enumerates the FULL Pi tool surface sf-team registers (5 base + 5
- * `_resume` + standalone steer = 11 names). Order: for each base name,
- * the bare start tool first, then its `_resume` companion, followed by
- * the standalone steering ingress tool.
+ * Enumerates the FULL Pi tool surface sf-team registers (5 base +
+ * unified resume + standalone steer = 7 names).
  */
-export const TEAM_START_RESUME_TOOL_NAMES = TEAM_BASE_TOOL_NAMES.flatMap(
-  (base) => [base, `${base}_resume`] as const,
-) as readonly StartResumeToolName[];
+export const TEAM_TOOL_NAMES = [...TEAM_BASE_TOOL_NAMES, TEAM_RESUME_TOOL_NAME, TEAM_STEER_TOOL_NAME] as readonly TeamToolName[];
 
-export const TEAM_TOOL_NAMES = [...TEAM_START_RESUME_TOOL_NAMES, TEAM_STEER_TOOL_NAME] as readonly TeamToolName[];
-
-export type TeamResumeToolName = `${TeamBaseToolName}_resume`;
-export type StartResumeToolName = TeamBaseToolName | TeamResumeToolName;
-export type TeamToolName = StartResumeToolName | typeof TEAM_STEER_TOOL_NAME;
+export type TeamToolName = TeamBaseToolName | typeof TEAM_RESUME_TOOL_NAME | typeof TEAM_STEER_TOOL_NAME;
 
 export function registerSfTeam(pi: ExtensionAPI): void {
   // Maintain TEAM_BASE_TOOL_NAMES order so smoke-test enumeration is stable.
@@ -79,6 +74,7 @@ export function registerSfTeam(pi: ExtensionAPI): void {
     else if (name === "sf_team_auto") registerAutoTool(pi);
     else if (name === "sf_team_followup") registerFollowupTool(pi);
   }
+  registerResumeTool(pi);
   registerSteerTool(pi);
   registerSlashCommands(pi);
 }
@@ -122,19 +118,6 @@ async function runExec<T>(p: Promise<ToolExecuteOutcome<T>>): Promise<{ content:
   };
 }
 
-interface StartResumeRegistration<TStartParams, TResumeParams, TResult> {
-  /** Base tool name; the start tool registers under this name directly. */
-  base: TeamBaseToolName;
-  startDescription: string;
-  resumeDescription: string;
-  /** Schema body for `<base>` (a Type.Object, NOT a Type.Union). */
-  startSchema: ReturnType<typeof Type.Object>;
-  /** Schema body for `<base>_resume` (a Type.Object, NOT a Type.Union). */
-  resumeSchema: ReturnType<typeof Type.Object>;
-  executeStart: (params: TStartParams, ctx: PiToolExecuteCtx) => Promise<ToolExecuteOutcome<TResult>>;
-  executeResume: (params: TResumeParams, ctx: PiToolExecuteCtx) => Promise<ToolExecuteOutcome<TResult>>;
-}
-
 /**
  * Subset of Pi's per-call execute context that sf-team handlers consume.
  * Kept loose to avoid coupling to Pi internal types beyond what each
@@ -147,49 +130,6 @@ interface PiToolExecuteCtx {
   signal?: AbortSignal;
   hasUI?: boolean;
   ui?: ExtensionUIContext;
-}
-
-/**
- * Register `<base>` (start) and `<base>_resume` for one sf-team workflow.
- * Both carry a flat single-object schema so calling LLMs hit the right
- * shape on the first try (no top-level `anyOf` union). Each `execute`
- * body is wrapped via `wrapExecute(<piToolName>, ...)` so any
- * non-SfTeamToolError throw is normalized to
- * `SfTeamToolError({ kind: "internal", ... })` whose `Error.message`
- * carries the `FAILED:`/`RESUME:` envelope. Already-typed errors pass
- * through unchanged.
- */
-function registerStartResumeTools<TStartParams, TResumeParams, TResult>(
-  pi: ExtensionAPI,
-  reg: StartResumeRegistration<TStartParams, TResumeParams, TResult>,
-): void {
-  const startName = reg.base;
-  const resumeName = `${reg.base}_resume` as TeamResumeToolName;
-
-  const wrappedStart = wrapExecute<TStartParams, ToolExecuteOutcome<TResult>>(startName, async (_id, params, signal, _onUpdate, ctx) => {
-    return reg.executeStart(params, makeExecCtx(startName, signal, ctx));
-  });
-  const wrappedResume = wrapExecute<TResumeParams, ToolExecuteOutcome<TResult>>(resumeName, async (_id, params, signal, _onUpdate, ctx) => {
-    return reg.executeResume(params, makeExecCtx(resumeName, signal, ctx));
-  });
-
-  pi.registerTool({
-    name: startName,
-    label: startName,
-    description: withCostSummaryGuidance(reg.startDescription),
-    parameters: reg.startSchema as any,
-    execute: (id, params, signal, onUpdate, ctx) =>
-      runExec(wrappedStart(id, params as TStartParams, signal ?? undefined, onUpdate ?? undefined, ctx)),
-  });
-
-  pi.registerTool({
-    name: resumeName,
-    label: resumeName,
-    description: withCostSummaryGuidance(reg.resumeDescription),
-    parameters: reg.resumeSchema as any,
-    execute: (id, params, signal, onUpdate, ctx) =>
-      runExec(wrappedResume(id, params as TResumeParams, signal ?? undefined, onUpdate ?? undefined, ctx)),
-  });
 }
 
 /**
@@ -218,7 +158,6 @@ function registerSlashCommands(pi: ExtensionAPI): void {
   const steerHandler = createSfTeamSteer();
 
   for (const base of TEAM_BASE_TOOL_NAMES) {
-    const resumeToolName = `${base}_resume` as TeamResumeToolName;
     const startHint = startHintForBase(base);
 
     registerOne(toolToCommandName(base), `${describeStartTool(base)} Args: ${startHint}.`, (trimmed) =>
@@ -226,13 +165,13 @@ function registerSlashCommands(pi: ExtensionAPI): void {
         ? `Invoke the ${base} tool. Ask me first for the ${startHint}.`
         : `Invoke the ${base} tool with: ${trimmed}`,
     );
-
-    registerOne(toolToCommandName(resumeToolName), `${describeResumeTool(base)} Args: slug to resume.`, (trimmed) =>
-      trimmed.length === 0
-        ? `Invoke the ${resumeToolName} tool. Ask me first for the slug to resume.`
-        : `Invoke the ${resumeToolName} tool with: ${trimmed}`,
-    );
   }
+
+  registerOne("sf-team-resume", "Resume any in-progress sf-team workflow. Args: optional slug to resume.", (trimmed) =>
+    trimmed.length === 0
+      ? "Invoke the sf_team_resume tool. Ask me first for the slug to resume, or omit to resume the latest."
+      : `Invoke the sf_team_resume tool with: ${trimmed}`,
+  );
 
   pi.registerCommand(toolToCommandName(TEAM_STEER_TOOL_NAME), {
     description: "Send an instruction to an active sf-team workflow. Args: optional workflowId=<id>, planSlug=<slug>, aiPlanPath=<dir> plus instruction.",
@@ -395,19 +334,75 @@ function describeStartTool(base: TeamBaseToolName): string {
   }
 }
 
-function describeResumeTool(base: TeamBaseToolName): string {
-  switch (base) {
-    case "sf_team_plan":
-      return "Resume an in-progress plan-review loop by slug. Accepts aiPlanPath, gitMode, tddMode.";
-    case "sf_team_implement":
-      return "Resume an in-progress implementation loop by slug. Accepts aiPlanPath, gitMode, tddMode.";
-    case "sf_team_task":
-      return "Resume an in-progress single-task workflow by slug. Accepts aiPlanPath, gitMode, tddMode.";
-    case "sf_team_auto":
-      return "Resume an in-progress sf_team_auto run (plan or implement phase) by slug. Accepts aiPlanPath, gitMode, tddMode.";
-    case "sf_team_followup":
-      return "Resume an in-progress sf_team_followup run by slug. Accepts aiPlanPath, gitMode, tddMode.";
-  }
+function registerResumeTool(pi: ExtensionAPI): void {
+  const handler = createSfTeamResume();
+  const GitModeSchema = Type.Union(GIT_MODES.map((m) => Type.Literal(m)));
+  const TddModeSchema = Type.Union(TDD_MODES.map((m) => Type.Literal(m)));
+  const resumeSchema = Type.Object(
+    {
+      resume: Type.Optional(Type.String({ description: "Plan-folder slug, absolute path, or relative path. If omitted, resumes the most recently active workflow." })),
+      maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+      allowDirty: Type.Optional(Type.Boolean()),
+      verification: Type.Optional(VerificationConfigSchema),
+      aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are read from. Defaults to ./ai_plan/." })),
+      gitMode: Type.Optional(GitModeSchema),
+      tddMode: Type.Optional(TddModeSchema),
+    },
+    { additionalProperties: false },
+  );
+
+  const exec = async (p: Record<string, any>, pctx: PiToolExecuteCtx) => {
+    const ui = pctx.hasUI ? pctx.ui : undefined;
+    const repoRoot = process.cwd();
+    const configDefaults = await resolveCtxDefaults(ui);
+    const toolUi = effectiveUi(ui, configDefaults);
+    const runtime = resolveRuntime({
+      prompt: { aiPlanPath: p.aiPlanPath, gitMode: p.gitMode, tddMode: p.tddMode },
+      defaults: configDefaults,
+      repoRoot,
+    });
+    const { ownerTool, result } = await handler(
+      {
+        resume: p.resume,
+        maxRounds: p.maxRounds,
+        allowDirty: p.allowDirty,
+        verification: p.verification,
+      },
+      {
+        repoRoot,
+        signal: pctx.signal ?? undefined,
+        ui: toolUi,
+        configDefaults,
+        planRoot: runtime.planRoot,
+        gitMode: runtime.gitMode,
+        tddMode: runtime.tddMode,
+        rawGitMode: runtime.raw.gitMode,
+        rawTddMode: runtime.raw.tddMode,
+      },
+    );
+    return {
+      content: [{ type: "text", text: `sf_team_resume: resumed ${ownerTool} workflow for slug ${(result as any).slug ?? "(unknown)"}.` }],
+      details: result,
+    };
+  };
+
+  const wrapped = wrapExecute<Record<string, any>, ToolExecuteOutcome<unknown>>(
+    TEAM_RESUME_TOOL_NAME,
+    async (_id, params, signal, _onUpdate, ctx) => {
+      return exec(params, makeExecCtx(TEAM_RESUME_TOOL_NAME, signal, ctx));
+    },
+  );
+
+  pi.registerTool({
+    name: TEAM_RESUME_TOOL_NAME,
+    label: TEAM_RESUME_TOOL_NAME,
+    description: withCostSummaryGuidance(
+      "Resume any in-progress sf-team workflow by slug, path, or latest. Reads workflow.json to determine which tool owns the workflow and dispatches accordingly. Accepts aiPlanPath, gitMode, tddMode.",
+    ),
+    parameters: resumeSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrapped(id, params as Record<string, any>, signal ?? undefined, onUpdate ?? undefined, ctx)),
+  });
 }
 
 function registerSteerTool(pi: ExtensionAPI): void {
@@ -465,17 +460,6 @@ function registerPlanTool(pi: ExtensionAPI): void {
     },
     { additionalProperties: false },
   );
-  const resumeSchema = Type.Object(
-    {
-      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
-      maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
-      verification: Type.Optional(VerificationConfigSchema),
-      aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are written." })),
-      gitMode: Type.Optional(GitModeSchema),
-      tddMode: Type.Optional(TddModeSchema),
-    },
-    { additionalProperties: false },
-  );
 
   const exec = async (
     p: Record<string, any>,
@@ -516,16 +500,19 @@ function registerPlanTool(pi: ExtensionAPI): void {
     };
   };
 
-  registerStartResumeTools(pi, {
-    base: "sf_team_plan",
-    startDescription:
+  const wrapped = wrapExecute<Record<string, any>, ToolExecuteOutcome<SfTeamPlanResult>>("sf_team_plan", async (_id, params, signal, _onUpdate, ctx) => {
+    return exec(params, makeExecCtx("sf_team_plan", signal, ctx));
+  });
+
+  pi.registerTool({
+    name: "sf_team_plan",
+    label: "sf_team_plan",
+    description: withCostSummaryGuidance(
       "Draft a multi-milestone plan via planner+reviewer agents and write a 5-file plan folder. Begins a new run; required: `title`.",
-    resumeDescription:
-      "Resume an in-progress sf_team_plan run. Required: `resume` (slug, absolute path, or relative path).",
-    startSchema,
-    resumeSchema,
-    executeStart: exec,
-    executeResume: exec,
+    ),
+    parameters: startSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrapped(id, params as Record<string, any>, signal ?? undefined, onUpdate ?? undefined, ctx)),
   });
 }
 
@@ -541,18 +528,6 @@ function registerTaskTool(pi: ExtensionAPI): void {
       allowDirty: Type.Optional(Type.Boolean({ description: "Skip dirty-worktree guard." })),
       verification: Type.Optional(VerificationConfigSchema),
       aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are written. Defaults to ./ai_plan/." })),
-      gitMode: Type.Optional(GitModeSchema),
-      tddMode: Type.Optional(TddModeSchema),
-    },
-    { additionalProperties: false },
-  );
-  const resumeSchema = Type.Object(
-    {
-      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
-      maxRounds: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
-      allowDirty: Type.Optional(Type.Boolean({ description: "Skip dirty-worktree guard." })),
-      verification: Type.Optional(VerificationConfigSchema),
-      aiPlanPath: Type.Optional(Type.String({ description: "Directory where plan folders are read from and written to. Defaults to ./ai_plan/." })),
       gitMode: Type.Optional(GitModeSchema),
       tddMode: Type.Optional(TddModeSchema),
     },
@@ -592,16 +567,19 @@ function registerTaskTool(pi: ExtensionAPI): void {
     };
   };
 
-  registerStartResumeTools(pi, {
-    base: "sf_team_task",
-    startDescription:
+  const wrapped = wrapExecute<Record<string, any>, ToolExecuteOutcome<SfTeamTaskResult>>("sf_team_task", async (_id, params, signal, _onUpdate, ctx) => {
+    return exec(params, makeExecCtx("sf_team_task", signal, ctx));
+  });
+
+  pi.registerTool({
+    name: "sf_team_task",
+    label: "sf_team_task",
+    description: withCostSummaryGuidance(
       "End-to-end single-task workflow: plan-review → implement → verify → impl-review → commit. Begins a new run; required: `title`.",
-    resumeDescription:
-      "Resume an in-progress sf_team_task workflow. Required: `resume` (slug, absolute path, or relative path).",
-    startSchema,
-    resumeSchema,
-    executeStart: exec,
-    executeResume: exec,
+    ),
+    parameters: startSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrapped(id, params as Record<string, any>, signal ?? undefined, onUpdate ?? undefined, ctx)),
   });
 }
 
@@ -626,13 +604,6 @@ function registerImplementTool(pi: ExtensionAPI): void {
   const startSchema = Type.Object(
     {
       slug: Type.String({ description: "Plan-folder slug under ai_plan/." }),
-      ...sharedFields,
-    },
-    { additionalProperties: false },
-  );
-  const resumeSchema = Type.Object(
-    {
-      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
       ...sharedFields,
     },
     { additionalProperties: false },
@@ -674,16 +645,19 @@ function registerImplementTool(pi: ExtensionAPI): void {
     };
   };
 
-  registerStartResumeTools(pi, {
-    base: "sf_team_implement",
-    startDescription:
+  const wrapped = wrapExecute<Record<string, any>, ToolExecuteOutcome<SfTeamImplementResult>>("sf_team_implement", async (_id, params, signal, _onUpdate, ctx) => {
+    return exec(params, makeExecCtx("sf_team_implement", signal, ctx));
+  });
+
+  pi.registerTool({
+    name: "sf_team_implement",
+    label: "sf_team_implement",
+    description: withCostSummaryGuidance(
       "Read an approved plan folder and implement milestones via developer+reviewer agents (D1 default). Begins a new run; required: `slug`.",
-    resumeDescription:
-      "Resume an in-progress sf_team_implement run. Required: `resume` (slug, absolute path, or relative path).",
-    startSchema,
-    resumeSchema,
-    executeStart: exec,
-    executeResume: exec,
+    ),
+    parameters: startSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrapped(id, params as Record<string, any>, signal ?? undefined, onUpdate ?? undefined, ctx)),
   });
 }
 
@@ -761,7 +735,7 @@ async function formatAutoResultText(
   const parts: string[] = [`sf_team_auto: ${prefix} — ${runSummary}`];
   if (planStatus) parts.push(planStatus);
   if (prefix === "PARTIAL" && progress && progress.pendingIds.length > 0) {
-    parts.push(`Next: invoke sf_team_auto_resume { resume: '${implResult.slug}' } to continue with ${progress.pendingIds[0]}.`);
+    parts.push(`Next: invoke sf_team_resume { resume: '${implResult.slug}' } to continue with ${progress.pendingIds[0]}.`);
   }
   if (implResult.warnings && implResult.warnings.length > 0) {
     parts.push(`Branch cleanup warnings: ${implResult.warnings.length} (see details.implement.warnings).`);
@@ -812,13 +786,6 @@ function registerAutoTool(pi: ExtensionAPI): void {
     },
     { additionalProperties: false },
   );
-  const resumeSchema = Type.Object(
-    {
-      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
-      ...sharedFields,
-    },
-    { additionalProperties: false },
-  );
 
   const exec = async (p: Record<string, any>, pctx: PiToolExecuteCtx) => {
     const ui = pctx.hasUI ? pctx.ui : undefined;
@@ -849,16 +816,19 @@ function registerAutoTool(pi: ExtensionAPI): void {
     };
   };
 
-  registerStartResumeTools(pi, {
-    base: "sf_team_auto",
-    startDescription:
+  const wrapped = wrapExecute<Record<string, any>, ToolExecuteOutcome<SfTeamAutoResult>>("sf_team_auto", async (_id, params, signal, _onUpdate, ctx) => {
+    return exec(params, makeExecCtx("sf_team_auto", signal, ctx));
+  });
+
+  pi.registerTool({
+    name: "sf_team_auto",
+    label: "sf_team_auto",
+    description: withCostSummaryGuidance(
       "Chain sf_team_plan and sf_team_implement (all-milestones) with no human gates between. Begins a new run; required: `title`.",
-    resumeDescription:
-      "Resume an in-progress sf_team_auto run (plan or implement phase). Required: `resume` (slug, absolute path, or relative path).",
-    startSchema,
-    resumeSchema,
-    executeStart: exec,
-    executeResume: exec,
+    ),
+    parameters: startSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrapped(id, params as Record<string, any>, signal ?? undefined, onUpdate ?? undefined, ctx)),
   });
 }
 
@@ -879,13 +849,6 @@ function registerFollowupTool(pi: ExtensionAPI): void {
     {
       title: Type.String(),
       brief: Type.Optional(Type.String()),
-      ...sharedFields,
-    },
-    { additionalProperties: false },
-  );
-  const resumeSchema = Type.Object(
-    {
-      resume: Type.String({ description: "Plan-folder slug, absolute path, or relative path to resume." }),
       ...sharedFields,
     },
     { additionalProperties: false },
@@ -930,15 +893,18 @@ function registerFollowupTool(pi: ExtensionAPI): void {
     };
   };
 
-  registerStartResumeTools(pi, {
-    base: "sf_team_followup",
-    startDescription:
+  const wrapped = wrapExecute<Record<string, any>, ToolExecuteOutcome<SfTeamTaskResult>>("sf_team_followup", async (_id, params, signal, _onUpdate, ctx) => {
+    return exec(params, makeExecCtx("sf_team_followup", signal, ctx));
+  });
+
+  pi.registerTool({
+    name: "sf_team_followup",
+    label: "sf_team_followup",
+    description: withCostSummaryGuidance(
       "Draft and implement a follow-up to a completed plan. Creates a new plan folder under `ai_plan/<date>-followup-<slug>/` (e.g. `ai_plan/2026-05-08-followup-better-anim/`). The parent plan is referenced in the planner brief and recorded in `.pi/sf/agent-workflows/workflow.json` as `parentSlug` for resume; the parent folder is not modified. Runs in the current branch (same as `sf_team_task`); switch branches before invoking if a fresh branch is required. Required: `title`.",
-    resumeDescription:
-      "Resume an in-progress sf_team_followup run. Required: `resume` (slug, absolute path, or relative path).",
-    startSchema,
-    resumeSchema,
-    executeStart: exec,
-    executeResume: exec,
+    ),
+    parameters: startSchema as any,
+    execute: (id, params, signal, onUpdate, ctx) =>
+      runExec(wrapped(id, params as Record<string, any>, signal ?? undefined, onUpdate ?? undefined, ctx)),
   });
 }
