@@ -21,7 +21,6 @@ const CHALLENGE_PATTERNS = [
   /verify you are human/i,
   /press and hold/i,
   /enable javascript/i,
-  /enable JavaScript/i,
   /captcha/i,
 ];
 
