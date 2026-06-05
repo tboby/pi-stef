@@ -34,7 +34,8 @@ async function resolveCtxDefaults(ui: ExtensionUIContext | undefined): Promise<R
  * Each base tool name (`sf_team_plan`, `sf_team_implement`, `sf_team_task`,
  * `sf_team_auto`, `sf_team_followup`) registers TWO Pi tools:
  *   - `<base>` — flat single-mode schema for new runs
- *   - `<base>_resume` — flat single-mode schema for resuming a slug
+ *
+ * A single unified `sf_team_resume` tool handles resuming any base tool.
  *
  * The historical M1 split that also registered a permissive `<base>`
  * legacy alias throwing `LegacyAliasError` is removed; the start tool
@@ -122,7 +123,7 @@ async function runExec<T>(p: Promise<ToolExecuteOutcome<T>>): Promise<{ content:
  * Subset of Pi's per-call execute context that sf-team handlers consume.
  * Kept loose to avoid coupling to Pi internal types beyond what each
  * handler actually reads. `toolName` is the registered Pi tool name
- * (`<base>` for the start variant, `<base>_resume` for resume) so inner
+ * (`<base>` for the start variant, `sf_team_resume` for resume) so inner
  * handlers can compose typed-error messages with the right surface name.
  */
 interface PiToolExecuteCtx {
@@ -134,7 +135,7 @@ interface PiToolExecuteCtx {
 
 /**
  * Convert a tool name (underscore) to a slash-command name (hyphen).
- * e.g. `sf_team_plan` → `sf-team-plan`, `sf_team_plan_resume` → `sf-team-plan-resume`
+ * e.g. `sf_team_plan` → `sf-team-plan`, `sf_team_resume` → `sf-team-resume`
  */
 function toolToCommandName(toolName: string): string {
   return toolName.replace(/_/g, "-");
@@ -142,9 +143,11 @@ function toolToCommandName(toolName: string): string {
 
 /**
  * Register `/sf-team-*` slash commands so the team tools appear in pi's
- * `/` menu. Each base name registers TWO commands:
+ * `/` menu. Each base name registers ONE command:
  *   - `/<base>` — directs the agent to call the start tool
- *   - `/<base>-resume` — directs the agent to call the resume tool
+ *
+ * A single `/sf-team-resume` command directs the agent to call the
+ * unified `sf_team_resume` tool for resuming any workflow.
  *
  * Slash commands use hyphens (`sf-team-plan`); tool names keep underscores
  * (`sf_team_plan`). Defensive against older pi runtimes: if

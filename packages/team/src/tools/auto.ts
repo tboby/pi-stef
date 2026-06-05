@@ -77,7 +77,7 @@ export function createSfTeamAuto(rawDeps: Partial<ToolDeps> = {}) {
       ui?: ExtensionUIContext;
       configDefaults?: import("../config/schema").ResolvedDefaults;
       /**
-       * Pi tool name (`sf_team_auto` or `sf_team_auto_resume`) fronting
+       * Pi tool name (`sf_team_auto`) fronting
        * this run. Used by typed errors so the `FAILED:` envelope names
        * the auto surface, not the inner implement surface, when
        * implement-side errors propagate up.
@@ -182,7 +182,7 @@ export function createSfTeamAuto(rawDeps: Partial<ToolDeps> = {}) {
           // in the M1-collapse follow-up). Auto's outer try/catch
           // rewraps any SfTeamToolError via `withTool(...)` so the
           // user-facing FAILED:/RESUME: line names the auto surface and
-          // points at `sf_team_auto_resume`. (R3 P2: no post-throw
+          // points at `sf_team_resume`. (R3 P2: no post-throw
           // mutation of `Error.message`.)
           toolName: "sf_team_implement",
         },

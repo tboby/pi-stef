@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { findLatestWorkflow, resolveOwnerTool } from "../src/tools/resume-dispatch";
+import { findLatestWorkflow, resolveOwnerTool, createSfTeamResume } from "../src/tools/resume-dispatch";
 
 function workflowJson(overrides: Record<string, unknown>) {
   return JSON.stringify({
@@ -103,6 +103,86 @@ describe("resolveOwnerTool", () => {
 
     await expect(resolveOwnerTool(folderPath, "no-metadata")).rejects.toThrow(
       "workflow metadata not found",
+    );
+  });
+});
+
+// Mock the tool creation modules so we can verify dispatch without running real handlers
+vi.mock("../src/tools/plan", () => ({
+  createSfTeamPlan: () => vi.fn().mockResolvedValue({ slug: "plan-result", approved: true }),
+}));
+vi.mock("../src/tools/implement", () => ({
+  createSfTeamImplement: () => vi.fn().mockResolvedValue({ slug: "impl-result", branch: "main" }),
+}));
+vi.mock("../src/tools/task", () => ({
+  createSfTeamTask: () => vi.fn().mockResolvedValue({ slug: "task-result", approved: true }),
+}));
+vi.mock("../src/tools/auto", () => ({
+  createSfTeamAuto: () => vi.fn().mockResolvedValue({ slug: "auto-result", planRounds: 1 }),
+}));
+vi.mock("../src/tools/followup", () => ({
+  createSfTeamFollowup: () => vi.fn().mockResolvedValue({ slug: "followup-result", approved: true }),
+}));
+
+describe("createSfTeamResume dispatch", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "dispatch-test-"));
+  });
+
+  afterEach(async () => {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it.each([
+    ["sf_team_plan", "plan-result"],
+    ["sf_team_implement", "impl-result"],
+    ["sf_team_task", "task-result"],
+    ["sf_team_auto", "auto-result"],
+    ["sf_team_followup", "followup-result"],
+  ])("dispatches to %s handler when ownerTool is %s", async (ownerTool, expectedSlug) => {
+    const slug = `2026-06-04-test-${ownerTool}`;
+    await createWorkflow(tmpDir, slug, { ownerTool, currentTool: ownerTool });
+
+    const handler = createSfTeamResume();
+    const result = await handler(
+      { resume: slug },
+      { repoRoot: tmpDir, planRoot: tmpDir },
+    );
+
+    expect(result.ownerTool).toBe(ownerTool);
+    expect((result.result as any).slug).toBe(expectedSlug);
+  });
+
+  it("throws for unknown ownerTool", async () => {
+    const slug = "2026-06-04-unknown";
+    const wfDir = path.join(tmpDir, slug, ".pi", "sf", "agent-workflows");
+    await fs.mkdir(wfDir, { recursive: true });
+    await fs.writeFile(path.join(wfDir, "workflow.json"), JSON.stringify({
+      schemaVersion: 1,
+      slug,
+      folderPath: path.join(tmpDir, slug),
+      ownerTool: "unknown_tool",
+      currentTool: "unknown_tool",
+      createdAt: "2026-06-04T10:00:00Z",
+      updatedAt: "2026-06-04T10:00:00Z",
+      status: "running",
+      phase: "test",
+      checkpoints: {},
+      commitIntents: {},
+    }));
+
+    const handler = createSfTeamResume();
+    await expect(handler({ resume: slug }, { repoRoot: tmpDir, planRoot: tmpDir })).rejects.toThrow(
+      /unknown ownerTool/,
+    );
+  });
+
+  it("throws when no workflows exist and resume is omitted", async () => {
+    const handler = createSfTeamResume();
+    await expect(handler({}, { repoRoot: tmpDir, planRoot: tmpDir })).rejects.toThrow(
+      /no workflows found/,
     );
   });
 });

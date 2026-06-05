@@ -33,7 +33,7 @@ export interface SfTeamToolErrorOptions {
   resumeHint: string;
   details?: Record<string, unknown>;
   cause?: unknown;
-  /** Tool to invoke to resume — typically `<base>_resume`. */
+  /** Tool to invoke to resume — `sf_team_resume`. */
   resumeTool?: string;
   /**
    * Override the default `FAILED: <toolName> <kind>: <description>. RESUME:
@@ -170,7 +170,7 @@ export interface EmptyDiffErrorOptions {
   attempts: number;
   slug: string;
   worktreePath?: string;
-  /** Tool to invoke to resume — `sf_team_implement_resume` or `sf_team_auto_resume`. */
+  /** Tool to invoke to resume — `sf_team_resume`. */
   resumeTool: string;
   cause?: unknown;
 }
@@ -179,7 +179,7 @@ export interface EmptyDiffErrorOptions {
  * Thrown when the developer agent stages no changes after the bounded
  * retry loop in `implement.ts:reviewMilestoneChanges` (M3) exhausts its
  * attempts. The composed message names the milestone, the attempt count,
- * and points at the right `_resume` tool plus the configurable model
+ * and points at the `sf_team_resume` tool plus the configurable model
  * bump knob.
  */
 export class EmptyDiffError extends SfTeamToolError {
@@ -515,8 +515,8 @@ function resolveResumeToolForBoundary(toolName: string): string | undefined {
  * This is NOT a swallow — every throw becomes another throw. The wrapper's
  * sole job is to guarantee the outgoing `Error.message` is structured.
  *
- * Resume hint: when `toolName` is a recognized sf-team base or `_resume`
- * tool, the hint names the matching `_resume` tool directly (with a
+ * Resume hint: when `toolName` is a recognized sf-team tool, the hint
+ * names the unified `sf_team_resume` tool directly (with a
  * `<slug-or-path>` placeholder, since the real slug is set inside the
  * inner handler and is not available at the boundary). Unknown tool
  * names fall back to a generic transcript-only line. Calling LLMs that

@@ -141,7 +141,7 @@ export function createSfTeamImplement(rawDeps: Partial<ToolDeps> = {}) {
       tmuxSessionName?: string;
       /**
        * Pi tool name that fronts this run (`sf_team_implement`,
-       * `sf_team_implement_resume`, `sf_team_auto`, …). Used by typed
+       * `sf_team_auto`, …). Used by typed
        * errors so `Error.message` carries the right `FAILED: <toolName>`
        * surface. When called by `sf_team_auto`, this is set to the
        * implement-side surface (`sf_team_implement`); auto's outer
@@ -558,7 +558,7 @@ interface RunMilestoneCtx {
   gitMode?: "on" | "off";
   /** Pi tool name fronting this run, used by typed errors. */
   toolName: string;
-  /** Tool to suggest in `RESUME:` hints. Defaults to `sf_team_implement_resume`. */
+  /** Tool to suggest in `RESUME:` hints. Defaults to `sf_team_resume`. */
   resumeTool: string;
   /** Slug of the plan folder; included in EmptyDiffError details. */
   slug: string;
@@ -964,7 +964,7 @@ interface RunParallelScheduleCtx {
   planRoot?: string;
   /** Pi tool name fronting the run, used by typed errors (e.g. EmptyDiffError, MergeFailedError). */
   toolName: string;
-  /** `_resume` tool to suggest in `RESUME:` hints. */
+  /** `sf_team_resume` tool to suggest in `RESUME:` hints. */
   resumeTool: string;
   /** Empty-diff retry budget (M3). */
   emptyDiffRetries: number;
@@ -1914,14 +1914,9 @@ function laneBranchNamespace(aggregateBranch: string): string {
 }
 
 /**
- * Map an inbound Pi tool surface name (e.g. `sf_team_implement`) to
- * the corresponding `_resume` tool name. Used by typed-error composition
- * so `RESUME:` hints point at the right resume entry point regardless of
- * whether the run was driven by `sf_team_implement` or `sf_team_auto`.
- *
- * Falls back to `sf_team_implement_resume` when `toolName` is missing or
- * unrecognized — implementing the implement-side default keeps existing
- * call sites that did not (yet) pass `toolName` working.
+ * Resolve the resume tool name for `RESUME:` hints. Always returns the
+ * unified `sf_team_resume` tool regardless of which tool surface initiated
+ * the run (`sf_team_implement`, `sf_team_auto`, etc.).
  */
 /**
  * Resolve the empty-diff retry budget (M3 S-M31). The implement tool reads
