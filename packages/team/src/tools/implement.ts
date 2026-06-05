@@ -1914,11 +1914,6 @@ function laneBranchNamespace(aggregateBranch: string): string {
 }
 
 /**
- * Resolve the resume tool name for `RESUME:` hints. Always returns the
- * unified `sf_team_resume` tool regardless of which tool surface initiated
- * the run (`sf_team_implement`, `sf_team_auto`, etc.).
- */
-/**
  * Resolve the empty-diff retry budget (M3 S-M31). The implement tool reads
  * `implement.empty_diff_retries` and the auto tool reads
  * `auto.empty_diff_retries` so each surface can have a distinct budget.
@@ -1942,6 +1937,11 @@ function resolveEmptyDiffRetryModel(piToolName: string, configDefaults: Resolved
   return configDefaults?.implement.empty_diff_retry_model;
 }
 
+/**
+ * Resolve the resume tool name for `RESUME:` hints. Always returns the
+ * unified `sf_team_resume` tool regardless of which tool surface initiated
+ * the run (`sf_team_implement`, `sf_team_auto`, etc.).
+ */
 export function resolveResumeTool(_toolName: string | undefined): string {
   return "sf_team_resume";
 }
