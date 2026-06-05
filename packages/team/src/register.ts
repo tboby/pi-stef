@@ -40,7 +40,7 @@ async function resolveCtxDefaults(ui: ExtensionUIContext | undefined): Promise<R
  * The historical M1 split that also registered a permissive `<base>`
  * legacy alias throwing `LegacyAliasError` is removed; the start tool
  * now lives at the bare base name. This keeps the LLM-facing tool count
- * minimal (10 names total) and matches the names LLMs already remember
+ * minimal (7 names total) and matches the names LLMs already remember
  * from training data, while the strict per-tool schemas (no top-level
  * `anyOf` union) preserve the M1 win against schema-validation churn.
  */
