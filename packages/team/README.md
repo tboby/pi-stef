@@ -84,7 +84,7 @@ The agent calls `sf_team_followup`.
 "Resume the interrupted auto workflow from 2026-05-06-refactor-auth and continue from its saved checkpoints."
 "Resume the sf_team_task workflow at ./ai_plan/2026-05-06-fix-cache-race."
 ```
-The agent calls the appropriate `_resume` tool.
+The agent calls `sf_team_resume` which auto-detects the workflow type.
 
 **Steer an active workflow:**
 ```text
@@ -105,35 +105,26 @@ Slash commands inject a prompt into the agent conversation. The agent then calls
 | `/sf-team-auto` | `<title>` | `/sf-team-auto Refactor auth module` |
 | `/sf-team-followup` | `<title>` | `/sf-team-followup Add metric for cache evictions` |
 | `/sf-team-steer` | `<instruction>` | `/sf-team-steer Do not touch the public cache interface` |
-| `/sf-team-plan-resume` | `<slug>` | `/sf-team-plan-resume 2026-05-06-add-rate-limit` |
-| `/sf-team-implement-resume` | `<slug>` | `/sf-team-implement-resume 2026-05-06-add-rate-limit` |
-| `/sf-team-task-resume` | `<slug>` | `/sf-team-task-resume 2026-05-06-fix-cache-race` |
-| `/sf-team-auto-resume` | `<slug>` | `/sf-team-auto-resume 2026-05-06-refactor-auth` |
-| `/sf-team-followup-resume` | `<slug>` | `/sf-team-followup-resume 2026-05-08-followup-add-cache-metric` |
+| `/sf-team-resume` | `[slug]` | `/sf-team-resume 2026-05-06-add-rate-limit` |
 
 ## Tools
 
 All tools use the `sf_team_` prefix to avoid collisions with other Pi extensions.
 
-Each base workflow registers TWO Pi tools — `<base>` (start) and
-`<base>_resume`. `sf_team_steer` is a standalone ingress tool for
-sending instructions to a currently active workflow; it intentionally
-has no `_resume` variant. `<base>` accepts a flat single-mode schema (the new
-run's required key plus tool-specific knobs); `<base>_resume` requires
-`resume` (the slug, absolute path, or relative `ai_plan/<slug>` path)
-and accepts the same tool-specific knobs alongside it. There is no
-top-level `anyOf` union, so calling LLMs hit the right shape on the
-first try and self-correct on a precise per-key validation error
-instead of an `anyOf` cascade. See `Schemas per tool` below for the
-exact required + optional keys per variant.
+Each base workflow registers ONE Pi tool (`<base>` for new runs).
+`sf_team_resume` is a unified dispatcher that resumes any workflow by
+reading `workflow.json` to determine which tool owns it. `sf_team_steer`
+is a standalone ingress tool for sending instructions to an active
+workflow. See `Schemas per tool` below for the exact required + optional
+keys per tool.
 
 | Workflow | Start tool | Resume tool |
 | --- | --- | --- |
-| Plan only | `sf_team_plan` | `sf_team_plan_resume` |
-| Implement an approved plan | `sf_team_implement` | `sf_team_implement_resume` |
-| End-to-end single task | `sf_team_task` | `sf_team_task_resume` |
-| Plan + implement chained | `sf_team_auto` | `sf_team_auto_resume` |
-| Follow-up against a completed plan | `sf_team_followup` | `sf_team_followup_resume` |
+| Plan only | `sf_team_plan` | `sf_team_resume` |
+| Implement an approved plan | `sf_team_implement` | `sf_team_resume` |
+| End-to-end single task | `sf_team_task` | `sf_team_resume` |
+| Plan + implement chained | `sf_team_auto` | `sf_team_resume` |
+| Follow-up against a completed plan | `sf_team_followup` | `sf_team_resume` |
 | Steer an active workflow | `sf_team_steer` | none |
 
 What each workflow does:
@@ -145,7 +136,7 @@ What each workflow does:
 - **followup**: resolves the parent plan, drafts and implements a follow-up against it as a brand-new sibling plan folder under `ai_plan/<date>-followup-<slug>/`. Runs in the current branch (mirrors `sf_team_task`); the parent's plan folder and pr-description are not modified.
 - **steer**: appends a user instruction to the durable steering inbox for an active workflow, targeted by `workflowId`, `planSlug`, or the single unambiguous active workflow. Ambiguous targets return candidate workflow ids instead of guessing.
 
-Slash commands use hyphens and mirror the split: `/sf-team-plan` for new runs and `/sf-team-plan-resume` for resume (and the same shape for the other four workflows). `/sf-team-steer` posts to the standalone steer tool. If Pi is busy, workflow slash commands queue as follow-up instructions, while `/sf-team-steer` is delivered with Pi's steering delivery mode.
+Slash commands use hyphens: `/sf-team-plan` for new runs and `/sf-team-resume` for resuming any workflow. `/sf-team-steer` posts to the standalone steer tool. If Pi is busy, workflow slash commands queue as follow-up instructions, while `/sf-team-steer` is delivered with Pi's steering delivery mode.
 
 During `sf_team_plan` research Q&A, questions are required by default. Selection questions automatically include an `Other (describe)` choice that opens inline text entry and stores the typed text as the answer. Escape does not skip required selection or free-text questions; it only skips a free-text question when the researcher explicitly marked that question optional. Recorded answers are cached in `ai_plan/<slug>/research-answers.json` so resume does not re-ask already answered questions.
 
@@ -156,15 +147,11 @@ Each tool carries a flat single-mode `Type.Object({...}, { additionalProperties:
 | Tool | Required key | Optional keys |
 | --- | --- | --- |
 | `sf_team_plan` | **`title`** | `brief`, `maxRounds`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
-| `sf_team_plan_resume` | **`resume`** | `maxRounds`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
 | `sf_team_implement` | **`slug`** | `mode`, `maxRounds`, `useWorktree`, `branchPrefix`, `pauseBetweenMilestones`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
-| `sf_team_implement_resume` | **`resume`** | `mode`, `maxRounds`, `useWorktree`, `branchPrefix`, `pauseBetweenMilestones`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
 | `sf_team_task` | **`title`** | `brief`, `maxRounds`, `allowDirty`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
-| `sf_team_task_resume` | **`resume`** | `maxRounds`, `allowDirty`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
 | `sf_team_auto` | **`title`** | `brief`, `maxRounds`, `branchPrefix`, `pauseBetweenMilestones`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
-| `sf_team_auto_resume` | **`resume`** | `maxRounds`, `branchPrefix`, `pauseBetweenMilestones`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
 | `sf_team_followup` | **`title`** | `brief`, `parentPlan`, `allowDirty`, `maxRounds`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
-| `sf_team_followup_resume` | **`resume`** | `parentPlan`, `allowDirty`, `maxRounds`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
+| `sf_team_resume` | *(none)* | `resume`, `maxRounds`, `allowDirty`, `verification`, `aiPlanPath`, `gitMode`, `tddMode` |
 | `sf_team_steer` | **`instruction`** | `workflowId`, `planSlug`, `priority`, `targetHints`, `aiPlanPath` |
 
 ## Start A Workflow
@@ -176,7 +163,7 @@ pi "Use sf_team_auto to plan and implement adding per-org rate limiting. Use Cla
 pi "Use sf_team_task for a small bug fix: reproduce the cache eviction race, add a regression test, fix it, get review, and commit locally."
 ```
 
-Use exact tool calls when you already know the workflow and inputs. Each workflow has a start tool at the bare base name and a resume tool with a `_resume` suffix:
+Use exact tool calls when you already know the workflow and inputs. Each workflow has a start tool at the bare base name; resume any workflow with `sf_team_resume`:
 
 ```text
 sf_team_plan title="Add per-org rate limiting" brief="Create a reviewed milestone plan only."
@@ -256,19 +243,18 @@ pi "Resume the interrupted sf_team_auto workflow from 2026-05-06-refactor-auth a
 pi "Resume the sf_team_task workflow at ./ai_plan/2026-05-06-fix-cache-race; do not start a new task."
 ```
 
-Technical exact-resume calls use the dedicated `_resume` tool with a `resume` input. The target can be a slug, a relative `ai_plan/<slug>` path, or an absolute plan-folder path:
+Technical exact-resume calls use the unified `sf_team_resume` tool with an optional `resume` input. The target can be a slug, a relative `ai_plan/<slug>` path, or an absolute plan-folder path. When `resume` is omitted, the tool resumes the most recently active workflow:
 
 ```text
-sf_team_plan_resume resume=2026-05-06-add-rate-limit
-sf_team_implement_resume resume=./ai_plan/2026-05-06-add-rate-limit
-sf_team_task_resume resume=/path/to/repo/ai_plan/2026-05-06-fix-cache-race
-sf_team_auto_resume resume=2026-05-06-refactor-auth
-sf_team_followup_resume resume=2026-05-08-followup-add-cache-metric
+sf_team_resume resume=2026-05-06-add-rate-limit
+sf_team_resume resume=./ai_plan/2026-05-06-add-rate-limit
+sf_team_resume resume=/path/to/repo/ai_plan/2026-05-06-fix-cache-race
+sf_team_resume
 ```
 
-The historical `sf_team_<base> resume=...` form (a single tool with an `anyOf` start/resume schema) is gone. Use `<base>_resume` for resume calls. Natural-language phrasing like `pi "Resume the interrupted sf_team_auto workflow ..."` still works because the agent routes through the right tool when interpreting the request.
+`sf_team_resume` reads `workflow.json` to determine which tool owns the workflow and dispatches to the correct handler. Natural-language phrasing like `pi "Resume the interrupted sf_team_auto workflow ..."` still works because the agent routes through the right tool when interpreting the request.
 
-Exact resume normally requires `.pi/sf/agent-workflows/workflow.json` to prove the same owner tool started the folder. Older metadata-less auto folders can be recovered only when they already contain both plan checkpoints and milestone implementation checkpoints; the resumed run writes metadata for future resumes. After ownership is accepted, `sf_team_auto_resume resume=<target>` skips researcher/planner whenever it finds an existing implementable five-file plan folder and resumes the implementation phase directly.
+Resume requires `.pi/sf/agent-workflows/workflow.json` to determine ownership. The workflow folder records the tool that started the run, and `sf_team_resume` dispatches to that tool's handler.
 
 ## Architecture
 
@@ -351,37 +337,17 @@ The generated file is copied from [`packages/sf-team/config/defaults.json`](conf
 
 ### Resume targets and ownership
 
-Every `sf_team_*_resume` tool accepts a `resume` field. The target can be a plan slug (`2026-05-06-add-rate-limit`), a relative path (`./ai_plan/2026-05-06-add-rate-limit`), or an absolute path to a plan folder. The start (bare `<base>`) and `<base>_resume` variants are mutually exclusive — invoke one or the other, never both.
+`sf_team_resume` accepts an optional `resume` field. The target can be a plan slug (`2026-05-06-add-rate-limit`), a relative path (`./ai_plan/2026-05-06-add-rate-limit`), or an absolute path to a plan folder. When `resume` is omitted, the tool scans `ai_plan/` for the most recently updated workflow.
 
 ```text
-sf_team_plan_resume resume=2026-05-06-add-rate-limit
-sf_team_implement_resume resume=2026-05-06-add-rate-limit
-sf_team_task_resume resume=2026-05-06-fix-cache-race
-sf_team_auto_resume resume=2026-05-06-refactor-auth
-sf_team_followup_resume resume=2026-05-08-followup-add-cache-metric
+sf_team_resume resume=2026-05-06-add-rate-limit
+sf_team_resume resume=./ai_plan/2026-05-06-add-rate-limit
+sf_team_resume
 ```
 
-Resume is intentionally strict. The workflow folder records the tool that started the run, and exact resume is allowed only by the matching `_resume` variant of that same workflow:
+`sf_team_resume` reads `workflow.json` to determine the `ownerTool` and dispatches to the correct handler. Resume requires metadata — the workflow folder must contain `.pi/sf/agent-workflows/workflow.json`.
 
-| Started by | Resumed by |
-| --- | --- |
-| `sf_team_plan` | `sf_team_plan_resume` |
-| `sf_team_implement` | `sf_team_implement_resume` |
-| `sf_team_task` | `sf_team_task_resume` |
-| `sf_team_auto` | `sf_team_auto_resume` |
-| `sf_team_followup` | `sf_team_followup_resume` |
-
-Normal handoff is still supported: `sf_team_implement slug=<slug>` can implement a five-file plan produced by `sf_team_plan`. That is not exact resume; it is the normal plan-to-implementation workflow, and implement intentionally claims plan-owned metadata for that handoff. `sf_team_followup title=... parentPlan=<parent-slug>` still targets a parent plan to derive context from. Exact follow-up resume targets the FOLLOWUP'S OWN slug — `sf_team_followup_resume resume=<followup-slug>` (e.g. `2026-05-08-followup-better-anim`) — and the resume code re-loads the parent's milestone-plan from the followup's `.pi/sf/agent-workflows/workflow.json` `parentSlug`.
-
-Legacy policy:
-
-- If `.pi/sf/agent-workflows/workflow.json` exists, `ownerTool` must match the invoked tool's workflow base (`sf_team_plan_resume` matches an `sf_team_plan` owner record, etc.).
-- If metadata is missing, `sf_team_implement_resume resume=<slug-or-path>` may resume a legacy five-file plan folder.
-- If metadata is missing, `sf_team_auto_resume resume=<slug-or-path>` may resume only a five-file plan folder that already has both plan-phase checkpoints and milestone implementation checkpoints. This evidence is used for legacy ownership recovery; once accepted, auto resumes implementation directly instead of rerunning the plan phase. The resumed run writes `workflow.json` so later resumes use the normal owner check.
-- Other exact resume calls require metadata because they cannot reconstruct planner/task/follow-up subprocess boundaries safely.
-- A completed checkpoint is reused only when its input fingerprint still matches. The current failed or in-progress step runs again.
-
-`sf_team_auto` (and its `_resume` companion) owns the whole chained workflow even though it runs nested `sf_team_plan` and `sf_team_implement` phases. Metadata records `ownerTool: "sf_team_auto"` and updates `currentTool` as each inner phase runs. Between phases, status may briefly be `completed` before the next phase reopens the same owner record as `running`. If `sf_team_auto_resume` starts after the plan folder exists, it does not rerun researcher or planner; it calls implement with `resume` so completed checkpoints are reused and the current in-progress milestone reruns.
+`sf_team_auto` owns the whole chained workflow even though it runs nested `sf_team_plan` and `sf_team_implement` phases. Metadata records `ownerTool: "sf_team_auto"` and updates `currentTool` as each inner phase runs. Between phases, status may briefly be `completed` before the next phase reopens the same owner record as `running`. If `sf_team_resume` dispatches to `sf_team_auto` after the plan folder exists, it does not rerun researcher or planner; it calls implement with `resume` so completed checkpoints are reused and the current in-progress milestone reruns.
 
 On resume, worktree safety stays conservative. The expected worktree must be attached to the expected branch and not diverged. Explicit resume may reuse that attached worktree even when it contains interrupted edits, because those edits are the state being resumed. Fresh runs still reject dirty attached worktrees, and deleted, divergent, or ambiguous branches abort with a diagnostic instead of being cleaned up automatically.
 
@@ -651,9 +617,9 @@ FAILED: <toolName> <kind>: <description>. RESUME: <recovery instruction>.
 Any non-typed exception thrown inside an `execute()` body is normalized
 by the boundary helper `wrapExecute(<piToolName>, ...)` into
 `FAILED: <toolName> internal: <stringifiedCause>. RESUME: invoke
-<base>_resume { resume: '<slug-or-path>' } to retry from saved state, or
+sf_team_resume { resume: '<slug-or-path>' } to retry from saved state, or
 consult the sf-team transcript under ai_plan/<slug>/ for details`. The
-`<base>_resume` recommendation is only included when `<piToolName>` is a
+`sf_team_resume` recommendation is only included when `<piToolName>` is a
 recognized sf-team workflow; for unknown tool names the hint falls back
 to the transcript-only line. So calling LLMs always see a structured
 failure envelope with a clear next step — they can never
@@ -675,7 +641,7 @@ throws an `EmptyDiffError`:
 
 ```text
 FAILED: sf_team_implement empty_diff: milestone M5 produced no
-changes after 3 attempts. RESUME: invoke sf_team_implement_resume
+changes after 3 attempts. RESUME: invoke sf_team_resume
 { resume: '<slug>' } and consider setting
 `implement.empty_diff_retry_model` to a stronger model in
 ~/.pi/sf/team/config.json.
@@ -808,7 +774,7 @@ sf_team_task title="Fix race in cache eviction"
 sf_team_followup title="Add metric for cache evictions"
 
 # Resume an interrupted exact workflow by slug or plan-folder path:
-sf_team_auto_resume resume=2026-05-06-refactor-auth
+sf_team_resume resume=2026-05-06-refactor-auth
 ```
 
 ## Running without a git repository
@@ -843,7 +809,7 @@ sf_team_followup title="Add metric for cache evictions" aiPlanPath=~/work/plans 
 sf_team_steer planSlug=2026-05-01-upgrade-postgres aiPlanPath=/home/user/notes/plans instruction="Skip the vacuum step"
 ```
 
-`aiPlanPath` is resolved to an absolute path and persisted in `.pi/sf/agent-workflows/workflow.json` so `_resume` calls find the folder even when invoked from a different working directory. A global slug-to-planRoot index at `~/.pi/sf/team/plan-index.json` is updated on every plan write; slug-only resumes consult the index when the slug is not found at the default `ai_plan/` location.
+`aiPlanPath` is resolved to an absolute path and persisted in `.pi/sf/agent-workflows/workflow.json` so `sf_team_resume` calls find the folder even when invoked from a different working directory. A global slug-to-planRoot index at `~/.pi/sf/team/plan-index.json` is updated on every plan write; slug-only resumes consult the index when the slug is not found at the default `ai_plan/` location.
 
 ### TDD mode
 
@@ -979,7 +945,7 @@ When provider usage includes cost, the final tool text appends a sentence such a
 
 The registered tool descriptions also instruct the outer assistant to repeat a known cost in its final user-facing summary as `Total cost: $<amount>`; for example, `Total cost: $10.58`.
 
-Resume totals include prior completed performance reports for the same workflow owner plus the active resume invocation. Normal handoff is separate from exact resume: `sf_team_implement slug=<plan-slug>` after a standalone `sf_team_plan` does not include the plan cost, while `sf_team_auto` and `sf_team_auto_resume` treat the nested plan and implement phases as one auto-owned run and count each phase once.
+Resume totals include prior completed performance reports for the same workflow owner plus the active resume invocation. Normal handoff is separate from exact resume: `sf_team_implement slug=<plan-slug>` after a standalone `sf_team_plan` does not include the plan cost, while `sf_team_auto` and `sf_team_resume` (dispatching to auto) treat the nested plan and implement phases as one auto-owned run and count each phase once.
 
 While sf-team owns the footer, Pi's default parent-session footer is hidden unless Pi exposes parent-session usage to the extension, in which case sf-team renders it as a second line. Footer ownership is a single UI slot today: two concurrent sf-team tool invocations in the same Pi UI are last-writer-wins for the live footer, but each run still writes its own final summary and performance report.
 
