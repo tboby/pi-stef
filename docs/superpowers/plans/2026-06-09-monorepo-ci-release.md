@@ -4,9 +4,16 @@
 
 **Goal:** Add an interactive version bump script and GitHub CI publish workflow for the pi-stef monorepo, enabling per-package npm publishing.
 
-**Architecture:** A local Node.js script (`scripts/release.mjs`) handles interactive package selection, version bumping, changelog updates, test gating, git commit, tagging, and pushing. A thin GitHub Actions workflow triggers on tag push to build and publish the tagged package to npm.
+**Architecture:** A local Node.js script (`scripts/release.mjs`) handles interactive package selection, version bumping, changelog updates, test gating, git commit, tagging, and pushing. A thin GitHub Actions workflow triggers on tag push to publish the tagged package to npm.
 
 **Tech Stack:** Node.js (ESM, built-ins only), pnpm workspaces, GitHub Actions, npm
+
+**Design note — Raw TypeScript publishing:** Packages intentionally publish raw `.ts` source files with no build/compile step. The `exports` field points to `./src/index.ts` and `files` includes `src/`. This is by design — consumers of these packages (Pi extensions) load TypeScript directly. This matches the rpiv-mono pattern. The CI workflow has no build step.
+
+**Prerequisites — GitHub repository setup:**
+- Create an npm access token with publish scope for `@pi-stef`
+- Add it as a GitHub repository secret named `NPM_TOKEN` (Settings → Secrets → Actions)
+- Ensure the repository has GitHub Actions enabled
 
 ---
 
@@ -221,6 +228,11 @@ Replace the `// --- Main ---` section with:
 ```javascript
 // --- Main ---
 async function main() {
+  const dryRun = process.argv.includes("--dry-run");
+  if (dryRun) {
+    console.log("🔍 DRY RUN mode — no files will be modified, no git operations.\n");
+  }
+
   const pkgs = discoverPackages();
   if (pkgs.length === 0) {
     console.error("No packages found.");
@@ -236,7 +248,78 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`\nSelected: ${selected.map((p) => p.dirName).join(", ")}`);
+  // Pre-flight checks
+  if (!dryRun) {
+    assertCleanWorkingDir();
+    assertInSyncWithRemote();
+    runTests();
+  }
+
+  // Select bump type
+  const isAll = selected.length > 1;
+  const bumpLabel = isAll ? "all packages" : selected[0].dirName;
+  const bumpType = await selectBumpType(rl, bumpLabel);
+
+  // Calculate new versions
+  const releases = selected.map((pkg) => ({
+    ...pkg,
+    newVersion: bumpVersion(pkg.version, bumpType),
+  }));
+
+  // Show preview
+  console.log("\nPlanned releases:");
+  for (const r of releases) {
+    console.log(`  ${r.dirName}: ${r.version} → ${r.newVersion}`);
+  }
+
+  // Check tags don't exist
+  if (!dryRun) {
+    for (const r of releases) {
+      const tag = `${r.name}@${r.newVersion}`;
+      assertTagDoesNotExist(tag);
+    }
+  }
+
+  const confirm = await ask(rl, "\nProceed? (y/n): ");
+  if (confirm !== "y") {
+    console.log("Aborted.");
+    rl.close();
+    process.exit(0);
+  }
+
+  if (dryRun) {
+    console.log("\n✅ Dry run complete. No changes made.");
+    rl.close();
+    return;
+  }
+
+  // Execute release with rollback on failure
+  const createdTags = [];
+  try {
+    // Update package.json files
+    for (const r of releases) {
+      updatePackageVersion(r.pkgPath, r.newVersion, pkgs);
+      console.log(`  Updated ${r.dirName}/package.json`);
+    }
+
+    // Update changelogs
+    for (const r of releases) {
+      updateChangelog(r.dirName, r.newVersion);
+      console.log(`  Updated ${r.dirName}/CHANGELOG.md`);
+    }
+
+    // Git commit, tag, push
+    gitRelease(releases, isAll);
+
+    console.log("\n🎉 Release complete!");
+    console.log("CI will now publish to npm when tags are processed.");
+  } catch (err) {
+    rollback(releases, createdTags);
+    console.error(`\n❌ Release failed: ${err.message}`);
+    console.error("All changes have been rolled back.");
+    process.exit(1);
+  }
+
   rl.close();
 }
 
@@ -412,13 +495,39 @@ Then fix `updatePackageVersion` to use it directly:
 
 ```javascript
 /**
- * Update a package's version in package.json and remove the private flag.
+ * Convert file: protocol dependencies to published version ranges.
+ * e.g. "@pi-stef/paths": "file:../paths" → "@pi-stef/paths": "^0.2.0"
+ * Only converts dependencies that reference other monorepo packages.
  */
-function updatePackageVersion(pkgPath, newVersion) {
+function convertFileDependencies(pkg, allPackages) {
+  const depFields = ["dependencies", "devDependencies"];
+  const nameMap = new Map(allPackages.map((p) => [p.name, p]));
+
+  for (const field of depFields) {
+    if (!pkg[field]) continue;
+    for (const [depName, depValue] of Object.entries(pkg[field])) {
+      if (typeof depValue === "string" && depValue.startsWith("file:")) {
+        const resolved = nameMap.get(depName);
+        if (resolved) {
+          pkg[field][depName] = `^${resolved.version}`;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Update a package's version in package.json, remove the private flag,
+ * and convert file: dependencies to published version ranges.
+ */
+function updatePackageVersion(pkgPath, newVersion, allPackages) {
   const raw = readFileSync(pkgPath, "utf-8");
   const pkg = JSON.parse(raw);
 
   pkg.version = newVersion;
+
+  // Convert file: dependencies to version ranges for npm publishing
+  convertFileDependencies(pkg, allPackages);
 
   // Remove private flag to allow npm publishing
   if (pkg.private) {
@@ -429,6 +538,8 @@ function updatePackageVersion(pkgPath, newVersion) {
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8");
 }
 ```
+
+**Note:** The `allPackages` parameter is the full list from `discoverPackages()`, used to resolve `file:` references to their current version numbers.
 
 - [ ] **Step 2: Wire bump into the main flow**
 
@@ -460,7 +571,7 @@ In the `main()` function, after the `selectPackage` block and before `rl.close()
 
   // Update package.json files
   for (const r of releases) {
-    updatePackageVersion(r.pkgPath, r.newVersion);
+    updatePackageVersion(r.pkgPath, r.newVersion, pkgs);
     console.log(`  Updated ${r.dirName}/package.json`);
   }
 ```
@@ -699,6 +810,54 @@ function assertTagDoesNotExist(tag) {
     // Tag doesn't exist — good
   }
 }
+
+/**
+ * Check that local branch is in sync with remote.
+ */
+function assertInSyncWithRemote() {
+  const branch = run("git rev-parse --abbrev-ref HEAD");
+  try {
+    run(`git fetch origin ${branch}`, { silent: true });
+    const local = run(`git rev-parse ${branch}`);
+    const remote = run(`git rev-parse origin/${branch}`);
+    if (local !== remote) {
+      console.error(
+        `\n❌ Local ${branch} is not in sync with origin/${branch}. Pull first.`
+      );
+      process.exit(1);
+    }
+  } catch {
+    // Remote branch may not exist yet — that's OK
+  }
+}
+
+/**
+ * Rollback changes if the release fails mid-way.
+ * Resets modified files and deletes any tags created in this session.
+ */
+function rollback(releases, createdTags) {
+  console.error("\n⚠️  Rolling back changes...");
+  // Reset modified package.json and CHANGELOG.md files
+  const files = releases
+    .map(
+      (r) =>
+        `packages/${r.dirName}/package.json packages/${r.dirName}/CHANGELOG.md`
+    )
+    .join(" ");
+  try {
+    run(`git checkout -- ${files}`, { silent: true });
+  } catch {
+    // Files may not have been modified yet
+  }
+  // Delete any tags created in this session
+  for (const tag of createdTags) {
+    try {
+      run(`git tag -d "${tag}"`, { silent: true });
+    } catch {
+      // Tag may not have been created yet
+    }
+  }
+}
 ```
 
 - [ ] **Step 2: Wire pre-flight checks into the main flow**
@@ -707,19 +866,26 @@ In `main()`, add these checks **before** the bump type selection (after `selectP
 
 ```javascript
   // Pre-flight checks
-  assertCleanWorkingDir();
-  runTests();
+  if (!dryRun) {
+    assertCleanWorkingDir();
+    assertInSyncWithRemote();
+    runTests();
+  }
 ```
 
 Also, after showing the preview and before `Proceed? (y/n)`, add tag existence checks:
 
 ```javascript
   // Check tags don't exist
-  for (const r of releases) {
-    const tag = `${r.name}@${r.newVersion}`;
-    assertTagDoesNotExist(tag);
+  if (!dryRun) {
+    for (const r of releases) {
+      const tag = `${r.name}@${r.newVersion}`;
+      assertTagDoesNotExist(tag);
+    }
   }
 ```
+
+**Note:** All pre-flight checks are skipped in `--dry-run` mode.
 
 - [ ] **Step 3: Test dirty working directory check**
 
@@ -754,6 +920,8 @@ Add these functions after `assertTagDoesNotExist`:
 ```javascript
 /**
  * Stage files, commit, create tags, and push.
+ * Pushes only the specific release tags (not all local tags).
+ * Detects current branch name instead of hardcoding "main".
  */
 function gitRelease(releases, isAll) {
   // Stage all changed package.json and CHANGELOG.md files
@@ -776,16 +944,21 @@ function gitRelease(releases, isAll) {
   console.log(`\n✅ Committed: ${commitMsg}`);
 
   // Create tags
+  const tags = [];
   for (const r of releases) {
     const tag = `${r.name}@${r.newVersion}`;
     run(`git tag "${tag}"`);
+    tags.push(tag);
     console.log(`  Tagged: ${tag}`);
   }
 
-  // Push
-  console.log("\n⏳ Pushing to origin...");
-  run("git push origin main");
-  run("git push origin --tags");
+  // Push — detect current branch, push only release tags
+  const branch = run("git rev-parse --abbrev-ref HEAD");
+  console.log(`\n⏳ Pushing to origin/${branch}...`);
+  run(`git push origin ${branch}`);
+  for (const tag of tags) {
+    run(`git push origin "${tag}"`);
+  }
   console.log("✅ Pushed commits and tags.");
 }
 ```
@@ -911,8 +1084,10 @@ jobs:
           # Extract changelog section for this version
           CHANGELOG_FILE="packages/${PKG_DIR}/CHANGELOG.md"
           if [ -f "$CHANGELOG_FILE" ]; then
+            # Escape dots in version for safe regex matching
+            ESCAPED_VERSION="${VERSION//./\\.}"
             # Extract text between ## [VERSION] and the next ## heading
-            BODY=$(sed -n "/^## \[${VERSION}\]/,/^## \[/p" "$CHANGELOG_FILE" | sed '$d')
+            BODY=$(sed -n "/^## \[${ESCAPED_VERSION}\]/,/^## \[/p" "$CHANGELOG_FILE" | sed '$d')
           else
             BODY="Release ${VERSION}"
           fi
@@ -990,25 +1165,25 @@ Run: `pnpm typecheck`
 
 Expected: No errors.
 
-- [ ] **Step 3: Verify the complete flow (dry run without push)**
+- [ ] **Step 3: Verify the complete flow with --dry-run**
 
-To test the full flow without actually pushing, you can temporarily modify the script to skip the push step, or test on a branch:
-
-```bash
-git checkout -b test-release-flow
-echo -e "1\npatch\ny" | node scripts/release.mjs
-```
-
-This will attempt the full flow. On a branch, the push will go to the branch instead of main. Verify:
-- package.json was updated
-- CHANGELOG.md was updated
-- Commit was created
-- Tag was created
-
-Then clean up:
+Run the script in dry-run mode to verify the interactive flow without modifying anything:
 
 ```bash
-git checkout main
-git branch -D test-release-flow
-git tag -d "@pi-stef/agent-workflows@0.2.1" 2>/dev/null || true
+echo -e "1\npatch\ny" | node scripts/release.mjs --dry-run
 ```
+
+Expected:
+- Shows package menu, selects first package
+- Shows bump type menu, selects patch
+- Shows preview: `agent-workflows: 0.2.0 → 0.2.1`
+- Prints `✅ Dry run complete. No changes made.`
+- No files modified, no git operations
+
+Also test "all" mode:
+
+```bash
+echo -e "all\nminor\ny" | node scripts/release.mjs --dry-run
+```
+
+Expected: Shows all packages bumping from 0.2.0 → 0.3.0, dry run completes.
