@@ -240,6 +240,7 @@ Replace the body of `main()` (after `discoverPackages`) with:
 
   console.log(`\nSelected: ${selected.map((p) => p.dirName).join(", ")}`);
 
+  // [TASK-8-DRYRUN] Dry-run flag and early return (Task 8)
   // [TASK-7-PREFLIGHT] Pre-flight checks (Task 7)
   // [TASK-4-BUMP] Bump type selection and preview (Task 4)
   // [TASK-5-UPDATE] Version update (Task 5)
@@ -411,9 +412,11 @@ Replace `// [TASK-5-UPDATE] Version update (Task 5)` with:
 
 ```javascript
   // Update package.json files (version + deps + private flag)
-  updateAllPackageVersions(releases);
-  for (const r of releases) {
-    console.log(`  Updated ${r.dirName}/package.json`);
+  if (!dryRun) {
+    updateAllPackageVersions(releases);
+    for (const r of releases) {
+      console.log(`  Updated ${r.dirName}/package.json`);
+    }
   }
 ```
 
@@ -498,9 +501,11 @@ Replace `// [TASK-6-CHANGELOG] Changelog update (Task 6)` with:
 
 ```javascript
   // Update changelogs
-  for (const r of releases) {
-    updateChangelog(r.dirName, r.newVersion);
-    console.log(`  Updated ${r.dirName}/CHANGELOG.md`);
+  if (!dryRun) {
+    for (const r of releases) {
+      updateChangelog(r.dirName, r.newVersion);
+      console.log(`  Updated ${r.dirName}/CHANGELOG.md`);
+    }
   }
 ```
 
@@ -590,14 +595,24 @@ function assertInSyncWithRemote() {
 
 /**
  * Rollback changes if the release fails mid-way.
- * Resets modified files and deletes any tags created in this session.
+ * If a commit was made, resets it with --soft HEAD~1.
+ * Restores files from HEAD (not index) and deletes any tags created in this session.
  */
 function rollback(releases, createdTags) {
   console.error("\n⚠️  Rolling back changes...");
+
+  // If tags were created, a commit was made — undo it
+  if (createdTags.length > 0) {
+    try { run("git reset --soft HEAD~1", { silent: true }); } catch {}
+  }
+
+  // Restore files from HEAD
   const files = releases
     .map((r) => `packages/${r.dirName}/package.json packages/${r.dirName}/CHANGELOG.md`)
     .join(" ");
-  try { run(`git checkout -- ${files}`, { silent: true }); } catch {}
+  try { run(`git checkout HEAD -- ${files}`, { silent: true }); } catch {}
+
+  // Delete any tags created in this session
   for (const tag of createdTags) {
     try { run(`git tag -d "${tag}"`, { silent: true }); } catch {}
   }
@@ -609,10 +624,12 @@ function rollback(releases, createdTags) {
 Replace `// [TASK-7-PREFLIGHT] Pre-flight checks (Task 7)` with:
 
 ```javascript
-  // Pre-flight checks
-  assertCleanWorkingDir();
-  assertInSyncWithRemote();
-  runTests();
+  // Pre-flight checks (skip in dry-run)
+  if (!dryRun) {
+    assertCleanWorkingDir();
+    assertInSyncWithRemote();
+    runTests();
+  }
 ```
 
 - [ ] **Step 3: Test dirty check**
@@ -683,9 +700,9 @@ function gitRelease(releases, isAll) {
 }
 ```
 
-- [ ] **Step 2: Add --dry-run flag to main()**
+- [ ] **Step 2: Wire dry-run flag into main()**
 
-At the top of `main()`, after `const pkgs = discoverPackages();`, add:
+Replace `// [TASK-8-DRYRUN] Dry-run flag and early return (Task 8)` with:
 
 ```javascript
   const dryRun = process.argv.includes("--dry-run");
@@ -694,29 +711,19 @@ At the top of `main()`, after `const pkgs = discoverPackages();`, add:
   }
 ```
 
-Wrap the pre-flight checks in `if (!dryRun)`:
-
-```javascript
-  // Pre-flight checks
-  if (!dryRun) {
-    assertCleanWorkingDir();
-    assertInSyncWithRemote();
-    runTests();
-  }
-```
-
 - [ ] **Step 3: Wire git operations and rollback into main()**
 
 Replace `// [TASK-8-GIT] Git operations (Task 8)` with:
 
 ```javascript
-  // Git commit, tag, push (skip in dry-run)
+  // Dry-run: skip mutations and exit
   if (dryRun) {
     console.log("\n✅ Dry run complete. No changes made.");
     rl.close();
     return;
   }
 
+  // Git commit, tag, push (only reached when NOT dry-run)
   let createdTags = [];
   try {
     createdTags = gitRelease(releases, isAll);
@@ -729,6 +736,8 @@ Replace `// [TASK-8-GIT] Git operations (Task 8)` with:
     process.exit(1);
   }
 ```
+
+**Note:** Tasks 5 and 6 (version update and changelog) run BEFORE this point. Since the dry-run flag is set at `[TASK-8-DRYRUN]` which comes before `[TASK-5-UPDATE]` and `[TASK-6-CHANGELOG]`, those tasks should also be wrapped. See the updated Task 5 and Task 6 wiring steps.
 
 - [ ] **Step 4: Verify syntax**
 
@@ -772,7 +781,7 @@ name: Publish to npm
 on:
   push:
     tags:
-      - "@pi-stef/*@*"
+      - "@pi-stef/*@*.*.*"
 
 permissions:
   contents: write
