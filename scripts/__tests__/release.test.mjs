@@ -35,7 +35,7 @@ describe("convertFileDependencies", () => {
 
     convertFileDependencies(pkg, versionMap);
 
-    expect(pkg.dependencies["@pi-stef/paths"]).toBe("^1.0.0");
+    expect(pkg.dependencies["@pi-stef/paths"]).toBe("workspace:*");
     expect(pkg.dependencies["lodash"]).toBe("^4.17.21");
   });
 
@@ -49,7 +49,7 @@ describe("convertFileDependencies", () => {
 
     convertFileDependencies(pkg, versionMap);
 
-    expect(pkg.devDependencies["@pi-stef/paths"]).toBe("^2.0.0");
+    expect(pkg.devDependencies["@pi-stef/paths"]).toBe("workspace:*");
   });
 
   it("skips when no dependencies", () => {
@@ -74,7 +74,7 @@ describe("convertFileDependencies", () => {
     convertFileDependencies(pkg, versionMap);
 
     expect(pkg.dependencies["lodash"]).toBe("^4.17.21");
-    expect(pkg.dependencies["@pi-stef/paths"]).toBe("file:../paths");
+    expect(pkg.dependencies["@pi-stef/paths"]).toBe("workspace:*");
   });
 });
 

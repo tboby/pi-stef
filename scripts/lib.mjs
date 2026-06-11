@@ -17,17 +17,16 @@ export function bumpVersion(version, type) {
 }
 
 /**
- * Convert file: protocol dependencies to published version ranges.
- * Uses versionMap (name → newVersion) to resolve cross-package deps.
+ * Convert file: protocol dependencies to workspace: protocol.
+ * pnpm will resolve workspace:* to real versions during publish.
  */
-export function convertFileDependencies(pkg, versionMap) {
+export function convertFileDependencies(pkg, _versionMap) {
   const depFields = ["dependencies", "devDependencies"];
   for (const field of depFields) {
     if (!pkg[field]) continue;
     for (const [depName, depValue] of Object.entries(pkg[field])) {
       if (typeof depValue === "string" && depValue.startsWith("file:")) {
-        const newVer = versionMap.get(depName);
-        if (newVer) pkg[field][depName] = `^${newVer}`;
+        pkg[field][depName] = "workspace:*";
       }
     }
   }
