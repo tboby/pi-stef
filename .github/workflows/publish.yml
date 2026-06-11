@@ -66,7 +66,19 @@ jobs:
           PKG_FILE="packages/${PKG_DIR}/package.json"
 
           # Convert file: references to workspace:* so pnpm can resolve them
-          sed -i 's|"file:\.\./[^"]*"|"workspace:*"|g' "$PKG_FILE"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('$PKG_FILE', 'utf-8'));
+            for (const field of ['dependencies', 'devDependencies']) {
+              if (!pkg[field]) continue;
+              for (const [name, val] of Object.entries(pkg[field])) {
+                if (typeof val === 'string' && val.startsWith('file:')) {
+                  pkg[field][name] = 'workspace:*';
+                }
+              }
+            }
+            fs.writeFileSync('$PKG_FILE', JSON.stringify(pkg, null, 2) + '\n');
+          "
           echo "Converted file: deps in ${PKG_FILE}"
 
       - name: Sync lockfile
