@@ -52,12 +52,12 @@ function ask(rl, question) {
  * Run a shell command and return stdout. Throws on non-zero exit.
  */
 function run(cmd, opts = {}) {
-  return execSync(cmd, {
+  return (execSync(cmd, {
     cwd: ROOT,
     encoding: "utf-8",
     stdio: opts.silent ? "pipe" : "inherit",
     ...opts,
-  }).trim();
+  }) ?? "").trim();
 }
 
 /**
