@@ -25,11 +25,9 @@ jobs:
           PKG_NAME="${TAG%@*}"
           VERSION="${TAG##*@}"
           PKG_DIR="${PKG_NAME#@pi-stef/}"
-
           echo "pkg_name=${PKG_NAME}" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "pkg_dir=${PKG_DIR}" >> "$GITHUB_OUTPUT"
-
           echo "Package: ${PKG_NAME}"
           echo "Version: ${VERSION}"
           echo "Directory: ${PKG_DIR}"
@@ -38,12 +36,12 @@ jobs:
         run: |
           PKG_VERSION=$(node -p "require('./packages/${{ steps.tag.outputs.pkg_dir }}/package.json').version")
           if [ "${PKG_VERSION}" != "${{ steps.tag.outputs.version }}" ]; then
-            echo "❌ Version mismatch!"
+            echo "Version mismatch!"
             echo "  Tag version: ${{ steps.tag.outputs.version }}"
             echo "  package.json version: ${PKG_VERSION}"
             exit 1
           fi
-          echo "✅ Version verified: ${PKG_VERSION}"
+          echo "Version verified: ${PKG_VERSION}"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -60,12 +58,12 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Convert file: deps for publish
+      - name: Convert file deps for publish
         run: |
           PKG_DIR="${{ steps.tag.outputs.pkg_dir }}"
           PKG_FILE="packages/${PKG_DIR}/package.json"
           node scripts/ci-convert-deps.mjs "$PKG_FILE"
-          echo "Converted file: deps in ${PKG_FILE}"
+          echo "Converted file deps in ${PKG_FILE}"
 
       - name: Sync lockfile
         run: pnpm install --no-frozen-lockfile
@@ -80,7 +78,6 @@ jobs:
           PKG_DIR="${{ steps.tag.outputs.pkg_dir }}"
           VERSION="${{ steps.tag.outputs.version }}"
           TAG="${{ github.ref_name }}"
-
           CHANGELOG_FILE="packages/${PKG_DIR}/CHANGELOG.md"
           if [ -f "$CHANGELOG_FILE" ]; then
             ESCAPED_VERSION="${VERSION//./\\.}"
@@ -88,9 +85,6 @@ jobs:
           else
             BODY="Release ${VERSION}"
           fi
-
-          gh release create "$TAG" \
-            --title "${PKG_DIR} v${VERSION}" \
-            --notes "$BODY"
+          gh release create "$TAG" --title "${PKG_DIR} v${VERSION}" --notes "$BODY"
         env:
           GH_TOKEN: ${{ github.token }}
