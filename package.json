@@ -4,6 +4,7 @@
   "private": true,
   "description": "Custom package collection for the pi coding agent.",
   "type": "module",
+  "packageManager": "pnpm@10.31.0",
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
