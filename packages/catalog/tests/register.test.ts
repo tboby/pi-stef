@@ -73,7 +73,7 @@ describe("registerCatalog", () => {
     }
   });
 
-  it("registers LLM tools (ct_sync, ct_add, ct_remove, ct_toggle, ct_status)", () => {
+  it("registers LLM tools (ct_sync, ct_add, ct_remove, ct_update, ct_toggle, ct_status)", () => {
     const { pi, tools } = mockPi();
     registerCatalog(pi);
 
@@ -81,6 +81,7 @@ describe("registerCatalog", () => {
       "ct_sync",
       "ct_add",
       "ct_remove",
+      "ct_update",
       "ct_toggle",
       "ct_status",
     ];
@@ -94,8 +95,8 @@ describe("registerCatalog", () => {
     const { pi } = mockPi();
     registerCatalog(pi);
 
-    // 1 main (/ct) + 15 subcommand aliases = 16 commands
-    expect(pi.registerCommand).toHaveBeenCalledTimes(16);
+    // 1 main (/ct) + 16 subcommand aliases = 17 commands
+    expect(pi.registerCommand).toHaveBeenCalledTimes(17);
   });
 
   it("calls registerTool exactly 6 times", () => {
