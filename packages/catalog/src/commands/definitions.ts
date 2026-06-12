@@ -30,7 +30,7 @@ export const SUBCOMMAND_DEFS: readonly SubcommandDef[] = [
   { name: "init", description: "Initialize a new catalog" },
   { name: "add", aliases: ["a"], description: "Add a package to the catalog" },
   { name: "remove", aliases: ["rm"], description: "Remove a package from the catalog" },
-  { name: "toggle", description: "Toggle a package's rating" },
+  { name: "toggle", description: "Toggle a package's enabled state" },
   { name: "update", aliases: ["up"], description: "Update packages to latest versions" },
   { name: "disable", description: "Disable a package" },
   { name: "enable", description: "Enable a package" },

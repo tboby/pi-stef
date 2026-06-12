@@ -96,7 +96,7 @@ describe("updateCommand", () => {
     const catalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "my-pkg": { source: "npm:my-pkg@1.0.0", rating: "core" },
+        "my-pkg": { source: "npm:my-pkg@1.0.0" },
       },
     };
     seedCatalog(tmpDir, catalog);
@@ -115,7 +115,7 @@ describe("updateCommand", () => {
     const catalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "my-pkg": { source: "npm:my-pkg@1.0.0", rating: "core" },
+        "my-pkg": { source: "npm:my-pkg@1.0.0" },
       },
     };
     seedCatalog(tmpDir, catalog);
@@ -137,8 +137,8 @@ describe("updateCommand", () => {
     const catalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        pkg1: { source: "npm:pkg1@1.0.0", rating: "core" },
-        pkg2: { source: "npm:pkg2@2.0.0", rating: "useful" },
+        pkg1: { source: "npm:pkg1@1.0.0" },
+        pkg2: { source: "npm:pkg2@2.0.0" },
       },
     };
     seedCatalog(tmpDir, catalog);
@@ -159,8 +159,8 @@ describe("updateCommand", () => {
     const catalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        pkg1: { source: "npm:pkg1@1.0.0", rating: "core" },
-        pkg2: { source: "npm:pkg2@2.0.0", rating: "useful" },
+        pkg1: { source: "npm:pkg1@1.0.0" },
+        pkg2: { source: "npm:pkg2@2.0.0" },
       },
     };
     seedCatalog(tmpDir, catalog);

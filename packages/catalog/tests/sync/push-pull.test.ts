@@ -87,7 +87,6 @@ function sampleCatalog() {
     packages: {
       "my-skill": {
         source: "https://example.com/skill.tar.gz",
-        rating: "core" as const,
       },
     },
   };
@@ -377,9 +376,7 @@ describe("pullCatalog", () => {
       packages: {
         "skill-a": {
           source: "https://example.com/a",
-          rating: "useful" as const,
           enabled: false,
-          previousRating: "core" as const,
         },
       },
     };
@@ -395,9 +392,8 @@ describe("pullCatalog", () => {
     const result = await pullCatalog(profile);
 
     expect(result.catalog.meta.pi_version).toBe("2.0.0");
-    expect(result.catalog.packages["skill-a"].rating).toBe("useful");
+    expect(result.catalog.packages["skill-a"].source).toBe("https://example.com/a");
     expect(result.catalog.packages["skill-a"].enabled).toBe(false);
-    expect(result.catalog.packages["skill-a"].previousRating).toBe("core");
   });
 
   // -------------------------------------------------------------------------

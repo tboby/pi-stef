@@ -4,6 +4,7 @@ import yaml from "js-yaml";
 import { catalogFile, lockFile, ensureCatalogDir } from "./paths.js";
 import { CatalogYamlSchema, LockFileSchema } from "./schema.js";
 import type { CatalogYaml, LockFile } from "./schema.js";
+import { migrateRatingToEnabledRaw } from "../catalog/migrate.js";
 
 // ---------------------------------------------------------------------------
 // Empty defaults
@@ -37,6 +38,8 @@ export function readCatalog(home?: string): CatalogYaml {
   }
 
   const parsed = yaml.load(raw);
+  // Migrate rating → enabled before Zod validation strips the unknown field
+  migrateRatingToEnabledRaw(parsed);
   return CatalogYamlSchema.parse(parsed);
 }
 

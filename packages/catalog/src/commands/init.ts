@@ -8,6 +8,7 @@
 import yaml from "js-yaml";
 
 import { scanInstalled } from "../catalog/install.js";
+import { migrateRatingToEnabledRaw } from "../catalog/migrate.js";
 import { CatalogYamlSchema } from "../config/schema.js";
 import type { CatalogYaml } from "../config/schema.js";
 import type { CommandArgs, CommandCtx } from "./types.js";
@@ -29,7 +30,7 @@ export type InitContext = CommandCtx;
  * Initialize a new catalog.
  *
  * - Without flags: scans installed packages and generates a catalog with
- *   `rating: 'core'` for every discovered package.
+ *   every discovered package enabled.
  * - With `--from-gist=<id>`: fetches the gist, reads its `cat.yaml` file,
  *   validates it, and writes it as the local catalog.
  */
@@ -70,7 +71,6 @@ function initFromScan(ctx: InitContext): void {
   for (const [name, pkg] of Object.entries(installed)) {
     packages[name] = {
       source: pkg.source,
-      rating: "core",
     };
   }
 
@@ -115,6 +115,7 @@ async function initFromGist(gistId: string, ctx: InitContext): Promise<void> {
 
   // Validate and write
   const parsed = yaml.load(gistContent);
+  migrateRatingToEnabledRaw(parsed);
   const catalog = CatalogYamlSchema.parse(parsed);
 
   writeCatalog(catalog, ctx.home);

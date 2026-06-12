@@ -46,7 +46,6 @@ function sampleCatalog(): CatalogYaml {
     packages: {
       "my-skill": {
         source: "npm:my-skill",
-        rating: "core",
       },
     },
   };
@@ -125,11 +124,9 @@ describe("diffCommand", () => {
       packages: {
         "my-skill": {
           source: "npm:my-skill",
-          rating: "useful",
         },
         "new-skill": {
           source: "npm:new-skill",
-          rating: "core",
         },
       },
     };

@@ -1,6 +1,5 @@
 import type { CatalogYaml, CatalogPackage } from "../config/schema.js";
-import type { RatingValue } from "./ratings.js";
-import { isValidSource, isDisabled, nextRating } from "./ratings.js";
+import { isValidSource } from "./ratings.js";
 
 // ---------------------------------------------------------------------------
 // Immutable helpers
@@ -28,7 +27,6 @@ export function addPackage(
   catalog: CatalogYaml,
   name: string,
   source: string,
-  rating: RatingValue,
   type?: "skill" | "pi-native",
 ): CatalogYaml {
   if (catalog.packages[name]) {
@@ -41,7 +39,7 @@ export function addPackage(
     );
   }
 
-  const entry: CatalogPackage = { source, rating };
+  const entry: CatalogPackage = { source };
   if (type !== undefined) {
     entry.type = type;
   }
@@ -70,8 +68,7 @@ export function removePackage(
 }
 
 /**
- * Toggle a package's rating through the cycle:
- * core → useful → debatable → disabled → core
+ * Toggle a package's enabled state: enabled ↔ disabled.
  *
  * @throws if the package is not found
  */
@@ -87,13 +84,13 @@ export function togglePackage(
   const next = cloneCatalog(catalog);
   next.packages[name] = {
     ...entry,
-    rating: nextRating(entry.rating),
+    enabled: entry.enabled === false ? true : false,
   };
   return next;
 }
 
 /**
- * Enable a disabled package, restoring its previous rating (or "core").
+ * Enable a disabled package.
  * No-op when the package is already enabled.
  *
  * @throws if the package is not found
@@ -108,19 +105,17 @@ export function enablePackage(
   }
 
   // No-op if already enabled
-  if (!isDisabled(entry.rating)) {
+  if (entry.enabled !== false) {
     return catalog;
   }
 
-  const restored = entry.previousRating ?? "core";
   const next = cloneCatalog(catalog);
-  const { previousRating: _, ...clean } = entry;
-  next.packages[name] = { ...clean, rating: restored };
+  next.packages[name] = { ...entry, enabled: true };
   return next;
 }
 
 /**
- * Disable a package, saving its current rating for later restoration.
+ * Disable a package.
  *
  * @throws if the package is not found
  */
@@ -134,10 +129,6 @@ export function disablePackage(
   }
 
   const next = cloneCatalog(catalog);
-  next.packages[name] = {
-    ...entry,
-    previousRating: entry.rating,
-    rating: "disabled",
-  };
+  next.packages[name] = { ...entry, enabled: false };
   return next;
 }

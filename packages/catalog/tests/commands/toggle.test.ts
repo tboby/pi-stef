@@ -69,56 +69,32 @@ describe("toggleCommand", () => {
   beforeEach(() => makeHome());
   afterEach(() => cleanup());
 
-  it("cycles rating: core → useful", async () => {
+  it("flips enabled to false when currently enabled (default)", async () => {
     seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "core" },
+      "my-pkg": { source: "npm:my-pkg" },
     });
     const { ctx, ui } = makeCtx();
 
     await toggleCommand({ positional: ["my-pkg"], flags: {} }, ctx);
 
     const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("useful");
+    expect(catalog.packages["my-pkg"].enabled).toBe(false);
     expect(ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("useful"),
+      expect.stringContaining("disabled"),
       "info",
     );
   });
 
-  it("cycles rating: useful → debatable", async () => {
+  it("flips enabled to true when currently disabled", async () => {
     seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "useful" },
+      "my-pkg": { source: "npm:my-pkg", enabled: false },
     });
     const { ctx } = makeCtx();
 
     await toggleCommand({ positional: ["my-pkg"], flags: {} }, ctx);
 
     const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("debatable");
-  });
-
-  it("cycles rating: debatable → disabled", async () => {
-    seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "debatable" },
-    });
-    const { ctx } = makeCtx();
-
-    await toggleCommand({ positional: ["my-pkg"], flags: {} }, ctx);
-
-    const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("disabled");
-  });
-
-  it("cycles rating: disabled → core", async () => {
-    seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "disabled" },
-    });
-    const { ctx } = makeCtx();
-
-    await toggleCommand({ positional: ["my-pkg"], flags: {} }, ctx);
-
-    const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("core");
+    expect(catalog.packages["my-pkg"].enabled).toBe(true);
   });
 
   it("shows error when package not found", async () => {
@@ -154,49 +130,32 @@ describe("enableCommand", () => {
   beforeEach(() => makeHome());
   afterEach(() => cleanup());
 
-  it("enables a disabled package, restoring to core when no previous rating", async () => {
+  it("enables a disabled package", async () => {
     seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "disabled" },
+      "my-pkg": { source: "npm:my-pkg", enabled: false },
     });
     const { ctx, ui } = makeCtx();
 
     await enableCommand({ positional: ["my-pkg"], flags: {} }, ctx);
 
     const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("core");
+    expect(catalog.packages["my-pkg"].enabled).toBe(true);
     expect(ui.notify).toHaveBeenCalledWith(
       expect.stringContaining("Enabled"),
       "info",
     );
   });
 
-  it("restores previous rating when enabling a disabled package", async () => {
-    seedCatalog(tmpDir, {
-      "my-pkg": {
-        source: "npm:my-pkg",
-        rating: "disabled",
-        previousRating: "useful",
-      },
-    });
-    const { ctx } = makeCtx();
-
-    await enableCommand({ positional: ["my-pkg"], flags: {} }, ctx);
-
-    const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("useful");
-    expect(catalog.packages["my-pkg"].previousRating).toBeUndefined();
-  });
-
   it("is a no-op for already-enabled package", async () => {
     seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "core" },
+      "my-pkg": { source: "npm:my-pkg" },
     });
     const { ctx, ui } = makeCtx();
 
     await enableCommand({ positional: ["my-pkg"], flags: {} }, ctx);
 
     const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("core");
+    expect(catalog.packages["my-pkg"].enabled).toBeUndefined();
     expect(ui.notify).toHaveBeenCalledWith(
       expect.stringContaining("already"),
       "info",
@@ -236,9 +195,9 @@ describe("disableCommand", () => {
   beforeEach(() => makeHome());
   afterEach(() => cleanup());
 
-  it("sets rating to disabled and saves previous rating", async () => {
+  it("sets enabled to false", async () => {
     seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "useful" },
+      "my-pkg": { source: "npm:my-pkg" },
     });
     const { ctx, ui } = makeCtx();
 
@@ -250,8 +209,7 @@ describe("disableCommand", () => {
     await disableCommand({ positional: ["my-pkg"], flags: {} }, ctx);
 
     const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("disabled");
-    expect(catalog.packages["my-pkg"].previousRating).toBe("useful");
+    expect(catalog.packages["my-pkg"].enabled).toBe(false);
     expect(ui.notify).toHaveBeenCalledWith(
       expect.stringContaining("Disabled"),
       "info",
@@ -261,7 +219,7 @@ describe("disableCommand", () => {
 
   it("runs pi uninstall after disabling", async () => {
     seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "core" },
+      "my-pkg": { source: "npm:my-pkg" },
     });
     const { ctx } = makeCtx();
 
@@ -278,7 +236,7 @@ describe("disableCommand", () => {
 
   it("warns when pi uninstall fails", async () => {
     seedCatalog(tmpDir, {
-      "my-pkg": { source: "npm:my-pkg", rating: "core" },
+      "my-pkg": { source: "npm:my-pkg" },
     });
     const { ctx, ui } = makeCtx();
 
@@ -291,7 +249,7 @@ describe("disableCommand", () => {
 
     // Catalog should still be updated
     const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("disabled");
+    expect(catalog.packages["my-pkg"].enabled).toBe(false);
 
     expect(ui.notify).toHaveBeenCalledWith(
       expect.stringContaining("uninstall"),

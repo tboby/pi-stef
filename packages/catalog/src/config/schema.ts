@@ -7,23 +7,16 @@ import { z } from "zod";
 /** Type discriminator for a catalog package entry. */
 export const PackageType = z.enum(["skill", "pi-native"]);
 
-/** Rating values for catalog packages. */
-export const Rating = z.enum(["core", "useful", "debatable", "disabled"]);
-
 /** A single package entry inside cat.yaml. */
 export const CatalogPackageSchema = z.object({
   /** Where to fetch the package from (URL, path, etc.). */
   source: z.string().min(1),
-  /** User-assigned rating. */
-  rating: Rating,
   /** Optional type discriminator. */
   type: PackageType.optional(),
   /** Optional profile name this package belongs to. */
   profile: z.string().optional(),
   /** Whether the package is active. Defaults to true when absent. */
   enabled: z.boolean().optional(),
-  /** Previous rating before disable; used by enablePackage to restore. */
-  previousRating: Rating.optional(),
 });
 
 /** The meta section at the top of cat.yaml. */
@@ -84,4 +77,3 @@ export type CatalogPackage = z.infer<typeof CatalogPackageSchema>;
 export type Profile = z.infer<typeof ProfileSchema>;
 export type LockFile = z.infer<typeof LockFileSchema>;
 export type LockPackage = z.infer<typeof LockPackageSchema>;
-export type RatingValue = z.infer<typeof Rating>;

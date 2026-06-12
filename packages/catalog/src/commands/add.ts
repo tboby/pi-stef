@@ -2,7 +2,7 @@
  * `ct add` subcommand implementation.
  *
  * Adds a new package to the catalog. Supports:
- *   - Full args: `ct add <name> <source> [--rating <r>] [--type <t>]`
+ *   - Full args: `ct add <source> [--type <t>]`
  *   - Git source without `--type`: prompts for type via `ctx.ui.select()`
  *   - After adding, runs `pi install` to install the package
  *
@@ -10,7 +10,6 @@
  * and `writeCatalog` / `readCatalog` for persistence.
  */
 
-import type { RatingValue } from "../catalog/ratings.js";
 import type { CommandArgs, CommandCtx } from "./types.js";
 import { addPackage } from "../catalog/crud.js";
 import { sourceToKey } from "../catalog/source.js";
@@ -36,25 +35,6 @@ export interface AddCtx extends CommandCtx {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const VALID_RATINGS: RatingValue[] = ["core", "useful", "debatable"];
-
-function isValidRating(value: string): value is RatingValue {
-  return VALID_RATINGS.includes(value as RatingValue);
-}
-
-function resolveRating(flags: Record<string, true | string>): RatingValue {
-  const raw =
-    "r" in flags
-      ? flags["r"]
-      : "rating" in flags
-        ? flags["rating"]
-        : undefined;
-
-  if (raw === true || raw === undefined) return "core";
-  if (typeof raw === "string" && isValidRating(raw)) return raw;
-  return "core";
-}
-
 function resolveType(
   flags: Record<string, true | string>,
 ): "skill" | "pi-native" | undefined {
@@ -77,10 +57,10 @@ function resolveType(
 /**
  * Execute the `ct add` subcommand.
  *
- * New syntax (preferred): `ct add <source> [--rating ...] [--type ...]`
+ * New syntax (preferred): `ct add <source> [--type ...]`
  *   — name is auto-derived from source via `sourceToKey()`.
  *
- * Legacy syntax (deprecated): `ct add <name> <source> [--rating ...] [--type ...]`
+ * Legacy syntax (deprecated): `ct add <name> <source> [--type ...]`
  *   — still accepted but emits a deprecation warning.
  *
  * Reads the catalog, validates inputs, prompts for type if needed,
@@ -98,7 +78,6 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
     }
 
     const catalog = readCatalog(ctx.home);
-    const rating = resolveRating(flags);
     let added = 0;
     let skipped = 0;
     let currentCatalog = catalog;
@@ -113,7 +92,7 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
       }
 
       try {
-        currentCatalog = addPackage(currentCatalog, pkg, npmSource, rating);
+        currentCatalog = addPackage(currentCatalog, pkg, npmSource);
         added++;
       } catch (err: unknown) {
         // Unexpected validation error — warn but continue
@@ -167,13 +146,12 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
     name = sourceToKey(source);
   } else {
     ctx.ui.notify(
-      "Usage: ct add <source> [--rating <core|useful|debatable>] [--type <skill|pi-native>]",
+      "Usage: ct add <source> [--type <skill|pi-native>]",
       "error",
     );
     return;
   }
 
-  const rating = resolveRating(flags);
   let type = resolveType(flags);
 
   // --- Read catalog ---------------------------------------------------------
@@ -194,7 +172,7 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
 
   // --- Add package ----------------------------------------------------------
   try {
-    const updated = addPackage(catalog, name, source, rating, type);
+    const updated = addPackage(catalog, name, source, type);
     writeCatalog(updated, ctx.home);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

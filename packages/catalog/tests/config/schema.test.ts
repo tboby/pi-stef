@@ -5,7 +5,6 @@ import {
   CatalogYamlSchema,
   CatalogPackageSchema,
   LockFileSchema,
-  Rating,
   type CatalogYaml,
   type LockFile,
 } from "../../src/config/schema.js";
@@ -20,7 +19,6 @@ describe("CatalogYamlSchema (cat.yaml)", () => {
     packages: {
       "my-skill": {
         source: "https://github.com/example/my-skill",
-        rating: "core",
       },
     },
   };
@@ -31,7 +29,6 @@ describe("CatalogYamlSchema (cat.yaml)", () => {
     expect(parsed.packages["my-skill"].source).toBe(
       "https://github.com/example/my-skill",
     );
-    expect(parsed.packages["my-skill"].rating).toBe("core");
   });
 
   it("parses a document with optional type and profile fields", () => {
@@ -40,13 +37,11 @@ describe("CatalogYamlSchema (cat.yaml)", () => {
       packages: {
         "my-skill": {
           source: "https://github.com/example/my-skill",
-          rating: "useful",
           type: "skill",
           profile: "default",
         },
         "another-pkg": {
           source: "https://github.com/example/pkg",
-          rating: "debatable",
           type: "pi-native",
         },
       },
@@ -66,7 +61,6 @@ meta:
 packages:
   hello-world:
     source: "https://github.com/example/hello"
-    rating: "core"
     type: skill
     profile: work
 `;
@@ -101,17 +95,7 @@ packages:
     const doc = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        bad: { rating: "core" },
-      },
-    };
-    expect(() => CatalogYamlSchema.parse(doc)).toThrow();
-  });
-
-  it("rejects a package entry missing rating", () => {
-    const doc = {
-      meta: { pi_version: "1.0.0" },
-      packages: {
-        bad: { source: "https://github.com/example/bad" },
+        bad: {},
       },
     };
     expect(() => CatalogYamlSchema.parse(doc)).toThrow();
@@ -123,55 +107,11 @@ packages:
       packages: {
         bad: {
           source: "https://github.com/example/bad",
-          rating: "core",
           type: "invalid-type",
         },
       },
     };
     expect(() => CatalogYamlSchema.parse(doc)).toThrow();
-  });
-
-  it("rejects an invalid rating value", () => {
-    const doc = {
-      meta: { pi_version: "1.0.0" },
-      packages: {
-        bad: {
-          source: "https://github.com/example/bad",
-          rating: "invalid",
-        },
-      },
-    };
-    expect(() => CatalogYamlSchema.parse(doc)).toThrow();
-  });
-
-  it("rejects a numeric rating — rating must be a string enum", () => {
-    const doc = {
-      meta: { pi_version: "1.0.0" },
-      packages: {
-        bad: {
-          source: "https://github.com/example/bad",
-          rating: 5,
-        },
-      },
-    };
-    expect(() => CatalogYamlSchema.parse(doc)).toThrow();
-  });
-
-  it("round-trips all four valid rating values", () => {
-    const doc: CatalogYaml = {
-      meta: { pi_version: "1.0.0" },
-      packages: {
-        a: { source: "npm:a", rating: "core" },
-        b: { source: "npm:b", rating: "useful" },
-        c: { source: "npm:c", rating: "debatable" },
-        d: { source: "npm:d", rating: "disabled" },
-      },
-    };
-    const parsed = CatalogYamlSchema.parse(doc);
-    expect(parsed.packages.a.rating).toBe("core");
-    expect(parsed.packages.b.rating).toBe("useful");
-    expect(parsed.packages.c.rating).toBe("debatable");
-    expect(parsed.packages.d.rating).toBe("disabled");
   });
 
   it("accepts enabled: true on a package entry", () => {
@@ -180,7 +120,6 @@ packages:
       packages: {
         "my-skill": {
           source: "https://github.com/example/my-skill",
-          rating: "core",
           enabled: true,
         },
       },
@@ -195,7 +134,6 @@ packages:
       packages: {
         "my-skill": {
           source: "https://github.com/example/my-skill",
-          rating: "core",
           enabled: false,
         },
       },
@@ -210,7 +148,6 @@ packages:
       packages: {
         "my-skill": {
           source: "https://github.com/example/my-skill",
-          rating: "core",
         },
       },
     };
@@ -220,40 +157,20 @@ packages:
 });
 
 // ---------------------------------------------------------------------------
-// Rating enum — explicit string-enum validation
-// ---------------------------------------------------------------------------
-
-describe("Rating enum", () => {
-  it("accepts exactly four string values", () => {
-    expect(Rating.options).toEqual(["core", "useful", "debatable", "disabled"]);
-  });
-
-  it("rejects a numeric rating", () => {
-    expect(Rating.safeParse(5).success).toBe(false);
-  });
-
-  it("rejects an unknown string", () => {
-    expect(Rating.safeParse("unknown").success).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// CatalogPackageSchema — rating type guard
+// CatalogPackageSchema
 // ---------------------------------------------------------------------------
 
 describe("CatalogPackageSchema", () => {
-  it("accepts a package with a string rating", () => {
+  it("accepts a package with a valid source", () => {
     const result = CatalogPackageSchema.safeParse({
       source: "npm:my-pkg",
-      rating: "core",
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects a package with a numeric rating", () => {
+  it("rejects a package with an empty source", () => {
     const result = CatalogPackageSchema.safeParse({
-      source: "npm:my-pkg",
-      rating: 5,
+      source: "",
     });
     expect(result.success).toBe(false);
   });

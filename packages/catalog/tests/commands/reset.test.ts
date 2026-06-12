@@ -45,10 +45,10 @@ function catalogWithPiStef(): CatalogYaml {
   return {
     meta: { pi_version: "1.0.0" },
     packages: {
-      "@pi-stef/figma": { source: "npm:@pi-stef/figma", rating: "core" },
-      "@pi-stef/web": { source: "npm:@pi-stef/web", rating: "useful" },
-      "other-pkg": { source: "npm:other-pkg", rating: "core" },
-      "@pi-stef/catalog": { source: "npm:@pi-stef/catalog", rating: "core" },
+      "@pi-stef/figma": { source: "npm:@pi-stef/figma" },
+      "@pi-stef/web": { source: "npm:@pi-stef/web" },
+      "other-pkg": { source: "npm:other-pkg" },
+      "@pi-stef/catalog": { source: "npm:@pi-stef/catalog" },
     },
   };
 }

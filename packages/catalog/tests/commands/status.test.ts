@@ -43,26 +43,15 @@ function sampleCatalog(): CatalogYaml {
   return {
     meta: { pi_version: "1.0.0" },
     packages: {
-      "core-skill": {
-        source: "npm:core-skill",
-        rating: "core",
-        enabled: true,
+      "enabled-skill-1": {
+        source: "npm:enabled-skill-1",
       },
-      "useful-skill": {
-        source: "npm:useful-skill",
-        rating: "useful",
-        enabled: true,
-      },
-      "debatable-skill": {
-        source: "npm:debatable-skill",
-        rating: "debatable",
-        enabled: true,
+      "enabled-skill-2": {
+        source: "npm:enabled-skill-2",
       },
       "disabled-skill": {
         source: "npm:disabled-skill",
-        rating: "disabled",
         enabled: false,
-        previousRating: "core",
       },
     },
   };
@@ -71,13 +60,13 @@ function sampleCatalog(): CatalogYaml {
 function sampleLock(): LockFile {
   return {
     packages: {
-      "core-skill": {
+      "enabled-skill-1": {
         version: "1.0.0",
         sourceHash: "sha256-abc",
         installedAt: "2025-01-15T10:30:00Z",
         syncState: "synced",
       },
-      "useful-skill": {
+      "enabled-skill-2": {
         version: "2.0.0",
         sourceHash: "sha256-def",
         installedAt: "2025-01-14T08:00:00Z",
@@ -110,8 +99,8 @@ describe("statusCommand", () => {
     mockedReadLock.mockReturnValue(sampleLock());
     mockedReadCachedGistId.mockReturnValue("gist-abc123");
     mockedScanInstalled.mockReturnValue({
-      "core-skill": { source: "npm:core-skill", name: "core-skill", version: "1.0.0" },
-      "useful-skill": { source: "npm:useful-skill", name: "useful-skill", version: "2.0.0" },
+      "enabled-skill-1": { source: "npm:enabled-skill-1", name: "enabled-skill-1", version: "1.0.0" },
+      "enabled-skill-2": { source: "npm:enabled-skill-2", name: "enabled-skill-2", version: "2.0.0" },
     });
   });
 
@@ -134,19 +123,20 @@ describe("statusCommand", () => {
   });
 
   // -------------------------------------------------------------------------
-  // Shows package counts by rating
+  // Shows package counts by enabled/disabled
   // -------------------------------------------------------------------------
 
-  it("shows package counts grouped by rating", async () => {
+  it("shows package counts grouped by enabled/disabled", async () => {
     const ctx = makeCtx();
     await statusCommand({ positional: [], flags: {} }, ctx);
 
     const notifyCalls = (ctx.ui.notify as ReturnType<typeof vi.fn>).mock.calls;
-    const statusCall = notifyCalls.find(
-      (c) => typeof c[0] === "string" && c[0].includes("core"),
-    );
-    expect(statusCall).toBeDefined();
-    expect(statusCall![0]).toContain("core");
+    const statusMsg = notifyCalls
+      .map((c) => c[0])
+      .filter((m) => typeof m === "string")
+      .join("\n");
+    expect(statusMsg).toContain("2 enabled");
+    expect(statusMsg).toContain("1 disabled");
   });
 
   // -------------------------------------------------------------------------
@@ -154,10 +144,10 @@ describe("statusCommand", () => {
   // -------------------------------------------------------------------------
 
   it("reports installed, missing, and orphan counts", async () => {
-    // Only core-skill is installed; useful-skill and debatable-skill are missing
+    // Only enabled-skill-1 is installed; enabled-skill-2 and disabled-skill are missing
     // orphan-pkg is installed but not in catalog
     mockedScanInstalled.mockReturnValue({
-      "core-skill": { source: "npm:core-skill", name: "core-skill", version: "1.0.0" },
+      "enabled-skill-1": { source: "npm:enabled-skill-1", name: "enabled-skill-1", version: "1.0.0" },
       "orphan-pkg": { source: "npm:orphan-pkg", name: "orphan-pkg", version: "3.0.0" },
     });
 
@@ -167,7 +157,7 @@ describe("statusCommand", () => {
     const notifyCalls = (ctx.ui.notify as ReturnType<typeof vi.fn>).mock.calls;
     const statusMsg = notifyCalls[0][0] as string;
     expect(statusMsg).toContain("Installed: 1");
-    expect(statusMsg).toContain("Missing: 3");
+    expect(statusMsg).toContain("Missing: 2");
     expect(statusMsg).toContain("Orphans: 1");
   });
 

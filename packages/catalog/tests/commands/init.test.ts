@@ -90,7 +90,7 @@ describe("initCommand", () => {
   // System with installed packages → catalog with entries
   // -------------------------------------------------------------------------
 
-  it("generates catalog entries from installed packages with core rating", async () => {
+  it("generates catalog entries from installed packages", async () => {
     mockedScan.mockReturnValue({
       "my-skill": { source: "npm:my-skill", name: "my-skill", version: "1.0.0" },
       "another-pkg": { source: "git:github.com/user/repo", name: "github.com/user/repo", version: undefined },
@@ -102,11 +102,9 @@ describe("initCommand", () => {
     expect(Object.keys(catalog.packages)).toHaveLength(2);
     expect(catalog.packages["my-skill"]).toEqual({
       source: "npm:my-skill",
-      rating: "core",
     });
     expect(catalog.packages["another-pkg"]).toEqual({
       source: "git:github.com/user/repo",
-      rating: "core",
     });
   });
 
@@ -122,7 +120,7 @@ describe("initCommand", () => {
     fs.mkdirSync(dir, { recursive: true });
     const existing: CatalogYaml = {
       meta: { pi_version: "9.9.9" },
-      packages: { "old-pkg": { source: "npm:old", rating: "useful" } },
+      packages: { "old-pkg": { source: "npm:old" } },
     };
     fs.writeFileSync(path.join(dir, "cat.yaml"), yaml.dump(existing), "utf-8");
 
@@ -136,7 +134,6 @@ describe("initCommand", () => {
     expect(catalog.packages["old-pkg"]).toBeUndefined();
     expect(catalog.packages["new-pkg"]).toEqual({
       source: "npm:new-pkg",
-      rating: "core",
     });
   });
 
@@ -170,7 +167,6 @@ describe("initCommand", () => {
         packages: {
           "remote-skill": {
             source: "npm:remote-skill",
-            rating: "useful",
             type: "skill",
           },
         },
@@ -190,7 +186,6 @@ describe("initCommand", () => {
       expect(catalog.meta.pi_version).toBe("3.5.0");
       expect(catalog.packages["remote-skill"]).toEqual({
         source: "npm:remote-skill",
-        rating: "useful",
         type: "skill",
       });
     });

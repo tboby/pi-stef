@@ -44,7 +44,6 @@ describe("readCatalog", () => {
       packages: {
         "my-skill": {
           source: "npm:@scope/my-skill",
-          rating: "core",
           type: "skill",
         },
       },
@@ -56,7 +55,6 @@ describe("readCatalog", () => {
     const result = readCatalog(tmpDir);
     expect(result.meta.pi_version).toBe("1.0.0");
     expect(result.packages["my-skill"].source).toBe("npm:@scope/my-skill");
-    expect(result.packages["my-skill"].rating).toBe("core");
     expect(result.packages["my-skill"].type).toBe("skill");
   });
 
@@ -95,6 +93,33 @@ describe("readCatalog", () => {
 
     expect(() => readCatalog(tmpDir)).toThrow();
   });
+
+  it("migrates legacy rating field to enabled boolean", () => {
+    const filePath = path.join(tmpDir, ".pi", "sf", "catalog", "cat.yaml");
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(
+      filePath,
+      yaml.dump({
+        meta: { pi_version: "1.0.0" },
+        packages: {
+          "active-pkg": { source: "npm:active-pkg", rating: "core" },
+          "disabled-pkg": { source: "npm:disabled-pkg", rating: "disabled" },
+        },
+      }),
+      "utf-8",
+    );
+
+    const result = readCatalog(tmpDir);
+
+    // rating field should be stripped, disabled → enabled: false
+    expect(result.packages["active-pkg"].source).toBe("npm:active-pkg");
+    expect(result.packages["active-pkg"]).not.toHaveProperty("rating");
+    expect(result.packages["active-pkg"].enabled).toBeUndefined(); // defaults to true via Zod
+
+    expect(result.packages["disabled-pkg"].source).toBe("npm:disabled-pkg");
+    expect(result.packages["disabled-pkg"]).not.toHaveProperty("rating");
+    expect(result.packages["disabled-pkg"].enabled).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -111,13 +136,11 @@ describe("writeCatalog", () => {
       packages: {
         "skill-a": {
           source: "git:https://github.com/example/skill-a#subpath",
-          rating: "useful",
           type: "skill",
           profile: "work",
         },
         "skill-b": {
           source: "npm:skill-b",
-          rating: "debatable",
         },
       },
     };
@@ -152,13 +175,13 @@ describe("writeCatalog", () => {
     const v1: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "old-skill": { source: "npm:old", rating: "core" },
+        "old-skill": { source: "npm:old" },
       },
     };
     const v2: CatalogYaml = {
       meta: { pi_version: "2.0.0" },
       packages: {
-        "new-skill": { source: "npm:new", rating: "useful" },
+        "new-skill": { source: "npm:new" },
       },
     };
 

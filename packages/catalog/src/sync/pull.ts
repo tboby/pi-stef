@@ -2,6 +2,7 @@ import yaml from "js-yaml";
 
 import { CatalogYamlSchema, LockFileSchema } from "../config/schema.js";
 import type { CatalogYaml, LockFile } from "../config/schema.js";
+import { migrateRatingToEnabledRaw } from "../catalog/migrate.js";
 import { readGist, findGistByDescription } from "./gist.js";
 import { readCachedGistId, writeCachedGistId } from "./cache.js";
 
@@ -62,6 +63,7 @@ export async function pullCatalog(
   const lockJsonContent = gist.files["catalog.lock.json"]?.content ?? "";
 
   const parsedYaml = yaml.load(catYamlContent);
+  migrateRatingToEnabledRaw(parsedYaml);
   const catalog: CatalogYaml = CatalogYamlSchema.parse(parsedYaml);
 
   const parsedLock = JSON.parse(lockJsonContent);

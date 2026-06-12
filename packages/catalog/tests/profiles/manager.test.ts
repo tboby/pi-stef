@@ -16,14 +16,14 @@ function baseCatalog(): CatalogYaml {
   return {
     meta: { pi_version: "1.0.0" },
     packages: {
-      "base-pkg-a": { source: "npm:base-pkg-a", rating: "core" },
-      "base-pkg-b": { source: "npm:base-pkg-b", rating: "useful" },
+      "base-pkg-a": { source: "npm:base-pkg-a" },
+      "base-pkg-b": { source: "npm:base-pkg-b" },
     },
     profiles: {
       work: {
         packages: {
-          "work-tool": { source: "npm:work-tool", rating: "core" },
-          "base-pkg-a": { source: "npm:base-pkg-a", rating: "debatable" },
+          "work-tool": { source: "npm:work-tool" },
+          "base-pkg-a": { source: "npm:base-pkg-a", enabled: false },
         },
       },
     },
@@ -134,8 +134,8 @@ describe("resolveEffectivePackages", () => {
 
   it("profile override wins over base package", () => {
     const result = resolveEffectivePackages(baseCatalog(), "work");
-    // base-pkg-a is "core" in base, "debatable" in work profile
-    expect(result["base-pkg-a"].rating).toBe("debatable");
+    // base-pkg-a has enabled: true in base (default), enabled: false in work profile
+    expect(result["base-pkg-a"].enabled).toBe(false);
   });
 
   it("returns only base packages when profile has no packages", () => {
@@ -147,7 +147,7 @@ describe("resolveEffectivePackages", () => {
   it("uses activeProfile from meta when profile is undefined", () => {
     const cat = switchProfile(baseCatalog(), "work");
     const result = resolveEffectivePackages(cat);
-    expect(result["base-pkg-a"].rating).toBe("debatable");
+    expect(result["base-pkg-a"].enabled).toBe(false);
     expect(result["work-tool"]).toBeDefined();
   });
 

@@ -79,7 +79,6 @@ function sampleCatalog(): CatalogYaml {
     packages: {
       "my-skill": {
         source: "npm:my-skill",
-        rating: "core",
       },
     },
   };
@@ -263,7 +262,7 @@ describe("pullCommand", () => {
     const remoteCatalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "remote-skill": { source: "npm:remote-skill", rating: "useful" },
+        "remote-skill": { source: "npm:remote-skill" },
       },
     };
     const remoteLock: LockFile = {
@@ -309,7 +308,7 @@ describe("pullCommand", () => {
     const remoteCatalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "new-pkg": { source: "npm:new-pkg", rating: "core" },
+        "new-pkg": { source: "npm:new-pkg" },
       },
     };
     mockedPull.mockResolvedValue({
@@ -438,7 +437,7 @@ describe("pullCommand", () => {
     const remoteCatalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "new-pkg": { source: "npm:new-pkg", rating: "core" },
+        "new-pkg": { source: "npm:new-pkg" },
       },
     };
     const remoteLock: LockFile = {

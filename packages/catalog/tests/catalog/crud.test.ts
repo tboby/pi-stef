@@ -8,12 +8,7 @@ import {
   enablePackage,
   disablePackage,
 } from "../../src/catalog/crud.js";
-import {
-  nextRating,
-  isDisabled,
-  isValidSource,
-  RATING_CYCLE,
-} from "../../src/catalog/ratings.js";
+import { isValidSource } from "../../src/catalog/ratings.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -29,53 +24,6 @@ function emptyCatalog(): CatalogYaml {
 // ---------------------------------------------------------------------------
 // ratings helpers
 // ---------------------------------------------------------------------------
-
-describe("RATING_CYCLE", () => {
-  it("contains core → useful → debatable → disabled", () => {
-    expect(RATING_CYCLE).toEqual([
-      "core",
-      "useful",
-      "debatable",
-      "disabled",
-    ]);
-  });
-});
-
-describe("nextRating", () => {
-  it("cycles core → useful", () => {
-    expect(nextRating("core")).toBe("useful");
-  });
-
-  it("cycles useful → debatable", () => {
-    expect(nextRating("useful")).toBe("debatable");
-  });
-
-  it("cycles debatable → disabled", () => {
-    expect(nextRating("debatable")).toBe("disabled");
-  });
-
-  it("cycles disabled → core (wraps around)", () => {
-    expect(nextRating("disabled")).toBe("core");
-  });
-});
-
-describe("isDisabled", () => {
-  it("returns true for disabled", () => {
-    expect(isDisabled("disabled")).toBe(true);
-  });
-
-  it("returns false for core", () => {
-    expect(isDisabled("core")).toBe(false);
-  });
-
-  it("returns false for useful", () => {
-    expect(isDisabled("useful")).toBe(false);
-  });
-
-  it("returns false for debatable", () => {
-    expect(isDisabled("debatable")).toBe(false);
-  });
-});
 
 describe("isValidSource", () => {
   it("accepts npm: source", () => {
@@ -116,10 +64,9 @@ describe("isValidSource", () => {
 describe("addPackage", () => {
   it("adds a new package entry", () => {
     const catalog = emptyCatalog();
-    const result = addPackage(catalog, "my-skill", "npm:my-skill", "core");
+    const result = addPackage(catalog, "my-skill", "npm:my-skill");
     expect(result.packages["my-skill"]).toEqual({
       source: "npm:my-skill",
-      rating: "core",
     });
   });
 
@@ -128,17 +75,16 @@ describe("addPackage", () => {
       emptyCatalog(),
       "my-skill",
       "npm:my-skill",
-      "core",
     );
     expect(() =>
-      addPackage(catalog, "my-skill", "npm:other", "useful"),
+      addPackage(catalog, "my-skill", "npm:other"),
     ).toThrow(/already exists/i);
   });
 
   it("throws on invalid source format", () => {
     const catalog = emptyCatalog();
     expect(() =>
-      addPackage(catalog, "skill", "invalid-source", "core"),
+      addPackage(catalog, "skill", "invalid-source"),
     ).toThrow(/source/i);
   });
 
@@ -148,7 +94,6 @@ describe("addPackage", () => {
       catalog,
       "skill",
       "git:https://github.com/example/repo",
-      "core",
     );
     expect(result.packages["skill"].source).toBe(
       "git:https://github.com/example/repo",
@@ -161,7 +106,6 @@ describe("addPackage", () => {
       catalog,
       "skill",
       "git:https://github.com/example/repo#skills/mine",
-      "core",
     );
     expect(result.packages["skill"].source).toBe(
       "git:https://github.com/example/repo#skills/mine",
@@ -170,13 +114,13 @@ describe("addPackage", () => {
 
   it("adds with optional type", () => {
     const catalog = emptyCatalog();
-    const result = addPackage(catalog, "skill", "npm:pkg", "core", "skill");
+    const result = addPackage(catalog, "skill", "npm:pkg", "skill");
     expect(result.packages["skill"].type).toBe("skill");
   });
 
   it("does not mutate the original catalog", () => {
     const catalog = emptyCatalog();
-    const result = addPackage(catalog, "skill", "npm:pkg", "core");
+    const result = addPackage(catalog, "skill", "npm:pkg");
     expect(catalog.packages).toEqual({});
     expect(result).not.toBe(catalog);
   });
@@ -192,7 +136,6 @@ describe("removePackage", () => {
       emptyCatalog(),
       "skill",
       "npm:pkg",
-      "core",
     );
     const result = removePackage(catalog, "skill");
     expect(result.packages["skill"]).toBeUndefined();
@@ -208,7 +151,6 @@ describe("removePackage", () => {
       emptyCatalog(),
       "skill",
       "npm:pkg",
-      "core",
     );
     const result = removePackage(catalog, "skill");
     expect(catalog.packages["skill"]).toBeDefined();
@@ -221,39 +163,25 @@ describe("removePackage", () => {
 // ---------------------------------------------------------------------------
 
 describe("togglePackage", () => {
-  it("cycles core → useful", () => {
+  it("flips enabled to false when currently enabled (default)", () => {
     const catalog = addPackage(
       emptyCatalog(),
       "skill",
       "npm:pkg",
-      "core",
     );
     const result = togglePackage(catalog, "skill");
-    expect(result.packages["skill"].rating).toBe("useful");
+    expect(result.packages["skill"].enabled).toBe(false);
   });
 
-  it("cycles useful → debatable", () => {
-    let catalog = addPackage(emptyCatalog(), "skill", "npm:pkg", "core");
-    catalog = togglePackage(catalog, "skill"); // core → useful
-    const result = togglePackage(catalog, "skill"); // useful → debatable
-    expect(result.packages["skill"].rating).toBe("debatable");
-  });
-
-  it("cycles debatable → disabled", () => {
-    let catalog = addPackage(emptyCatalog(), "skill", "npm:pkg", "core");
-    catalog = togglePackage(catalog, "skill"); // core → useful
-    catalog = togglePackage(catalog, "skill"); // useful → debatable
-    const result = togglePackage(catalog, "skill"); // debatable → disabled
-    expect(result.packages["skill"].rating).toBe("disabled");
-  });
-
-  it("cycles disabled → core (wraps around)", () => {
-    let catalog = addPackage(emptyCatalog(), "skill", "npm:pkg", "core");
-    catalog = togglePackage(catalog, "skill"); // core → useful
-    catalog = togglePackage(catalog, "skill"); // useful → debatable
-    catalog = togglePackage(catalog, "skill"); // debatable → disabled
-    const result = togglePackage(catalog, "skill"); // disabled → core
-    expect(result.packages["skill"].rating).toBe("core");
+  it("flips enabled to true when currently disabled", () => {
+    const catalog = addPackage(
+      emptyCatalog(),
+      "skill",
+      "npm:pkg",
+    );
+    catalog.packages["skill"].enabled = false;
+    const result = togglePackage(catalog, "skill");
+    expect(result.packages["skill"].enabled).toBe(true);
   });
 
   it("throws when package not found", () => {
@@ -266,10 +194,9 @@ describe("togglePackage", () => {
       emptyCatalog(),
       "skill",
       "npm:pkg",
-      "core",
     );
     const result = togglePackage(catalog, "skill");
-    expect(catalog.packages["skill"].rating).toBe("core");
+    expect(catalog.packages["skill"].enabled).toBeUndefined();
     expect(result).not.toBe(catalog);
   });
 });
@@ -279,55 +206,27 @@ describe("togglePackage", () => {
 // ---------------------------------------------------------------------------
 
 describe("enablePackage", () => {
-  it("restores previous rating when enabling a disabled package", () => {
-    let catalog = addPackage(
-      emptyCatalog(),
-      "skill",
-      "npm:pkg",
-      "useful",
-    );
-    catalog = disablePackage(catalog, "skill");
-    expect(catalog.packages["skill"].rating).toBe("disabled");
-
-    const result = enablePackage(catalog, "skill");
-    expect(result.packages["skill"].rating).toBe("useful");
-  });
-
-  it("defaults to core when no previous rating stored", () => {
-    // A package added directly with "disabled" rating has no previousRating
+  it("sets enabled to true when enabling a disabled package", () => {
     const catalog = addPackage(
       emptyCatalog(),
       "skill",
       "npm:pkg",
-      "disabled",
     );
-    const result = enablePackage(catalog, "skill");
-    expect(result.packages["skill"].rating).toBe("core");
+    const disabled = disablePackage(catalog, "skill");
+    expect(disabled.packages["skill"].enabled).toBe(false);
+
+    const result = enablePackage(disabled, "skill");
+    expect(result.packages["skill"].enabled).toBe(true);
   });
 
-  it("is a no-op when already enabled (not disabled)", () => {
+  it("is a no-op when already enabled", () => {
     const catalog = addPackage(
       emptyCatalog(),
       "skill",
       "npm:pkg",
-      "useful",
     );
     const result = enablePackage(catalog, "skill");
-    expect(result.packages["skill"].rating).toBe("useful");
-  });
-
-  it("clears previousRating after enabling", () => {
-    let catalog = addPackage(
-      emptyCatalog(),
-      "skill",
-      "npm:pkg",
-      "debatable",
-    );
-    catalog = disablePackage(catalog, "skill");
-    expect(catalog.packages["skill"].previousRating).toBe("debatable");
-
-    const result = enablePackage(catalog, "skill");
-    expect(result.packages["skill"].previousRating).toBeUndefined();
+    expect(result.packages["skill"].enabled).toBeUndefined();
   });
 
   it("throws when package not found", () => {
@@ -341,26 +240,14 @@ describe("enablePackage", () => {
 // ---------------------------------------------------------------------------
 
 describe("disablePackage", () => {
-  it("sets rating to disabled", () => {
+  it("sets enabled to false", () => {
     const catalog = addPackage(
       emptyCatalog(),
       "skill",
       "npm:pkg",
-      "core",
     );
     const result = disablePackage(catalog, "skill");
-    expect(result.packages["skill"].rating).toBe("disabled");
-  });
-
-  it("preserves the previous rating in previousRating field", () => {
-    const catalog = addPackage(
-      emptyCatalog(),
-      "skill",
-      "npm:pkg",
-      "useful",
-    );
-    const result = disablePackage(catalog, "skill");
-    expect(result.packages["skill"].previousRating).toBe("useful");
+    expect(result.packages["skill"].enabled).toBe(false);
   });
 
   it("throws when package not found", () => {
@@ -373,10 +260,9 @@ describe("disablePackage", () => {
       emptyCatalog(),
       "skill",
       "npm:pkg",
-      "core",
     );
     const result = disablePackage(catalog, "skill");
-    expect(catalog.packages["skill"].rating).toBe("core");
+    expect(catalog.packages["skill"].enabled).toBeUndefined();
     expect(result).not.toBe(catalog);
   });
 });

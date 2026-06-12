@@ -38,11 +38,9 @@ function sampleCatalog(): CatalogYaml {
     packages: {
       "valid-npm": {
         source: "npm:valid-npm",
-        rating: "core",
       },
       "valid-git": {
         source: "git:github.com/user/repo",
-        rating: "useful",
       },
     },
   };
@@ -121,7 +119,6 @@ describe("verifyCommand", () => {
       packages: {
         "bad-source": {
           source: "invalid://not-a-valid-source",
-          rating: "core",
         },
       },
     });
@@ -284,7 +281,6 @@ describe("verifyCommand", () => {
       packages: {
         "empty-source": {
           source: "",
-          rating: "core",
         },
       },
     });

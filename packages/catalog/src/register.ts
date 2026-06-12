@@ -224,13 +224,11 @@ export function registerCatalog(pi: ExtensionAPI): void {
     ],
     parameters: Type.Object({
       source: Type.String({ description: "Package source (npm:… or git:…)" }),
-      rating: Type.Optional(Type.String({ description: "Initial rating (core, useful, debatable)" })),
       scope: Type.Optional(Type.String({ description: "Batch scope: '@pi-stef' to add all @pi-stef packages" })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
         const flags: Record<string, true | string> = {};
-        if (params.rating) flags.rating = params.rating;
         if (params.scope) flags.scope = params.scope;
         const args: CommandArgs = {
           positional: params.scope ? [] : [params.source],
@@ -277,10 +275,10 @@ export function registerCatalog(pi: ExtensionAPI): void {
     name: "ct_toggle",
     label: "Catalog Toggle",
     description:
-      "Toggle a package's rating through the cycle: core → useful → debatable → disabled → core.",
-    promptSnippet: "Toggle a package's catalog rating",
+      "Toggle a package's enabled state (enabled ↔ disabled).",
+    promptSnippet: "Toggle a package's enabled state",
     promptGuidelines: [
-      "Use ct_toggle when the user wants to cycle a package's rating.",
+      "Use ct_toggle when the user wants to enable or disable a package.",
     ],
     parameters: Type.Object({
       name: Type.String({ description: "Package name to toggle" }),

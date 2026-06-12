@@ -65,7 +65,6 @@ function sampleCatalog(): CatalogYaml {
     packages: {
       "my-skill": {
         source: "npm:my-skill",
-        rating: "core",
       },
     },
   };
@@ -133,8 +132,8 @@ describe("syncCommand", () => {
     const remoteCatalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "my-skill": { source: "npm:my-skill", rating: "core" },
-        "new-skill": { source: "npm:new-skill", rating: "useful" },
+        "my-skill": { source: "npm:my-skill" },
+        "new-skill": { source: "npm:new-skill" },
       },
     };
     mockedPull.mockResolvedValue({ catalog: remoteCatalog, lock: sampleLock() });
@@ -310,7 +309,7 @@ describe("syncCommand", () => {
     const remoteCatalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "new-skill": { source: "npm:new-skill@1.0.0", rating: "core" },
+        "new-skill": { source: "npm:new-skill@1.0.0" },
       },
     };
     const remoteLock: LockFile = {
@@ -598,7 +597,7 @@ describe("syncCommand", () => {
     const remoteCatalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "my-skill": { source: "npm:my-skill", rating: "core" },
+        "my-skill": { source: "npm:my-skill" },
       },
     };
     const remoteLock: LockFile = {
@@ -668,8 +667,8 @@ describe("syncCommand", () => {
     const remoteCatalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "my-skill": { source: "npm:my-skill", rating: "core" },
-        "old-skill": { source: "npm:old-skill", rating: "core" },
+        "my-skill": { source: "npm:my-skill" },
+        "old-skill": { source: "npm:old-skill" },
       },
     };
     const remoteLock: LockFile = {
@@ -694,7 +693,7 @@ describe("syncCommand", () => {
     const localCatalog: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "my-skill": { source: "npm:my-skill", rating: "core" },
+        "my-skill": { source: "npm:my-skill" },
       },
     };
     mockedReadCatalog.mockReturnValue(localCatalog);
@@ -735,8 +734,8 @@ describe("syncCommand", () => {
     const catWithDisabled: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "active-skill": { source: "npm:active-skill", rating: "core" },
-        "disabled-skill": { source: "npm:disabled-skill", rating: "core", enabled: false },
+        "active-skill": { source: "npm:active-skill" },
+        "disabled-skill": { source: "npm:disabled-skill", enabled: false },
       },
     };
     mockedReadCatalog.mockReturnValue(catWithDisabled);

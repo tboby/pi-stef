@@ -84,7 +84,7 @@ function writeInvalidSchemaYaml(): void {
   const filePath = catalogFile(tmpDir);
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(filePath, "meta:\n  pi_version: 123\npackages:\n  x:\n    source: ''\n    rating: notarating", "utf-8");
+  fs.writeFileSync(filePath, "meta:\n  pi_version: 123\npackages:\n  x:\n    source: ''", "utf-8");
 }
 
 // ---------------------------------------------------------------------------
@@ -212,7 +212,7 @@ describe("Edge cases: error handling", () => {
       const catalog: CatalogYaml = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "pkg-a": { source: "npm:pkg-a", rating: "core" },
+          "pkg-a": { source: "npm:pkg-a" },
         },
       };
 
@@ -237,7 +237,7 @@ describe("Edge cases: error handling", () => {
       const catalog: CatalogYaml = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "pkg-a": { source: "npm:pkg-a", rating: "core" },
+          "pkg-a": { source: "npm:pkg-a" },
         },
       };
       writeCatalog(catalog, tmpDir);
@@ -279,7 +279,7 @@ describe("Edge cases: error handling", () => {
       const catalog: CatalogYaml = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "pkg-a": { source: "npm:pkg-a", rating: "core" },
+          "pkg-a": { source: "npm:pkg-a" },
         },
       };
       writeCatalog(catalog, tmpDir);

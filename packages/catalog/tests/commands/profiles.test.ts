@@ -34,17 +34,17 @@ function catalogWithProfiles(): CatalogYaml {
   return {
     meta: { pi_version: "1.0.0", activeProfile: "work" },
     packages: {
-      "base-pkg": { source: "npm:base-pkg", rating: "core" },
+      "base-pkg": { source: "npm:base-pkg" },
     },
     profiles: {
       work: {
         packages: {
-          "work-tool": { source: "npm:work-tool", rating: "core" },
+          "work-tool": { source: "npm:work-tool" },
         },
       },
       personal: {
         packages: {
-          "home-tool": { source: "npm:home-tool", rating: "useful" },
+          "home-tool": { source: "npm:home-tool" },
         },
       },
     },

@@ -1,7 +1,7 @@
 /**
  * `ct status` subcommand implementation.
  *
- * Shows catalog status: profile, package counts by rating,
+ * Shows catalog status: profile, package counts (enabled/disabled),
  * installed/missing/orphan counts, gist URL, and last sync time.
  */
 
@@ -16,30 +16,6 @@ import { readCachedGistId } from "../sync/cache.js";
 
 /** Context for `statusCommand`. Uses the base `CommandCtx`. */
 export type StatusCtx = CommandCtx;
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-interface RatingCounts {
-  core: number;
-  useful: number;
-  debatable: number;
-  disabled: number;
-}
-
-function countByRating(
-  packages: Record<string, { rating: string; enabled?: boolean }>,
-): RatingCounts {
-  const counts: RatingCounts = { core: 0, useful: 0, debatable: 0, disabled: 0 };
-  for (const pkg of Object.values(packages)) {
-    const r = pkg.rating as keyof RatingCounts;
-    if (r in counts) {
-      counts[r]++;
-    }
-  }
-  return counts;
-}
 
 // ---------------------------------------------------------------------------
 // statusCommand
@@ -67,8 +43,16 @@ export async function statusCommand(
   const packages = catalog.packages;
   const totalPackages = Object.keys(packages).length;
 
-  // --- Package counts by rating ---
-  const ratingCounts = countByRating(packages);
+  // --- Enabled / disabled counts ---
+  let enabledCount = 0;
+  let disabledCount = 0;
+  for (const pkg of Object.values(packages)) {
+    if (pkg.enabled === false) {
+      disabledCount++;
+    } else {
+      enabledCount++;
+    }
+  }
 
   // --- Installed / missing / orphan ---
   const catalogSources = new Set<string>();
@@ -116,7 +100,7 @@ export async function statusCommand(
 
   // Package counts
   lines.push(
-    `Packages: ${totalPackages} total (core: ${ratingCounts.core}, useful: ${ratingCounts.useful}, debatable: ${ratingCounts.debatable}, disabled: ${ratingCounts.disabled})`,
+    `Packages: ${totalPackages} total (${enabledCount} enabled, ${disabledCount} disabled)`,
   );
 
   // Installed/missing/orphan

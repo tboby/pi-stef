@@ -86,14 +86,13 @@ describe("addCommand", () => {
     const { ctx, ui } = makeCtx();
 
     await addCommand(
-      { positional: ["my-pkg", "npm:my-pkg"], flags: { rating: "core" } },
+      { positional: ["my-pkg", "npm:my-pkg"], flags: {} },
       ctx,
     );
 
     const catalog = readCatalog(tmpDir);
     expect(catalog.packages["my-pkg"]).toEqual({
       source: "npm:my-pkg",
-      rating: "core",
     });
     expect(ui.notify).toHaveBeenCalledWith(
       expect.stringContaining("my-pkg"),
@@ -110,7 +109,7 @@ describe("addCommand", () => {
     await addCommand(
       {
         positional: ["my-pkg", "git:github.com/sfiorini/pi-stef#packages/my-pkg"],
-        flags: { rating: "core", type: "skill" },
+        flags: { type: "skill" },
       },
       ctx,
     );
@@ -118,7 +117,6 @@ describe("addCommand", () => {
     const catalog = readCatalog(tmpDir);
     expect(catalog.packages["my-pkg"]).toEqual({
       source: "git:github.com/sfiorini/pi-stef#packages/my-pkg",
-      rating: "core",
       type: "skill",
     });
     expect(ui.notify).toHaveBeenCalledWith(
@@ -137,7 +135,7 @@ describe("addCommand", () => {
     await addCommand(
       {
         positional: ["my-pkg", "git:github.com/user/repo"],
-        flags: { rating: "useful" },
+        flags: {},
       },
       ctx,
     );
@@ -151,7 +149,6 @@ describe("addCommand", () => {
     const catalog = readCatalog(tmpDir);
     expect(catalog.packages["my-pkg"]).toEqual({
       source: "git:github.com/user/repo",
-      rating: "useful",
       type: "pi-native",
     });
   });
@@ -165,7 +162,7 @@ describe("addCommand", () => {
     await addCommand(
       {
         positional: ["my-pkg", "npm:my-pkg"],
-        flags: { rating: "core" },
+        flags: {},
       },
       ctx,
     );
@@ -182,7 +179,7 @@ describe("addCommand", () => {
     const existing: CatalogYaml = {
       meta: { pi_version: "1.0.0" },
       packages: {
-        "my-pkg": { source: "npm:existing", rating: "core" },
+        "my-pkg": { source: "npm:existing" },
       },
     };
     seedCatalog(tmpDir, existing);
@@ -191,7 +188,7 @@ describe("addCommand", () => {
     await addCommand(
       {
         positional: ["my-pkg", "npm:another"],
-        flags: { rating: "core" },
+        flags: {},
       },
       ctx,
     );
@@ -215,7 +212,7 @@ describe("addCommand", () => {
     await addCommand(
       {
         positional: ["my-pkg", "invalid-source"],
-        flags: { rating: "core" },
+        flags: {},
       },
       ctx,
     );
@@ -236,7 +233,7 @@ describe("addCommand", () => {
     const { ctx, ui } = makeCtx();
 
     await addCommand(
-      { positional: [], flags: { rating: "core" } },
+      { positional: [], flags: {} },
       ctx,
     );
 
@@ -251,7 +248,7 @@ describe("addCommand", () => {
     const { ctx, ui } = makeCtx();
 
     await addCommand(
-      { positional: ["my-pkg"], flags: { rating: "core" } },
+      { positional: ["my-pkg"], flags: {} },
       ctx,
     );
 
@@ -259,21 +256,6 @@ describe("addCommand", () => {
       expect.stringContaining("Invalid source"),
       "error",
     );
-  });
-
-  // --- Default rating when not specified ------------------------------------
-
-  it("defaults rating to 'core' when not specified", async () => {
-    seedCatalog(tmpDir);
-    const { ctx } = makeCtx();
-
-    await addCommand(
-      { positional: ["my-pkg", "npm:my-pkg"], flags: {} },
-      ctx,
-    );
-
-    const catalog = readCatalog(tmpDir);
-    expect(catalog.packages["my-pkg"].rating).toBe("core");
   });
 
   // --- Runs pi install after adding -----------------------------------------
@@ -285,7 +267,7 @@ describe("addCommand", () => {
     await addCommand(
       {
         positional: ["my-pkg", "npm:my-pkg"],
-        flags: { rating: "core" },
+        flags: {},
       },
       ctx,
     );
@@ -304,7 +286,7 @@ describe("addCommand", () => {
     await addCommand(
       {
         positional: ["my-pkg", "npm:my-pkg"],
-        flags: { rating: "core" },
+        flags: {},
       },
       ctx,
     );
@@ -329,14 +311,13 @@ describe("addCommand", () => {
       const { ctx, ui } = makeCtx();
 
       await addCommand(
-        { positional: ["npm:@scope/my-pkg@1.0.0"], flags: { rating: "core" } },
+        { positional: ["npm:@scope/my-pkg@1.0.0"], flags: {} },
         ctx,
       );
 
       const catalog = readCatalog(tmpDir);
       expect(catalog.packages["@scope/my-pkg"]).toEqual({
         source: "npm:@scope/my-pkg@1.0.0",
-        rating: "core",
       });
       expect(ui.notify).toHaveBeenCalledWith(
         expect.stringContaining("@scope/my-pkg"),
@@ -351,7 +332,7 @@ describe("addCommand", () => {
       await addCommand(
         {
           positional: ["git:github.com/user/repo#packages/foo"],
-          flags: { rating: "core", type: "skill" },
+          flags: { type: "skill" },
         },
         ctx,
       );
@@ -359,7 +340,6 @@ describe("addCommand", () => {
       const catalog = readCatalog(tmpDir);
       expect(catalog.packages["github.com/user/repo#packages/foo"]).toEqual({
         source: "git:github.com/user/repo#packages/foo",
-        rating: "core",
         type: "skill",
       });
     });
@@ -390,7 +370,7 @@ describe("addCommand", () => {
       const { ctx, ui } = makeCtx();
 
       await addCommand(
-        { positional: ["my-pkg", "npm:my-pkg"], flags: { rating: "core" } },
+        { positional: ["my-pkg", "npm:my-pkg"], flags: {} },
         ctx,
       );
 
@@ -404,7 +384,6 @@ describe("addCommand", () => {
       const catalog = readCatalog(tmpDir);
       expect(catalog.packages["my-pkg"]).toEqual({
         source: "npm:my-pkg",
-        rating: "core",
       });
     });
   });
@@ -444,7 +423,7 @@ describe("addCommand", () => {
       const existing = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "@pi-stef/figma": { source: "npm:@pi-stef/figma", rating: "core" as const },
+          "@pi-stef/figma": { source: "npm:@pi-stef/figma" },
         },
       };
       seedCatalog(tmpDir, existing);

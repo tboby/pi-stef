@@ -153,16 +153,16 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
       writeCatalogToDisk(catalog);
 
       const packages = [
-        { name: "core-skill", source: "npm:core-skill", rating: "core" as const },
-        { name: "useful-tool", source: "npm:useful-tool", rating: "useful" as const },
-        { name: "git-skill", source: "git:github.com/user/repo", rating: "debatable" as const },
+        { name: "core-skill", source: "npm:core-skill" },
+        { name: "useful-tool", source: "npm:useful-tool" },
+        { name: "git-skill", source: "git:github.com/user/repo" },
       ];
 
       for (const pkg of packages) {
         await addCommand(
           {
             positional: [pkg.name, pkg.source],
-            flags: { rating: pkg.rating, type: "skill" },
+            flags: { type: "skill" },
           },
           ctx,
         );
@@ -175,17 +175,14 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
       expect(Object.keys(catalog.packages)).toHaveLength(3);
       expect(catalog.packages["core-skill"]).toEqual({
         source: "npm:core-skill",
-        rating: "core",
         type: "skill",
       });
       expect(catalog.packages["useful-tool"]).toEqual({
         source: "npm:useful-tool",
-        rating: "useful",
         type: "skill",
       });
       expect(catalog.packages["git-skill"]).toEqual({
         source: "git:github.com/user/repo",
-        rating: "debatable",
         type: "skill",
       });
 
@@ -201,9 +198,7 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
 
       const statusMsg = notifications.map((n) => n.msg).join("\n");
       expect(statusMsg).toContain("3 total");
-      expect(statusMsg).toContain("core: 1");
-      expect(statusMsg).toContain("useful: 1");
-      expect(statusMsg).toContain("debatable: 1");
+      expect(statusMsg).toContain("3 enabled");
       expect(statusMsg).toContain("Installed: 2");
       expect(statusMsg).toContain("Missing: 1");
     });
@@ -219,8 +214,8 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
       const catalog: CatalogYaml = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "pkg-a": { source: "npm:pkg-a", rating: "core" },
-          "pkg-b": { source: "npm:pkg-b", rating: "useful" },
+          "pkg-a": { source: "npm:pkg-a" },
+          "pkg-b": { source: "npm:pkg-b" },
         },
       };
       writeCatalogToDisk(catalog);
@@ -243,7 +238,7 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
       const catalog: CatalogYaml = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "pkg-a": { source: "npm:pkg-a", rating: "core" },
+          "pkg-a": { source: "npm:pkg-a" },
         },
       };
       writeCatalogToDisk(catalog);
@@ -265,7 +260,7 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
       const catalog: CatalogYaml = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "pkg-a": { source: "npm:pkg-a@2.0.0", rating: "core" },
+          "pkg-a": { source: "npm:pkg-a@2.0.0" },
         },
       };
       writeCatalogToDisk(catalog);
@@ -294,8 +289,8 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
       const originalCatalog: CatalogYaml = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "skill-a": { source: "npm:skill-a", rating: "core", type: "skill" },
-          "tool-b": { source: "git:github.com/user/tool-b", rating: "useful" },
+          "skill-a": { source: "npm:skill-a", type: "skill" },
+          "tool-b": { source: "git:github.com/user/tool-b" },
         },
       };
       const originalLock: LockFile = {
@@ -388,7 +383,7 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
       const baseCatalog: CatalogYaml = {
         meta: { pi_version: "1.0.0" },
         packages: {
-          "base-tool": { source: "npm:base-tool", rating: "core" },
+          "base-tool": { source: "npm:base-tool" },
         },
       };
       writeCatalogToDisk(baseCatalog);
@@ -475,12 +470,11 @@ describe.skipIf(!RUN)("Integration: full lifecycle", () => {
       let catalog = readCatalogFromDisk();
       expect(catalog.packages["existing"]).toEqual({
         source: "npm:existing",
-        rating: "core",
       });
 
       // Add a new package
       await addCommand(
-        { positional: ["new-pkg", "npm:new-pkg"], flags: { rating: "useful" } },
+        { positional: ["new-pkg", "npm:new-pkg"], flags: {} },
         ctx,
       );
 

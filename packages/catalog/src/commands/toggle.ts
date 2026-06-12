@@ -1,12 +1,9 @@
 /**
  * `ct toggle`, `ct enable`, and `ct disable` subcommand implementations.
  *
- * - `ct toggle <name>` cycles a package's rating through the cycle:
- *   core → useful → debatable → disabled → core
- * - `ct enable <name>` sets a disabled package back to its previous rating
- *   (or "core" if no previous rating stored). No-op when already enabled.
- * - `ct disable <name>` sets rating to disabled, saves the previous rating,
- *   and runs `pi uninstall` to remove the package.
+ * - `ct toggle <name>` toggles a package's enabled state (enabled ↔ disabled)
+ * - `ct enable <name>` enables a disabled package. No-op when already enabled.
+ * - `ct disable <name>` disables a package and runs `pi uninstall`.
  *
  * All commands read/write `cat.yaml` via `readCatalog` / `writeCatalog`
  * and provide user feedback through `ctx.ui.notify`.
@@ -31,7 +28,7 @@ export type ToggleCtx = CommandCtx;
 /**
  * Execute the `ct toggle` subcommand.
  *
- * Cycles the package's rating through: core → useful → debatable → disabled → core.
+ * Toggles the package's enabled state: enabled ↔ disabled.
  */
 export async function toggleCommand(
   args: CommandArgs,
@@ -49,8 +46,9 @@ export async function toggleCommand(
   try {
     const updated = togglePackage(catalog, name);
     writeCatalog(updated, ctx.home);
+    const isEnabled = updated.packages[name].enabled !== false;
     ctx.ui.notify(
-      `Toggled "${name}" to ${updated.packages[name].rating}`,
+      `Toggled "${name}" — now ${isEnabled ? "enabled" : "disabled"}`,
       "info",
     );
   } catch (err: unknown) {
@@ -66,8 +64,7 @@ export async function toggleCommand(
 /**
  * Execute the `ct enable` subcommand.
  *
- * Restores a disabled package to its previous rating (or "core").
- * No-op when the package is already enabled.
+ * Enables a disabled package. No-op when the package is already enabled.
  */
 export async function enableCommand(
   args: CommandArgs,
@@ -92,10 +89,7 @@ export async function enableCommand(
     }
 
     writeCatalog(updated, ctx.home);
-    ctx.ui.notify(
-      `Enabled "${name}" (rating: ${updated.packages[name].rating})`,
-      "info",
-    );
+    ctx.ui.notify(`Enabled "${name}"`, "info");
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     ctx.ui.notify(message, "error");
@@ -109,8 +103,7 @@ export async function enableCommand(
 /**
  * Execute the `ct disable` subcommand.
  *
- * Sets the package rating to "disabled", saves the previous rating for later
- * restoration, and runs `pi uninstall` to remove the package.
+ * Disables a package and runs `pi uninstall` to remove it.
  */
 export async function disableCommand(
   args: CommandArgs,
