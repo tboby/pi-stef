@@ -256,4 +256,105 @@ describe("removeCommand", () => {
     );
     uninstallSpy.mockRestore();
   });
+
+  // =========================================================================
+  // --scope @pi-stef batch mode
+  // =========================================================================
+
+  describe("--scope @pi-stef", () => {
+    function catalogWithPiStef(): CatalogYaml {
+      return {
+        meta: { pi_version: "1.0.0" },
+        packages: {
+          "@pi-stef/figma": { source: "npm:@pi-stef/figma", rating: "core" },
+          "@pi-stef/web": { source: "npm:@pi-stef/web", rating: "useful" },
+          "other-pkg": { source: "npm:other-pkg", rating: "core" },
+          // Catalog itself — should NOT be removed
+          "@pi-stef/catalog": { source: "npm:@pi-stef/catalog", rating: "core" },
+        },
+      };
+    }
+
+    it("removes all @pi-stef packages (excluding catalog)", async () => {
+      seedCatalog(tmpDir, catalogWithPiStef());
+      const { ctx, ui } = makeCtx();
+      ui.confirm.mockResolvedValue(true);
+
+      const execModule = await import("../../src/util/exec.js");
+      const uninstallSpy = vi
+        .spyOn(execModule, "piUninstall")
+        .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+      await removeCommand(
+        { positional: [], flags: { scope: "@pi-stef" } },
+        ctx,
+      );
+
+      const catalog = readCatalog(tmpDir);
+      // @pi-stef packages removed
+      expect(catalog.packages["@pi-stef/figma"]).toBeUndefined();
+      expect(catalog.packages["@pi-stef/web"]).toBeUndefined();
+      // Non-pi-stef package untouched
+      expect(catalog.packages["other-pkg"]).toBeDefined();
+      // Catalog package untouched
+      expect(catalog.packages["@pi-stef/catalog"]).toBeDefined();
+
+      expect(ui.notify).toHaveBeenCalledWith(
+        expect.stringContaining("removed 2"),
+        "info",
+      );
+      expect(uninstallSpy).toHaveBeenCalledTimes(2);
+      uninstallSpy.mockRestore();
+    });
+
+    it("prompts for confirmation before removing", async () => {
+      seedCatalog(tmpDir, catalogWithPiStef());
+      const { ctx, ui } = makeCtx();
+
+      const execModule = await import("../../src/util/exec.js");
+      const uninstallSpy = vi
+        .spyOn(execModule, "piUninstall")
+        .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+      await removeCommand(
+        { positional: [], flags: { scope: "@pi-stef" } },
+        ctx,
+      );
+
+      expect(ui.confirm).toHaveBeenCalledWith(
+        expect.stringContaining("@pi-stef"),
+      );
+      uninstallSpy.mockRestore();
+    });
+
+    it("shows info when no @pi-stef packages in catalog", async () => {
+      seedCatalog(tmpDir);
+      const { ctx, ui } = makeCtx();
+
+      await removeCommand(
+        { positional: [], flags: { scope: "@pi-stef" } },
+        ctx,
+      );
+
+      expect(ui.notify).toHaveBeenCalledWith(
+        expect.stringContaining("No @pi-stef packages"),
+        "info",
+      );
+    });
+
+    it("rejects unsupported scope", async () => {
+      seedCatalog(tmpDir);
+      const { ctx, ui } = makeCtx();
+
+      await removeCommand(
+        { positional: [], flags: { scope: "@other" } },
+        ctx,
+      );
+
+      expect(ui.notify).toHaveBeenCalledWith(
+        expect.stringContaining("Unsupported scope"),
+        "error",
+      );
+    });
+  });
 });

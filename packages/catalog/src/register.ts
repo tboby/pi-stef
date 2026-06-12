@@ -221,12 +221,16 @@ export function registerCatalog(pi: ExtensionAPI): void {
     parameters: Type.Object({
       source: Type.String({ description: "Package source (npm:… or git:…)" }),
       rating: Type.Optional(Type.String({ description: "Initial rating (core, useful, debatable)" })),
+      scope: Type.Optional(Type.String({ description: "Batch scope: '@pi-stef' to add all @pi-stef packages" })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
+        const flags: Record<string, true | string> = {};
+        if (params.rating) flags.rating = params.rating;
+        if (params.scope) flags.scope = params.scope;
         const args: CommandArgs = {
-          positional: [params.source],
-          flags: params.rating ? { rating: params.rating } : {},
+          positional: params.scope ? [] : [params.source],
+          flags,
         };
         await addCommand(args, ctx as unknown as AddCtx);
         return { content: [{ type: "text" as const, text: `Added ${params.source}.` }], details: undefined as unknown };
@@ -245,11 +249,17 @@ export function registerCatalog(pi: ExtensionAPI): void {
       "Use ct_remove when the user asks to remove or uninstall a package from their catalog.",
     ],
     parameters: Type.Object({
-      name: Type.String({ description: "Package name to remove" }),
+      name: Type.Optional(Type.String({ description: "Package name to remove" })),
+      scope: Type.Optional(Type.String({ description: "Batch scope: '@pi-stef' to remove all @pi-stef packages" })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
-        const args: CommandArgs = { positional: [params.name], flags: {} };
+        const flags: Record<string, true | string> = {};
+        if (params.scope) flags.scope = params.scope;
+        const args: CommandArgs = {
+          positional: params.name ? [params.name] : [],
+          flags,
+        };
         await removeCommand(args, ctx as unknown as RemoveCtx);
         return { content: [{ type: "text" as const, text: `Removed ${params.name}.` }], details: undefined as unknown };
       } catch (err) {

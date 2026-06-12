@@ -12,6 +12,7 @@
 
 import type { CommandArgs, CommandCtx } from "./types.js";
 import { removePackage } from "../catalog/crud.js";
+import { isPiStefSource } from "../catalog/packages.js";
 import { readCatalog, writeCatalog, readLock, writeLock } from "../config/io.js";
 import { piUninstall } from "../util/exec.js";
 
@@ -41,6 +42,77 @@ export async function removeCommand(
   ctx: RemoveCtx,
 ): Promise<void> {
   const { positional, flags } = args;
+
+  // --- Handle --scope batch mode ---------------------------------------------
+  if ("scope" in flags) {
+    const scope = flags["scope"];
+    if (scope !== "@pi-stef") {
+      ctx.ui.notify(`Unsupported scope: "${scope}". Use --scope @pi-stef.`, "error");
+      return;
+    }
+
+    const catalog = readCatalog(ctx.home);
+    const lock = readLock(ctx.home);
+
+    // isPiStefSource returns false for @pi-stef/catalog by design (see packages.ts)
+    const piStefNames = Object.keys(catalog.packages).filter(
+      (name) => isPiStefSource(catalog.packages[name].source),
+    );
+
+    if (piStefNames.length === 0) {
+      ctx.ui.notify("No @pi-stef packages found in catalog", "info");
+      return;
+    }
+
+    // Confirmation
+    const skipConfirm = "yes" in flags || "y" in flags;
+    if (!skipConfirm && ctx.ui.confirm) {
+      const confirmed = await ctx.ui.confirm(
+        `Remove ${piStefNames.length} @pi-stef packages from catalog?`,
+      );
+      if (!confirmed) {
+        ctx.ui.notify("Removal cancelled", "info");
+        return;
+      }
+    }
+
+    // Capture sources before removing
+    const sources: Record<string, string> = {};
+    for (const name of piStefNames) {
+      sources[name] = catalog.packages[name].source;
+    }
+
+    // Remove all from catalog and lock file
+    for (const name of piStefNames) {
+      delete catalog.packages[name];
+      if (lock.packages[name]) {
+        delete lock.packages[name];
+      }
+    }
+
+    writeCatalog(catalog, ctx.home);
+    writeLock(lock, ctx.home);
+
+    // Uninstall all
+    let uninstalled = 0;
+    let failed = 0;
+    for (const name of piStefNames) {
+      try {
+        await piUninstall(sources[name]);
+        uninstalled++;
+      } catch {
+        ctx.ui.notify(`Warning: uninstall of "${name}" failed`, "warning");
+        failed++;
+      }
+    }
+
+    ctx.ui.notify(
+      `Scope @pi-stef: removed ${piStefNames.length}, uninstalled ${uninstalled}${failed > 0 ? ` (${failed} uninstall failed)` : ""}`,
+      failed > 0 ? "warning" : "info",
+    );
+    return;
+  }
+
   const name = positional[0];
 
   // --- Validate required args -----------------------------------------------

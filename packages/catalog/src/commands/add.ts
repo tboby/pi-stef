@@ -14,6 +14,7 @@ import type { RatingValue } from "../catalog/ratings.js";
 import type { CommandArgs, CommandCtx } from "./types.js";
 import { addPackage } from "../catalog/crud.js";
 import { sourceToKey } from "../catalog/source.js";
+import { PI_STEF_PACKAGES } from "../catalog/packages.js";
 import { readCatalog, writeCatalog } from "../config/io.js";
 import { piInstall } from "../util/exec.js";
 
@@ -87,6 +88,63 @@ function resolveType(
  */
 export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> {
   const { positional, flags } = args;
+
+  // --- Handle --scope batch mode ---------------------------------------------
+  if ("scope" in flags) {
+    const scope = flags["scope"];
+    if (scope !== "@pi-stef") {
+      ctx.ui.notify(`Unsupported scope: "${scope}". Use --scope @pi-stef.`, "error");
+      return;
+    }
+
+    const catalog = readCatalog(ctx.home);
+    const rating = resolveRating(flags);
+    let added = 0;
+    let skipped = 0;
+
+    for (const pkg of PI_STEF_PACKAGES) {
+      const npmSource = `npm:${pkg}`;
+
+      // Skip if already in catalog
+      if (catalog.packages[pkg]) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        const updated = addPackage(catalog, pkg, npmSource, rating);
+        // Merge into catalog so next iteration sees it
+        Object.assign(catalog.packages, updated.packages);
+        added++;
+      } catch {
+        // Package may already exist — skip silently
+        skipped++;
+      }
+    }
+
+    if (added > 0) {
+      writeCatalog(catalog, ctx.home);
+    }
+
+    // Install all added packages
+    if (added > 0) {
+      for (const pkg of PI_STEF_PACKAGES) {
+        if (catalog.packages[pkg]?.source === `npm:${pkg}`) {
+          try {
+            await piInstall(`npm:${pkg}`);
+          } catch {
+            ctx.ui.notify(`Warning: install of "${pkg}" failed`, "warning");
+          }
+        }
+      }
+    }
+
+    ctx.ui.notify(
+      `Scope @pi-stef: added ${added}, skipped ${skipped} (already in catalog)`,
+      "info",
+    );
+    return;
+  }
 
   // --- Handle legacy 2-arg syntax: ct add <name> <source> -------------------
   let name: string;

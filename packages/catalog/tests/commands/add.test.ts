@@ -409,4 +409,72 @@ describe("addCommand", () => {
     });
   });
 
+  // =========================================================================
+  // --scope @pi-stef batch mode
+  // =========================================================================
+
+  describe("--scope @pi-stef", () => {
+    it("adds all @pi-stef packages to catalog", async () => {
+      seedCatalog(tmpDir);
+      const { ctx, ui } = makeCtx();
+
+      await addCommand(
+        { positional: [], flags: { scope: "@pi-stef" } },
+        ctx,
+      );
+
+      const catalog = readCatalog(tmpDir);
+      expect(catalog.packages["@pi-stef/agent-workflows"]).toBeDefined();
+      expect(catalog.packages["@pi-stef/atlassian"]).toBeDefined();
+      expect(catalog.packages["@pi-stef/figma"]).toBeDefined();
+      expect(catalog.packages["@pi-stef/paths"]).toBeDefined();
+      expect(catalog.packages["@pi-stef/team"]).toBeDefined();
+      expect(catalog.packages["@pi-stef/web"]).toBeDefined();
+
+      // Catalog package itself should NOT be added
+      expect(catalog.packages["@pi-stef/catalog"]).toBeUndefined();
+
+      expect(ui.notify).toHaveBeenCalledWith(
+        expect.stringContaining("added 6"),
+        "info",
+      );
+    });
+
+    it("skips packages already in catalog", async () => {
+      const existing = {
+        meta: { pi_version: "1.0.0" },
+        packages: {
+          "@pi-stef/figma": { source: "npm:@pi-stef/figma", rating: "core" as const },
+        },
+      };
+      seedCatalog(tmpDir, existing);
+      const { ctx, ui } = makeCtx();
+
+      await addCommand(
+        { positional: [], flags: { scope: "@pi-stef" } },
+        ctx,
+      );
+
+      expect(ui.notify).toHaveBeenCalledWith(
+        expect.stringContaining("skipped 1"),
+        "info",
+      );
+    });
+
+    it("rejects unsupported scope", async () => {
+      seedCatalog(tmpDir);
+      const { ctx, ui } = makeCtx();
+
+      await addCommand(
+        { positional: [], flags: { scope: "@other" } },
+        ctx,
+      );
+
+      expect(ui.notify).toHaveBeenCalledWith(
+        expect.stringContaining("Unsupported scope"),
+        "error",
+      );
+    });
+  });
+
 });
