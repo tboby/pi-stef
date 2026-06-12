@@ -261,7 +261,8 @@ export function registerCatalog(pi: ExtensionAPI): void {
           flags,
         };
         await removeCommand(args, ctx as unknown as RemoveCtx);
-        return { content: [{ type: "text" as const, text: `Removed ${params.name}.` }], details: undefined as unknown };
+        const label = params.scope ? `Scope ${params.scope}` : `${params.name}`;
+        return { content: [{ type: "text" as const, text: `Removed ${label}.` }], details: undefined as unknown };
       } catch (err) {
         return { content: [{ type: "text" as const, text: `Remove failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
       }

@@ -101,35 +101,38 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
     const rating = resolveRating(flags);
     let added = 0;
     let skipped = 0;
+    let currentCatalog = catalog;
 
     for (const pkg of PI_STEF_PACKAGES) {
       const npmSource = `npm:${pkg}`;
 
       // Skip if already in catalog
-      if (catalog.packages[pkg]) {
+      if (currentCatalog.packages[pkg]) {
         skipped++;
         continue;
       }
 
       try {
-        const updated = addPackage(catalog, pkg, npmSource, rating);
-        // Merge into catalog so next iteration sees it
-        Object.assign(catalog.packages, updated.packages);
+        currentCatalog = addPackage(currentCatalog, pkg, npmSource, rating);
         added++;
-      } catch {
-        // Package may already exist — skip silently
+      } catch (err: unknown) {
+        // Unexpected validation error — warn but continue
+        ctx.ui.notify(
+          `Warning: failed to add "${pkg}": ${err instanceof Error ? err.message : String(err)}`,
+          "warning",
+        );
         skipped++;
       }
     }
 
     if (added > 0) {
-      writeCatalog(catalog, ctx.home);
+      writeCatalog(currentCatalog, ctx.home);
     }
 
     // Install all added packages
     if (added > 0) {
       for (const pkg of PI_STEF_PACKAGES) {
-        if (catalog.packages[pkg]?.source === `npm:${pkg}`) {
+        if (currentCatalog.packages[pkg]?.source === `npm:${pkg}`) {
           try {
             await piInstall(`npm:${pkg}`);
           } catch {
