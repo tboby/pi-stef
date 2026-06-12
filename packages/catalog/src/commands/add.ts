@@ -13,6 +13,7 @@
 import type { CommandArgs, CommandCtx } from "./types.js";
 import { addPackage } from "../catalog/crud.js";
 import { sourceToKey } from "../catalog/source.js";
+import { checkSetupForSource, formatSetupStatus } from "../catalog/setup.js";
 import { PI_STEF_PACKAGES } from "../catalog/packages.js";
 import { readCatalog, writeCatalog } from "../config/io.js";
 import { piInstall } from "../util/exec.js";
@@ -109,12 +110,19 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
     }
 
     // Install all added packages
+    const setupWarnings: string[] = [];
     if (added > 0) {
       for (const pkg of PI_STEF_PACKAGES) {
         if (currentCatalog.packages[pkg]?.source === `npm:${pkg}`) {
           ctx.ui.setWorkingMessage?.(`Installing ${pkg}...`);
           try {
             await piInstall(`npm:${pkg}`);
+
+            // Check setup after successful install
+            const setup = checkSetupForSource(`npm:${pkg}`, ctx.home);
+            if (setup && !setup.ok) {
+              setupWarnings.push(`${pkg}: ${formatSetupStatus(setup)}`);
+            }
           } catch {
             ctx.ui.notify(`Warning: install of "${pkg}" failed`, "warning");
           }
@@ -123,9 +131,16 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
       ctx.ui.setWorkingMessage?.();
     }
 
-    ctx.ui.notify(
+    const parts: string[] = [
       `Scope @pi-stef: added ${added}, skipped ${skipped} (already in catalog)`,
-      "info",
+    ];
+    if (setupWarnings.length > 0) {
+      parts.push(`Setup incomplete:\n  ${setupWarnings.join("\n  ")}`);
+    }
+
+    ctx.ui.notify(
+      parts.join("\n"),
+      setupWarnings.length > 0 ? "warning" : "info",
     );
     return;
   }
@@ -193,4 +208,13 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
     );
   }
   ctx.ui.setWorkingMessage?.();
+
+  // --- Check setup requirements ---------------------------------------------
+  const setup = checkSetupForSource(source, ctx.home);
+  if (setup && !setup.ok) {
+    ctx.ui.notify(
+      `Setup incomplete for "${name}": ${formatSetupStatus(setup)}`,
+      "warning",
+    );
+  }
 }

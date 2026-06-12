@@ -31,6 +31,8 @@ export interface InstalledPackage {
   name: string;
   /** Installed version if discoverable, otherwise undefined. */
   version: string | undefined;
+  /** Absolute path to the installed package directory, if discoverable. */
+  installDir?: string;
 }
 
 export type InstalledMap = Record<string, InstalledPackage>;
@@ -135,10 +137,14 @@ function readPackagesFromSettings(
     const parsed = parseSource(rawSource);
 
     let version: string | undefined;
+    let installDir: string | undefined;
     if (parsed.type === "npm") {
       version = readNpmVersion(home, parsed.npmName!);
+      installDir = path.join(npmNodeModulesDir(home), parsed.npmName!);
     } else if (parsed.type === "local") {
       version = readLocalVersion(home, rawSource);
+      const settingsDir = path.join(home, ".pi", "agent");
+      installDir = path.resolve(settingsDir, rawSource);
     }
 
     const key = parsed.type === "local" ? rawSource : parsed.name;
@@ -147,6 +153,7 @@ function readPackagesFromSettings(
       source: rawSource,
       name: parsed.name,
       version,
+      installDir,
     };
   }
 

@@ -13,6 +13,7 @@
 import type { CommandArgs, CommandCtx } from "./types.js";
 import { readCatalog } from "../config/io.js";
 import { piUpdate } from "../util/exec.js";
+import { checkSetupForSource, formatSetupStatus } from "../catalog/setup.js";
 
 // ---------------------------------------------------------------------------
 // updateCommand
@@ -56,6 +57,15 @@ export async function updateCommand(
       ctx.ui.notify(`Warning: update of "${name}" failed`, "warning");
     }
     ctx.ui.setWorkingMessage?.();
+
+    // Check setup requirements after update
+    const setup = checkSetupForSource(entry.source, ctx.home);
+    if (setup && !setup.ok) {
+      ctx.ui.notify(
+        `Setup incomplete for "${name}": ${formatSetupStatus(setup)}`,
+        "warning",
+      );
+    }
     return;
   }
 
@@ -68,6 +78,7 @@ export async function updateCommand(
 
   let updated = 0;
   let failed = 0;
+  const setupWarnings: string[] = [];
 
   for (const pkgName of names) {
     const entry = packages[pkgName];
@@ -75,6 +86,12 @@ export async function updateCommand(
     try {
       await piUpdate(entry.source);
       updated++;
+
+      // Check setup after successful update
+      const setup = checkSetupForSource(entry.source, ctx.home);
+      if (setup && !setup.ok) {
+        setupWarnings.push(`${pkgName}: ${formatSetupStatus(setup)}`);
+      }
     } catch {
       ctx.ui.notify(`Warning: update of "${pkgName}" failed`, "warning");
       failed++;
@@ -82,8 +99,15 @@ export async function updateCommand(
   }
   ctx.ui.setWorkingMessage?.();
 
-  ctx.ui.notify(
+  const parts: string[] = [
     `Updated ${updated}/${names.length} packages${failed > 0 ? ` (${failed} failed)` : ""}`,
-    failed > 0 ? "warning" : "info",
+  ];
+  if (setupWarnings.length > 0) {
+    parts.push(`Setup incomplete:\n  ${setupWarnings.join("\n  ")}`);
+  }
+
+  ctx.ui.notify(
+    parts.join("\n"),
+    failed > 0 || setupWarnings.length > 0 ? "warning" : "info",
   );
 }
