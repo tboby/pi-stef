@@ -172,6 +172,12 @@ export async function syncCommand(
     }
   }
 
+  // Track whether the rebuilt lock (from buildSyncedLock) differs from the
+  // remote lock. This catches the case where `pi update` bumped an installed
+  // version but the catalog source string hasn't changed, so the pre-pull
+  // lock comparison wouldn't detect it.
+  let rebuiltLockDiffers = false;
+
   const installed = scanInstalled(ctx.home);
 
   // Build catalog entries for reconcile
@@ -234,6 +240,28 @@ export async function syncCommand(
     // Always write a populated lock so "last sync" is accurate
     const syncedLock = buildSyncedLock(catalog, installed);
     writeLock(syncedLock, ctx.home);
+
+    // Compare rebuilt lock versions against remote to detect version drift
+    // from external `pi update` calls that bumped installed versions without
+    // changing the catalog source string.
+    if (pulledData) {
+      const remoteLock = pulledData.lock;
+      for (const [key, rebuiltEntry] of Object.entries(syncedLock.packages)) {
+        const remoteEntry = remoteLock.packages[key];
+        if (!remoteEntry || remoteEntry.version !== rebuiltEntry.version) {
+          rebuiltLockDiffers = true;
+          break;
+        }
+      }
+      if (!rebuiltLockDiffers) {
+        for (const key of Object.keys(remoteLock.packages)) {
+          if (!(key in syncedLock.packages)) {
+            rebuiltLockDiffers = true;
+            break;
+          }
+        }
+      }
+    }
   }
 
   // --- 5. Push if changed --------------------------------------------------
@@ -251,7 +279,7 @@ export async function syncCommand(
   const hasGist = readCachedGistId(ctx.home) !== undefined;
   const localHasPackages = Object.keys(catalog.packages).length > 0;
 
-  if (force || summary.actionCount > 0 || hasLocalOnlyPackages || hasLocalLockChanges || (!hasGist && localHasPackages)) {
+  if (force || summary.actionCount > 0 || hasLocalOnlyPackages || hasLocalLockChanges || rebuiltLockDiffers || (!hasGist && localHasPackages)) {
     try {
       const updatedCatalog = readCatalog(ctx.home);
       const updatedLock = readLock(ctx.home);
@@ -282,7 +310,7 @@ export async function syncCommand(
     }
   }
 
-  if (summary.actionCount === 0 && summary.errors.length === 0 && !force && !hasLocalOnlyPackages && !hasLocalLockChanges) {
+  if (summary.actionCount === 0 && summary.errors.length === 0 && !force && !hasLocalOnlyPackages && !hasLocalLockChanges && !rebuiltLockDiffers) {
     ctx.ui.notify("Catalog already up to date.", "info");
     return;
   }
@@ -297,6 +325,9 @@ export async function syncCommand(
   }
   if (hasLocalLockChanges) {
     parts.push("Pushed local version updates.");
+  }
+  if (rebuiltLockDiffers) {
+    parts.push("Rebuilt lock (version drift detected).");
   }
   if (plan.installs.length > 0) {
     parts.push(`${plan.installs.length} install(s): ${plan.installs.map((a) => a.key).join(", ")}`);

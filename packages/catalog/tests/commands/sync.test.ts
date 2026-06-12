@@ -171,6 +171,16 @@ describe("syncCommand", () => {
       orphans: [],
     });
 
+    // Provide installed state matching the remote lock so buildSyncedLock
+    // produces a lock that matches the remote (no version drift).
+    mockedScanInstalled.mockReturnValue({
+      "my-skill": {
+        source: "npm:my-skill",
+        name: "my-skill",
+        version: "1.0.0",
+      },
+    });
+
     const ctx = makeCtx();
     await syncCommand({ positional: [], flags: {} }, ctx);
 
@@ -571,6 +581,141 @@ describe("syncCommand", () => {
     expect(Object.keys(writtenLock.packages)).toContain("my-skill");
     expect(writtenLock.packages["my-skill"].version).toBe("2.0.0");
     expect(writtenLock.packages["my-skill"].syncState).toBe("synced");
+  });
+
+  // -------------------------------------------------------------------------
+  // External pi update → first ct sync detects version drift and pushes
+  // -------------------------------------------------------------------------
+
+  it("pushes when rebuilt lock differs from remote lock (external pi update)", async () => {
+    // Remote catalog + lock: my-skill at version 1.0.0
+    const remoteCatalog: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-skill": { source: "npm:my-skill", rating: "core" },
+      },
+    };
+    const remoteLock: LockFile = {
+      packages: {
+        "my-skill": {
+          version: "1.0.0",
+          sourceHash: "sha256-abc",
+          installedAt: "2025-01-01T00:00:00Z",
+          syncState: "synced",
+        },
+      },
+    };
+    mockedPull.mockResolvedValue({ catalog: remoteCatalog, lock: remoteLock });
+
+    // Local lock also at 1.0.0 before pull (so hasLocalLockChanges is false)
+    mockedReadLock.mockReturnValue({
+      packages: {
+        "my-skill": {
+          version: "1.0.0",
+          sourceHash: "sha256-abc",
+          installedAt: "2025-01-01T00:00:00Z",
+          syncState: "synced",
+        },
+      },
+    });
+
+    // User ran `pi update` externally — installed version is now 2.0.0
+    mockedScanInstalled.mockReturnValue({
+      "my-skill": {
+        source: "npm:my-skill",
+        name: "my-skill",
+        version: "2.0.0",
+      },
+    });
+
+    // Reconcile: no actions (source string unchanged)
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await syncCommand({ positional: [], flags: {} }, ctx);
+
+    // Should push because rebuilt lock (version 2.0.0) differs from remote (1.0.0)
+    expect(mockedPush).toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("version drift detected"),
+      "info",
+    );
+    // Should NOT say "already up to date"
+    const notifyCalls = (ctx.ui.notify as ReturnType<typeof vi.fn>).mock.calls;
+    const upToDateCall = notifyCalls.find(
+      (c) => typeof c[0] === "string" && c[0].includes("already up to date"),
+    );
+    expect(upToDateCall).toBeUndefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // Version drift: remote has package removed from local catalog
+  // -------------------------------------------------------------------------
+
+  it("pushes when remote lock has keys absent from rebuilt lock", async () => {
+    // Remote catalog has two packages
+    const remoteCatalog: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-skill": { source: "npm:my-skill", rating: "core" },
+        "old-skill": { source: "npm:old-skill", rating: "core" },
+      },
+    };
+    const remoteLock: LockFile = {
+      packages: {
+        "my-skill": {
+          version: "1.0.0",
+          sourceHash: "sha256-abc",
+          installedAt: "2025-01-01T00:00:00Z",
+          syncState: "synced",
+        },
+        "old-skill": {
+          version: "1.0.0",
+          sourceHash: "sha256-def",
+          installedAt: "2025-01-01T00:00:00Z",
+          syncState: "synced",
+        },
+      },
+    };
+    mockedPull.mockResolvedValue({ catalog: remoteCatalog, lock: remoteLock });
+
+    // Local catalog only has my-skill (old-skill was removed)
+    const localCatalog: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-skill": { source: "npm:my-skill", rating: "core" },
+      },
+    };
+    mockedReadCatalog.mockReturnValue(localCatalog);
+
+    // Installed: only my-skill
+    mockedScanInstalled.mockReturnValue({
+      "my-skill": {
+        source: "npm:my-skill",
+        name: "my-skill",
+        version: "1.0.0",
+      },
+    });
+
+    // Reconcile: 0 actions (old-skill is in remote catalog but not local —
+    // the merged catalog has both, but reconcile sees old-skill as not installed)
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await syncCommand({ positional: [], flags: {} }, ctx);
+
+    // Should push because remote lock has "old-skill" but rebuilt lock doesn't
+    expect(mockedPush).toHaveBeenCalled();
   });
 
   // -------------------------------------------------------------------------
