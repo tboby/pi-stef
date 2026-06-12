@@ -111,7 +111,11 @@ export async function syncCommand(
     errors: [],
   };
 
-  // --- 1. Pull remote catalog (into memory only) ---------------------------
+  // --- 1. Read local catalog BEFORE pulling --------------------------------
+  // We need this to detect local-only packages that haven't been pushed yet.
+  const localCatalogBeforePull = readCatalog(ctx.home);
+
+  // --- 2. Pull remote catalog (into memory only) ---------------------------
   let remoteCatalog = false;
   let pulledData: { catalog: CatalogYaml; lock: LockFile } | undefined;
   try {
@@ -124,9 +128,24 @@ export async function syncCommand(
     summary.errors.push(message);
   }
 
-  // --- 2. Reconcile --------------------------------------------------------
+  // --- 3. Reconcile --------------------------------------------------------
   // Use pulled catalog if available, otherwise read from disk
-  const catalog = pulledData ? pulledData.catalog : readCatalog(ctx.home);
+  let catalog = pulledData ? pulledData.catalog : readCatalog(ctx.home);
+
+  // Merge local-only packages into the catalog.
+  // When a user adds a package locally (ct add) and then syncs, the pull
+  // would overwrite their addition. Detect local packages not in the remote
+  // and merge them back so they get pushed.
+  let hasLocalOnlyPackages = false;
+  if (pulledData) {
+    for (const [key, pkg] of Object.entries(localCatalogBeforePull.packages)) {
+      if (!(key in catalog.packages)) {
+        catalog.packages[key] = pkg;
+        hasLocalOnlyPackages = true;
+      }
+    }
+  }
+
   const installed = scanInstalled(ctx.home);
 
   // Build catalog entries for reconcile
@@ -206,7 +225,7 @@ export async function syncCommand(
   const hasGist = readCachedGistId(ctx.home) !== undefined;
   const localHasPackages = Object.keys(catalog.packages).length > 0;
 
-  if (force || summary.actionCount > 0 || (!hasGist && localHasPackages)) {
+  if (force || summary.actionCount > 0 || hasLocalOnlyPackages || (!hasGist && localHasPackages)) {
     try {
       const updatedCatalog = readCatalog(ctx.home);
       const updatedLock = readLock(ctx.home);
@@ -237,7 +256,7 @@ export async function syncCommand(
     }
   }
 
-  if (summary.actionCount === 0 && summary.errors.length === 0 && !force) {
+  if (summary.actionCount === 0 && summary.errors.length === 0 && !force && !hasLocalOnlyPackages) {
     ctx.ui.notify("Catalog already up to date.", "info");
     return;
   }
@@ -246,6 +265,9 @@ export async function syncCommand(
   const parts: string[] = [];
   if (summary.pulled) {
     parts.push("Pulled remote catalog.");
+  }
+  if (hasLocalOnlyPackages) {
+    parts.push("Merged local-only packages.");
   }
   if (plan.installs.length > 0) {
     parts.push(`${plan.installs.length} install(s): ${plan.installs.map((a) => a.key).join(", ")}`);
