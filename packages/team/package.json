@@ -24,14 +24,16 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@pi-stef/paths": "file:../paths",
-    "@pi-stef/agent-workflows": "file:../agent-workflows",
-    "@pi-stef/atlassian": "file:../atlassian",
-    "@pi-stef/figma": "file:../figma",
-    "@pi-stef/web": "file:../web",
+    "@pi-stef/agent-workflows": "^0.3.0",
+    "@pi-stef/atlassian": "^0.3.0",
+    "@pi-stef/catalog": "^0.3.0",
+    "@pi-stef/figma": "^0.3.0",
+    "@pi-stef/paths": "^0.3.0",
+    "@pi-stef/team": "^0.3.0",
+    "@pi-stef/web": "^0.3.0",
+    "@sinclair/typebox": "*",
     "marked": "^15.0.12",
-    "marked-terminal": "^7.3.0",
-    "@sinclair/typebox": "*"
+    "marked-terminal": "^7.3.0"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",

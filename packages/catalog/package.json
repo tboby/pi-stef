@@ -23,9 +23,15 @@
   ],
   "dependencies": {
     "@octokit/rest": "^21.0.0",
-    "@pi-stef/paths": "file:../paths",
-    "js-yaml": "^4.1.0",
+    "@pi-stef/agent-workflows": "^0.3.0",
+    "@pi-stef/atlassian": "^0.3.0",
+    "@pi-stef/catalog": "^0.3.0",
+    "@pi-stef/figma": "^0.3.0",
+    "@pi-stef/paths": "^0.3.0",
+    "@pi-stef/team": "^0.3.0",
+    "@pi-stef/web": "^0.3.0",
     "@sinclair/typebox": "*",
+    "js-yaml": "^4.1.0",
     "zod": "^3.25.62"
   },
   "peerDependencies": {

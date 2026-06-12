@@ -15,5 +15,14 @@
     "@types/node": "^22.0.0",
     "typescript": "^6.0.3",
     "vitest": "^4.0.0"
+  },
+  "dependencies": {
+    "@pi-stef/agent-workflows": "^0.3.0",
+    "@pi-stef/atlassian": "^0.3.0",
+    "@pi-stef/catalog": "^0.3.0",
+    "@pi-stef/figma": "^0.3.0",
+    "@pi-stef/paths": "^0.3.0",
+    "@pi-stef/team": "^0.3.0",
+    "@pi-stef/web": "^0.3.0"
   }
 }

@@ -29,14 +29,20 @@
     "install-browser": "npx cloakbrowser install"
   },
   "dependencies": {
-    "@pi-stef/paths": "file:../paths",
     "@mozilla/readability": "^0.6.0",
+    "@pi-stef/agent-workflows": "^0.3.0",
+    "@pi-stef/atlassian": "^0.3.0",
+    "@pi-stef/catalog": "^0.3.0",
+    "@pi-stef/figma": "^0.3.0",
+    "@pi-stef/paths": "^0.3.0",
+    "@pi-stef/team": "^0.3.0",
+    "@pi-stef/web": "^0.3.0",
+    "@sinclair/typebox": "*",
     "cloakbrowser": "^0.3.31",
     "defuddle": "^0.18.1",
     "jsdom": "^29.1.0",
     "playwright-core": "^1.59.1",
-    "turndown": "^7.2.4",
-    "@sinclair/typebox": "*"
+    "turndown": "^7.2.4"
   },
   "devDependencies": {
     "@types/jsdom": "^28.0.1",

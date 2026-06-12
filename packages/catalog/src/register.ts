@@ -12,7 +12,6 @@ import {
   SUBCOMMAND_DEFS,
   getAliasMap,
 } from "./commands/definitions.js";
-import { parseSubcommand } from "./commands/dispatch.js";
 import { addCommand, type AddCtx } from "./commands/add.js";
 import { initCommand, type InitContext } from "./commands/init.js";
 import { removeCommand, type RemoveCtx } from "./commands/remove.js";
@@ -66,9 +65,27 @@ async function handleSubcommand(
     return;
   }
 
-  // Parse the raw argument string into structured { positional, flags }
+  // Parse the raw argument string into structured { positional, flags }.
+  // Note: the subcommand has already been extracted by the /ct handler,
+  // so we only parse flags from the remaining args — positional tokens
+  // are passed through directly.
   const rawParts = (args ?? "").trim().split(/\s+/).filter(Boolean);
-  const parsed = parseSubcommand(rawParts);
+  const flags: Record<string, true | string> = {};
+  const positional: string[] = [];
+  for (const token of rawParts) {
+    if (token.startsWith("--")) {
+      const body = token.slice(2);
+      const eqIdx = body.indexOf("=");
+      if (eqIdx !== -1) {
+        flags[body.slice(0, eqIdx)] = body.slice(eqIdx + 1);
+      } else {
+        flags[body] = true;
+      }
+    } else {
+      positional.push(token);
+    }
+  }
+  const parsed = { subcommand: canonical, flags, positional };
 
   switch (canonical) {
     case "add":
