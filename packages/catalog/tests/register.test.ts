@@ -98,11 +98,11 @@ describe("registerCatalog", () => {
     expect(pi.registerCommand).toHaveBeenCalledTimes(16);
   });
 
-  it("calls registerTool exactly 5 times", () => {
+  it("calls registerTool exactly 6 times", () => {
     const { pi } = mockPi();
     registerCatalog(pi);
 
-    expect(pi.registerTool).toHaveBeenCalledTimes(5);
+    expect(pi.registerTool).toHaveBeenCalledTimes(6);
   });
 
   it("does not throw (smoke test)", () => {

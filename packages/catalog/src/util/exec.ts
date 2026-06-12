@@ -158,3 +158,15 @@ export function piUninstall(
 ): Promise<ExecResult> {
   return execCommand("pi", ["uninstall", packageName], options);
 }
+
+/**
+ * Update a pi package from the given source.
+ *
+ * Runs `pi update <source>`.
+ */
+export function piUpdate(
+  source: string,
+  options?: PiExecOptions,
+): Promise<ExecResult> {
+  return execCommand("pi", ["update", source], options);
+}

@@ -15,6 +15,7 @@ import {
 import { addCommand, type AddCtx } from "./commands/add.js";
 import { initCommand, type InitContext } from "./commands/init.js";
 import { removeCommand, type RemoveCtx } from "./commands/remove.js";
+import { updateCommand } from "./commands/update.js";
 import {
   toggleCommand,
   enableCommand,
@@ -108,6 +109,9 @@ async function handleSubcommand(
       break;
     case "toggle":
       await toggleCommand(parsed, ctx as ToggleCtx);
+      break;
+    case "update":
+      await updateCommand(parsed, ctx);
       break;
     case "enable":
       await enableCommand(parsed, ctx as ToggleCtx);
@@ -273,6 +277,33 @@ export function registerCatalog(pi: ExtensionAPI): void {
         return { content: [{ type: "text" as const, text: `Toggled ${params.name}.` }], details: undefined as unknown };
       } catch (err) {
         return { content: [{ type: "text" as const, text: `Toggle failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
+      }
+    },
+  });
+
+  pi.registerTool({
+    name: "ct_update",
+    label: "Catalog Update",
+    description:
+      "Update packages to their latest versions. Run `pi update` behind the scenes.",
+    promptSnippet: "Update catalog packages",
+    promptGuidelines: [
+      "Use ct_update when the user asks to update one or more packages in their catalog.",
+    ],
+    parameters: Type.Object({
+      name: Type.Optional(Type.String({ description: "Package name to update (omit for --all)" })),
+      all: Type.Optional(Type.Boolean({ description: "Update all packages" })),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      try {
+        const positional = params.name ? [params.name] : [];
+        const flags: Record<string, true | string> = {};
+        if (params.all) flags.all = true;
+        const args: CommandArgs = { positional, flags };
+        await updateCommand(args, ctx);
+        return { content: [{ type: "text" as const, text: "Update completed." }], details: undefined as unknown };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: `Update failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
       }
     },
   });
