@@ -91,6 +91,7 @@ export async function resetCommand(
   let failed = 0;
 
   for (const name of piStefNames) {
+    ctx.ui.setWorkingMessage?.(`Uninstalling ${name} (${uninstalled + 1}/${piStefNames.length})...`);
     try {
       await piUninstall(packages[name].source);
       uninstalled++;
@@ -99,6 +100,7 @@ export async function resetCommand(
       failed++;
     }
   }
+  ctx.ui.setWorkingMessage?.();
 
   // --- Delete config files --------------------------------------------------
   const dir = catalogDir(ctx.home);

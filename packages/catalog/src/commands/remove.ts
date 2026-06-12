@@ -97,6 +97,7 @@ export async function removeCommand(
     let uninstalled = 0;
     let failed = 0;
     for (const name of piStefNames) {
+      ctx.ui.setWorkingMessage?.(`Uninstalling ${name} (${uninstalled + 1}/${piStefNames.length})...`);
       try {
         await piUninstall(sources[name]);
         uninstalled++;
@@ -105,6 +106,7 @@ export async function removeCommand(
         failed++;
       }
     }
+    ctx.ui.setWorkingMessage?.();
 
     ctx.ui.notify(
       `Scope @pi-stef: removed ${piStefNames.length}, uninstalled ${uninstalled}${failed > 0 ? ` (${failed} uninstall failed)` : ""}`,
@@ -163,6 +165,7 @@ export async function removeCommand(
   ctx.ui.notify(`Removed "${name}" from catalog`, "info");
 
   // --- Run pi uninstall -----------------------------------------------------
+  ctx.ui.setWorkingMessage?.(`Uninstalling ${name}...`);
   try {
     await piUninstall(source);
   } catch {
@@ -171,4 +174,5 @@ export async function removeCommand(
       "warning",
     );
   }
+  ctx.ui.setWorkingMessage?.();
 }

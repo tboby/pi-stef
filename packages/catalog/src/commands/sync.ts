@@ -120,6 +120,7 @@ export async function syncCommand(
   // --- 2. Pull remote catalog (into memory only) ---------------------------
   let remoteCatalog = false;
   let pulledData: { catalog: CatalogYaml; lock: LockFile } | undefined;
+  ctx.ui.setWorkingMessage?.("Pulling remote catalog...");
   try {
     pulledData = await pullCatalog(profile, ctx.home);
     remoteCatalog = true;
@@ -129,6 +130,7 @@ export async function syncCommand(
     ctx.ui.notify(`Pull failed: ${message}`, "warning");
     summary.errors.push(message);
   }
+  ctx.ui.setWorkingMessage?.();
 
   // --- 3. Reconcile --------------------------------------------------------
   // Use pulled catalog if available, otherwise read from disk
@@ -226,7 +228,9 @@ export async function syncCommand(
       writeLock(pulledData.lock, ctx.home);
     }
 
+    ctx.ui.setWorkingMessage?.("Executing actions...");
     const result = await executeActions(plan, { home: ctx.home });
+    ctx.ui.setWorkingMessage?.();
 
     for (const { error } of result.errors) {
       ctx.ui.notify(`Action error: ${error.message}`, "warning");
@@ -280,6 +284,7 @@ export async function syncCommand(
   const localHasPackages = Object.keys(catalog.packages).length > 0;
 
   if (force || summary.actionCount > 0 || hasLocalOnlyPackages || hasLocalLockChanges || rebuiltLockDiffers || (!hasGist && localHasPackages)) {
+    ctx.ui.setWorkingMessage?.("Pushing to gist...");
     try {
       const updatedCatalog = readCatalog(ctx.home);
       const updatedLock = readLock(ctx.home);
@@ -296,6 +301,7 @@ export async function syncCommand(
       ctx.ui.notify(`Push failed: ${message}`, "error");
       summary.errors.push(message);
     }
+    ctx.ui.setWorkingMessage?.();
   }
 
   // --- 6. Report summary ---------------------------------------------------

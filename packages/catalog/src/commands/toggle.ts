@@ -136,6 +136,7 @@ export async function disableCommand(
   }
 
   // Run pi uninstall after disabling
+  ctx.ui.setWorkingMessage?.(`Uninstalling ${name}...`);
   try {
     await piUninstall(name);
   } catch {
@@ -144,4 +145,5 @@ export async function disableCommand(
       "warning",
     );
   }
+  ctx.ui.setWorkingMessage?.();
 }

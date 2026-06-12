@@ -32,6 +32,8 @@ export interface CommandArgs {
 export interface CommandCtx {
   ui: {
     notify: (msg: string, type?: "error" | "info" | "warning") => void;
+    /** Show a temporary working message (e.g. "Adding..."). Pass undefined or no arg to clear. */
+    setWorkingMessage?: (msg?: string) => void;
   };
   /** Home directory override (for testing). */
   home?: string;

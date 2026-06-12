@@ -93,6 +93,7 @@ function makeCtx(home = "/tmp/test-home") {
     home,
     ui: {
       notify: vi.fn(),
+      setWorkingMessage: vi.fn(),
     },
   };
 }
@@ -157,6 +158,11 @@ describe("syncCommand", () => {
       expect.stringContaining("Synced"),
       "info",
     );
+    // Progress messages should have been set and cleared
+    expect(ctx.ui.setWorkingMessage).toHaveBeenCalledWith("Pulling remote catalog...");
+    expect(ctx.ui.setWorkingMessage).toHaveBeenCalledWith("Executing actions...");
+    expect(ctx.ui.setWorkingMessage).toHaveBeenCalledWith("Pushing to gist...");
+    expect(ctx.ui.setWorkingMessage).toHaveBeenCalledWith(); // cleared
   });
 
   // -------------------------------------------------------------------------

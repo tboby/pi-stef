@@ -133,6 +133,7 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
     if (added > 0) {
       for (const pkg of PI_STEF_PACKAGES) {
         if (currentCatalog.packages[pkg]?.source === `npm:${pkg}`) {
+          ctx.ui.setWorkingMessage?.(`Installing ${pkg}...`);
           try {
             await piInstall(`npm:${pkg}`);
           } catch {
@@ -140,6 +141,7 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
           }
         }
       }
+      ctx.ui.setWorkingMessage?.();
     }
 
     ctx.ui.notify(
@@ -203,6 +205,7 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
   ctx.ui.notify(`Added "${name}" to catalog`, "info");
 
   // --- Run pi install -------------------------------------------------------
+  ctx.ui.setWorkingMessage?.(`Installing ${name}...`);
   try {
     await piInstall(source);
   } catch {
@@ -211,4 +214,5 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
       "warning",
     );
   }
+  ctx.ui.setWorkingMessage?.();
 }

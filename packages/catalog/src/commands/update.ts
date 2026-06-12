@@ -48,12 +48,14 @@ export async function updateCommand(
       return;
     }
 
+    ctx.ui.setWorkingMessage?.(`Updating ${name}...`);
     try {
       await piUpdate(entry.source);
       ctx.ui.notify(`Updated "${name}"`, "info");
     } catch {
       ctx.ui.notify(`Warning: update of "${name}" failed`, "warning");
     }
+    ctx.ui.setWorkingMessage?.();
     return;
   }
 
@@ -69,6 +71,7 @@ export async function updateCommand(
 
   for (const pkgName of names) {
     const entry = packages[pkgName];
+    ctx.ui.setWorkingMessage?.(`Updating ${pkgName} (${updated + 1}/${names.length})...`);
     try {
       await piUpdate(entry.source);
       updated++;
@@ -77,6 +80,7 @@ export async function updateCommand(
       failed++;
     }
   }
+  ctx.ui.setWorkingMessage?.();
 
   ctx.ui.notify(
     `Updated ${updated}/${names.length} packages${failed > 0 ? ` (${failed} failed)` : ""}`,
