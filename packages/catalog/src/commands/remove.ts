@@ -72,6 +72,11 @@ export async function removeCommand(
     }
   }
 
+  // --- Capture source before removing -------------------------------------
+  // pi uninstall needs the full source (e.g., "npm:@pi-stef/foo"), not just
+  // the catalog key.
+  const source = catalog.packages[name].source;
+
   // --- Remove package -------------------------------------------------------
   const updated = removePackage(catalog, name);
   writeCatalog(updated, ctx.home);
@@ -80,7 +85,7 @@ export async function removeCommand(
 
   // --- Run pi uninstall -----------------------------------------------------
   try {
-    await piUninstall(name);
+    await piUninstall(source);
   } catch {
     ctx.ui.notify(
       `Warning: package "${name}" removed from catalog but uninstall failed`,

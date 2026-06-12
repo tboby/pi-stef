@@ -81,6 +81,11 @@ describe("removeCommand", () => {
     const { ctx, ui } = makeCtx();
     ui.confirm.mockResolvedValue(true);
 
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
     await removeCommand(
       { positional: ["my-pkg"], flags: {} },
       ctx,
@@ -94,6 +99,7 @@ describe("removeCommand", () => {
       expect.stringContaining("my-pkg"),
       "info",
     );
+    uninstallSpy.mockRestore();
   });
 
   // --- Missing package shows error ------------------------------------------
@@ -122,7 +128,11 @@ describe("removeCommand", () => {
   it("prompts for confirmation before removing", async () => {
     seedCatalog(tmpDir);
     const { ctx, ui } = makeCtx();
-    ui.confirm.mockResolvedValue(true);
+
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
     await removeCommand(
       { positional: ["my-pkg"], flags: {} },
@@ -132,6 +142,7 @@ describe("removeCommand", () => {
     expect(ui.confirm).toHaveBeenCalledWith(
       expect.stringContaining("my-pkg"),
     );
+    uninstallSpy.mockRestore();
   });
 
   // --- User declines confirmation, no removal ------------------------------
@@ -171,7 +182,7 @@ describe("removeCommand", () => {
       ctx,
     );
 
-    expect(uninstallSpy).toHaveBeenCalledWith("my-pkg");
+    expect(uninstallSpy).toHaveBeenCalledWith("npm:my-pkg");
     uninstallSpy.mockRestore();
   });
 
@@ -226,6 +237,11 @@ describe("removeCommand", () => {
     seedCatalog(tmpDir);
     const { ctx, ui } = makeCtx();
 
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
     await removeCommand(
       { positional: ["my-pkg"], flags: { yes: true } },
       ctx,
@@ -238,5 +254,6 @@ describe("removeCommand", () => {
       expect.stringContaining("my-pkg"),
       "info",
     );
+    uninstallSpy.mockRestore();
   });
 });
