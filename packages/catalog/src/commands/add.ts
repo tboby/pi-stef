@@ -13,6 +13,7 @@
 import type { RatingValue } from "../catalog/ratings.js";
 import type { CommandArgs, CommandCtx } from "./types.js";
 import { addPackage } from "../catalog/crud.js";
+import { sourceToKey } from "../catalog/source.js";
 import { readCatalog, writeCatalog } from "../config/io.js";
 import { piInstall } from "../util/exec.js";
 
@@ -75,18 +76,35 @@ function resolveType(
 /**
  * Execute the `ct add` subcommand.
  *
+ * New syntax (preferred): `ct add <source> [--rating ...] [--type ...]`
+ *   — name is auto-derived from source via `sourceToKey()`.
+ *
+ * Legacy syntax (deprecated): `ct add <name> <source> [--rating ...] [--type ...]`
+ *   — still accepted but emits a deprecation warning.
+ *
  * Reads the catalog, validates inputs, prompts for type if needed,
  * adds the package, writes the catalog, and runs `pi install`.
  */
 export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> {
   const { positional, flags } = args;
-  const name = positional[0];
-  const source = positional[1];
 
-  // --- Validate required args -----------------------------------------------
-  if (!name || !source) {
+  // --- Handle legacy 2-arg syntax: ct add <name> <source> -------------------
+  let name: string;
+  let source: string;
+
+  if (positional.length >= 2) {
+    name = positional[0];
+    source = positional[1];
     ctx.ui.notify(
-      "Usage: ct add <name> <source> [--rating <core|useful|debatable>] [--type <skill|pi-native>]",
+      `"ct add <name> <source>" is legacy. Use "ct add <source>" — name is auto-derived.`,
+      "warning",
+    );
+  } else if (positional.length === 1) {
+    source = positional[0];
+    name = sourceToKey(source);
+  } else {
+    ctx.ui.notify(
+      "Usage: ct add <source> [--rating <core|useful|debatable>] [--type <skill|pi-native>]",
       "error",
     );
     return;

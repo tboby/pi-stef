@@ -231,7 +231,7 @@ describe("addCommand", () => {
 
   // --- Missing positional args ----------------------------------------------
 
-  it("shows error when name is missing", async () => {
+  it("shows error when no args provided", async () => {
     seedCatalog(tmpDir);
     const { ctx, ui } = makeCtx();
 
@@ -246,7 +246,7 @@ describe("addCommand", () => {
     );
   });
 
-  it("shows error when source is missing", async () => {
+  it("shows error for invalid source when single positional arg", async () => {
     seedCatalog(tmpDir);
     const { ctx, ui } = makeCtx();
 
@@ -256,7 +256,7 @@ describe("addCommand", () => {
     );
 
     expect(ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("Usage"),
+      expect.stringContaining("Invalid source"),
       "error",
     );
   });
@@ -317,6 +317,96 @@ describe("addCommand", () => {
       expect.stringContaining("install"),
       "warning",
     );
+  });
+
+  // =========================================================================
+  // Auto-derived name (new syntax: ct add <source>)
+  // =========================================================================
+
+  describe("auto-derived name from source", () => {
+    it("derives name from npm source", async () => {
+      seedCatalog(tmpDir);
+      const { ctx, ui } = makeCtx();
+
+      await addCommand(
+        { positional: ["npm:@scope/my-pkg@1.0.0"], flags: { rating: "core" } },
+        ctx,
+      );
+
+      const catalog = readCatalog(tmpDir);
+      expect(catalog.packages["@scope/my-pkg"]).toEqual({
+        source: "npm:@scope/my-pkg@1.0.0",
+        rating: "core",
+      });
+      expect(ui.notify).toHaveBeenCalledWith(
+        expect.stringContaining("@scope/my-pkg"),
+        "info",
+      );
+    });
+
+    it("derives name from git source", async () => {
+      seedCatalog(tmpDir);
+      const { ctx } = makeCtx();
+
+      await addCommand(
+        {
+          positional: ["git:github.com/user/repo#packages/foo"],
+          flags: { rating: "core", type: "skill" },
+        },
+        ctx,
+      );
+
+      const catalog = readCatalog(tmpDir);
+      expect(catalog.packages["github.com/user/repo#packages/foo"]).toEqual({
+        source: "git:github.com/user/repo#packages/foo",
+        rating: "core",
+        type: "skill",
+      });
+    });
+
+    it("shows no deprecation warning for new syntax", async () => {
+      seedCatalog(tmpDir);
+      const { ctx, ui } = makeCtx();
+
+      await addCommand(
+        { positional: ["npm:my-pkg"], flags: {} },
+        ctx,
+      );
+
+      expect(ui.notify).not.toHaveBeenCalledWith(
+        expect.stringContaining("legacy"),
+        "warning",
+      );
+    });
+  });
+
+  // =========================================================================
+  // Legacy 2-arg syntax
+  // =========================================================================
+
+  describe("legacy 2-arg syntax", () => {
+    it("still works but shows deprecation warning", async () => {
+      seedCatalog(tmpDir);
+      const { ctx, ui } = makeCtx();
+
+      await addCommand(
+        { positional: ["my-pkg", "npm:my-pkg"], flags: { rating: "core" } },
+        ctx,
+      );
+
+      // Deprecation warning emitted
+      expect(ui.notify).toHaveBeenCalledWith(
+        expect.stringContaining("legacy"),
+        "warning",
+      );
+
+      // Package still added with user-supplied name
+      const catalog = readCatalog(tmpDir);
+      expect(catalog.packages["my-pkg"]).toEqual({
+        source: "npm:my-pkg",
+        rating: "core",
+      });
+    });
   });
 
 });

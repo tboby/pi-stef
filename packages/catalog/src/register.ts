@@ -209,24 +209,23 @@ export function registerCatalog(pi: ExtensionAPI): void {
     name: "ct_add",
     label: "Catalog Add",
     description:
-      "Add a package to the catalog by name and source. Source must start with 'npm:' or 'git:'.",
+      "Add a package to the catalog by source. Name is auto-derived from source. Source must start with 'npm:' or 'git:'.",
     promptSnippet: "Add a package to the catalog",
     promptGuidelines: [
       "Use ct_add when the user asks to add a new package or skill to their catalog.",
     ],
     parameters: Type.Object({
-      name: Type.String({ description: "Package name" }),
       source: Type.String({ description: "Package source (npm:… or git:…)" }),
       rating: Type.Optional(Type.String({ description: "Initial rating (core, useful, debatable)" })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       try {
         const args: CommandArgs = {
-          positional: [params.name, params.source],
+          positional: [params.source],
           flags: params.rating ? { rating: params.rating } : {},
         };
         await addCommand(args, ctx as unknown as AddCtx);
-        return { content: [{ type: "text" as const, text: `Added ${params.name}.` }], details: undefined as unknown };
+        return { content: [{ type: "text" as const, text: `Added ${params.source}.` }], details: undefined as unknown };
       } catch (err) {
         return { content: [{ type: "text" as const, text: `Add failed: ${err instanceof Error ? err.message : String(err)}` }], details: undefined as unknown };
       }
