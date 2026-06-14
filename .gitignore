@@ -5,6 +5,8 @@ dist/
 *.log
 .DS_Store
 /ai_plan/
+/docs/superpowers/
+docs-site/.vitepress/dist/
 **/worktrees/
 .claude/
 **/tsconfig.tsbuildinfo
