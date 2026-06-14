@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-14
+### Changed
+- docs: update all READMEs and CHANGELOG for new features
+- feat(status): show individual packages with setup indicators
+- feat(setup): detect missing setup requirements for packages
+- feat(schema): remove rating system, replace with enabled boolean
+- feat(ui): add progress indicators to long-running commands
+- fix(sync): detect version drift on first sync after external pi update
+
+
 ## [0.4.0] - 2026-06-12
 ### Added
 - `ct reset` command — full nuke of @pi-stef packages and config
