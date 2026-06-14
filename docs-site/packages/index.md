@@ -1,0 +1,27 @@
+# Packages
+
+All packages are published to npm under the `@pi-stef` scope. Install any package individually with:
+
+```bash
+pi install npm:@pi-stef/<package-name>
+```
+
+Or manage them declaratively with the [catalog](/packages/catalog).
+
+## Package List
+
+| Package | Description |
+|---------|-------------|
+| [catalog](/packages/catalog) | Declarative package manager with cross-machine sync |
+| [team](/packages/team) | Steerable team of role-agents for plan/review/implement |
+| [superpowers-adapter](/packages/superpowers-adapter) | Bridges superpowers skill system to pi |
+| [atlassian](/packages/atlassian) | Jira and Confluence integration |
+| [figma](/packages/figma) | Figma REST API tools and design context |
+| [web](/packages/web) | Web search, URL fetch, and browser automation |
+| [paths](/packages/paths) | Shared path conventions (internal) |
+| agent-workflows | Workflow engine primitives (internal, not user-installed) |
+
+## Internal Packages
+
+- **paths** — Shared path conventions used by other packages. Not typically installed directly.
+- **agent-workflows** — Internal workflow engine. Used by `team` and other packages. Not user-installed.
