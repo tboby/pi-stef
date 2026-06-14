@@ -2,6 +2,8 @@
 
 Custom package collection for the [pi](https://pi.dev) coding agent.
 
+> 📖 **[Full Documentation](https://sfiorini.github.io/pi-stef/)** | [Development Guide](docs/development.md)
+
 ## Quick Start
 
 ```bash
@@ -110,4 +112,4 @@ pnpm typecheck        # Type check
 
 ## License
 
-MIT
+[MIT](LICENSE)
