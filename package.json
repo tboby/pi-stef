@@ -21,12 +21,15 @@
     "vitest": "^4.0.0"
   },
   "dependencies": {
-    "@pi-stef/agent-workflows": "^0.3.0",
-    "@pi-stef/atlassian": "^0.3.0",
-    "@pi-stef/catalog": "^0.3.0",
-    "@pi-stef/figma": "^0.3.0",
-    "@pi-stef/paths": "^0.3.0",
-    "@pi-stef/team": "^0.3.0",
-    "@pi-stef/web": "^0.3.0"
+    "@pi-stef/agent-workflows": "workspace:^0.3.0",
+    "@pi-stef/atlassian": "workspace:^0.3.0",
+    "@pi-stef/azure-foundry": "workspace:^0.1.0",
+    "@pi-stef/catalog": "workspace:^0.3.0",
+    "@pi-stef/cursor": "workspace:^0.1.0",
+    "@pi-stef/figma": "workspace:^0.3.0",
+    "@pi-stef/paths": "workspace:^0.3.0",
+    "@pi-stef/superpowers-adapter": "workspace:^0.3.0",
+    "@pi-stef/team": "workspace:^0.3.0",
+    "@pi-stef/web": "workspace:^0.3.0"
   }
 }
