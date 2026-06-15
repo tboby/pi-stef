@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-06-15
+### Changed
+- feat(pi-dev): implement milestone M4 - add pi.dev gallery metadata to all packages
+
+
 ## [0.3.2] - 2026-06-14
 ### Changed
 - docs: update all READMEs and CHANGELOG for new features
