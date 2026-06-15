@@ -25,6 +25,8 @@ pi install npm:@pi-stef/catalog
 | Package | Type | Description | Install |
 |---------|------|-------------|---------|
 | **[catalog](packages/catalog/README.md)** | extension | Declarative package manager — sync, add, remove, toggle packages via `cat.yaml` | `pi install npm:@pi-stef/catalog` |
+| [azure-foundry](packages/azure-foundry/README.md) | extension | Azure Foundry and Azure OpenAI deployments as native Pi providers | `pi install npm:@pi-stef/azure-foundry` |
+| [cursor](packages/cursor/README.md) | extension | Cursor AI editor as a native Pi stream provider | `pi install npm:@pi-stef/cursor` |
 | [superpowers-adapter](packages/superpowers-adapter/README.md) | extension | Bridges superpowers skill system to pi | `pi install npm:@pi-stef/superpowers-adapter` |
 | [team](packages/team/README.md) | extension | Steerable team of role-agents for plan/review/implement workflows | `pi install npm:@pi-stef/team` |
 | [agent-workflows](packages/agent-workflows/README.md) | library | Reusable workflow engine primitives (internal dependency, not user-installed) | — |

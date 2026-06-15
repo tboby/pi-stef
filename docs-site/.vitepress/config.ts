@@ -28,7 +28,9 @@ export default defineConfig({
         text: "Packages",
         items: [
           { text: "Overview", link: "/packages/" },
+          { text: "azure-foundry", link: "/packages/azure-foundry" },
           { text: "catalog", link: "/packages/catalog" },
+          { text: "cursor", link: "/packages/cursor" },
           { text: "team", link: "/packages/team" },
           { text: "Superpowers Bridge", link: "/packages/superpowers-adapter" },
           { text: "atlassian", link: "/packages/atlassian" },

@@ -38,4 +38,12 @@ features:
     title: Superpowers Bridge
     details: Connects the superpowers skill system to pi's extension API, enabling TodoWrite and Skill tools.
     link: /packages/superpowers-adapter
+  - icon: 🖥️
+    title: Cursor Provider
+    details: Use Cursor's AI models (Claude, GPT, Gemini, Grok) as native Pi providers with OAuth login and protobuf protocol
+    link: /packages/cursor
+  - icon: ☁️
+    title: Azure Foundry
+    details: Connect Azure Foundry and Azure OpenAI deployments as native Pi providers with config-driven setup
+    link: /packages/azure-foundry
 ---

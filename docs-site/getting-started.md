@@ -64,6 +64,8 @@ This installs all enabled packages and pushes your catalog to a GitHub Gist for 
 If you don't want catalog management, install packages directly:
 
 ```bash
+pi install npm:@pi-stef/azure-foundry
+pi install npm:@pi-stef/cursor
 pi install npm:@pi-stef/team
 pi install npm:@pi-stef/web
 pi install npm:@pi-stef/figma

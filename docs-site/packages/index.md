@@ -12,7 +12,9 @@ Or manage them declaratively with the [catalog](/packages/catalog).
 
 | Package | Description |
 |---------|-------------|
+| [azure-foundry](/packages/azure-foundry) | Azure Foundry and Azure OpenAI deployments as native Pi providers |
 | [catalog](/packages/catalog) | Declarative package manager with cross-machine sync |
+| [cursor](/packages/cursor) | Cursor AI editor as a native Pi stream provider |
 | [team](/packages/team) | Steerable team of role-agents for plan/review/implement |
 | [superpowers-adapter](/packages/superpowers-adapter) | Bridges superpowers skill system to pi |
 | [atlassian](/packages/atlassian) | Jira and Confluence integration |
