@@ -461,7 +461,7 @@ describe("addCommand", () => {
       expect(catalog.packages["@pi-stef/catalog"]).toBeUndefined();
 
       expect(ui.notify).toHaveBeenCalledWith(
-        expect.stringContaining("added 6"),
+        expect.stringContaining("added 7"),
         "info",
       );
     });
