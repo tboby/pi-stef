@@ -121,8 +121,8 @@ export function registerSfPair(pi: ExtensionAPI): void {
     description:
       "Create a multi-milestone implementation plan with iterative reviewer approval. Produces a plan folder under ai_plan/.",
     parameters: planSchema as any,
-    execute: async (_id, params, _signal, _onUpdate, _ctx) => {
-      const repoRoot = process.cwd();
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const repoRoot = ctx.cwd ?? process.cwd();
       const defaults = await loadAndResolveDefaults(repoRoot);
       const promptModel = extractReviewerModelFromPrompt((params as any).prompt ?? "");
       const model = resolveReviewerModel(
@@ -176,8 +176,8 @@ export function registerSfPair(pi: ExtensionAPI): void {
     description:
       "Execute an approved plan milestone-by-milestone in a git worktree. Creates worktree, implements all milestones with reviewer approval, then rolls up commits and deletes worktree.",
     parameters: implementSchema as any,
-    execute: async (_id, params, _signal, _onUpdate, _ctx) => {
-      const repoRoot = process.cwd();
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const repoRoot = ctx.cwd ?? process.cwd();
       const defaults = await loadAndResolveDefaults(repoRoot);
       const model = resolveReviewerModel((params as any).reviewer_model, defaults);
 
@@ -226,8 +226,8 @@ export function registerSfPair(pi: ExtensionAPI): void {
     description:
       "Execute a single task end-to-end: plan, review, implement, verify, commit. Uses current branch (no worktree).",
     parameters: taskSchema as any,
-    execute: async (_id, params, _signal, _onUpdate, _ctx) => {
-      const repoRoot = process.cwd();
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const repoRoot = ctx.cwd ?? process.cwd();
       const defaults = await loadAndResolveDefaults(repoRoot);
       const promptModel = extractReviewerModelFromPrompt((params as any).prompt);
       const model = resolveReviewerModel(
