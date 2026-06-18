@@ -37,4 +37,13 @@ export interface CommandCtx {
   };
   /** Home directory override (for testing). */
   home?: string;
+  /**
+   * Re-discover extensions and rebuild the ExtensionRunner.
+   *
+   * When present, commands that install/uninstall packages should call this
+   * after the operation succeeds so the runtime picks up the change without
+   * requiring a manual restart. When absent (e.g. LLM tool context), the
+   * command falls back to a "restart required" message.
+   */
+  reload?: () => Promise<void>;
 }

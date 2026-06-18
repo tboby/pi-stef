@@ -258,6 +258,66 @@ describe("disableCommand", () => {
     uninstallSpy.mockRestore();
   });
 
+  // --- Reload behavior -------------------------------------------------------
+
+  it("calls ctx.reload after successful disable + uninstall", async () => {
+    seedCatalog(tmpDir, {
+      "my-pkg": { source: "npm:my-pkg" },
+    });
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const { ctx } = makeCtx();
+    (ctx as any).reload = reload;
+
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await disableCommand({ positional: ["my-pkg"], flags: {} }, ctx);
+
+    expect(reload).toHaveBeenCalled();
+    uninstallSpy.mockRestore();
+  });
+
+  it("shows restart message when ctx.reload is absent on disable", async () => {
+    seedCatalog(tmpDir, {
+      "my-pkg": { source: "npm:my-pkg" },
+    });
+    const { ctx, ui } = makeCtx();
+
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await disableCommand({ positional: ["my-pkg"], flags: {} }, ctx);
+
+    expect(ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Restart pi"),
+      "warning",
+    );
+    uninstallSpy.mockRestore();
+  });
+
+  it("does not call ctx.reload when uninstall fails on disable", async () => {
+    seedCatalog(tmpDir, {
+      "my-pkg": { source: "npm:my-pkg" },
+    });
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const { ctx } = makeCtx();
+    (ctx as any).reload = reload;
+
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockRejectedValue(new Error("uninstall failed"));
+
+    await disableCommand({ positional: ["my-pkg"], flags: {} }, ctx);
+
+    expect(reload).not.toHaveBeenCalled();
+    uninstallSpy.mockRestore();
+  });
+
   it("shows error when package not found", async () => {
     seedCatalog(tmpDir, {});
     const { ctx, ui } = makeCtx();

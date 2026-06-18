@@ -275,6 +275,53 @@ describe("addCommand", () => {
     expect(installSpy).toHaveBeenCalledWith("npm:my-pkg");
   });
 
+  // --- Reload behavior -------------------------------------------------------
+
+  it("calls ctx.reload after successful install", async () => {
+    seedCatalog(tmpDir);
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const { ctx } = makeCtx();
+    (ctx as any).reload = reload;
+
+    await addCommand(
+      { positional: ["my-pkg", "npm:my-pkg"], flags: {} },
+      ctx,
+    );
+
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it("shows restart message when ctx.reload is absent", async () => {
+    seedCatalog(tmpDir);
+    const { ctx, ui } = makeCtx();
+
+    await addCommand(
+      { positional: ["my-pkg", "npm:my-pkg"], flags: {} },
+      ctx,
+    );
+
+    expect(ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Restart pi"),
+      "warning",
+    );
+  });
+
+  it("does not call ctx.reload when install fails", async () => {
+    seedCatalog(tmpDir);
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const { ctx } = makeCtx();
+    (ctx as any).reload = reload;
+
+    installSpy.mockRejectedValue(new Error("install failed"));
+
+    await addCommand(
+      { positional: ["my-pkg", "npm:my-pkg"], flags: {} },
+      ctx,
+    );
+
+    expect(reload).not.toHaveBeenCalled();
+  });
+
   // --- install failure is non-fatal -----------------------------------------
 
   it("notifies on install failure but still writes catalog", async () => {

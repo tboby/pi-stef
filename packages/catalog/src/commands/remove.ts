@@ -112,6 +112,23 @@ export async function removeCommand(
       `Scope @pi-stef: removed ${piStefNames.length}, uninstalled ${uninstalled}${failed > 0 ? ` (${failed} uninstall failed)` : ""}`,
       failed > 0 ? "warning" : "info",
     );
+
+    // Reload extensions so removed tools disappear immediately
+    if (typeof ctx.reload === "function") {
+      ctx.ui.notify("Reloading extensions...", "info");
+      try {
+        await ctx.reload();
+        ctx.ui.notify("Extensions reloaded.", "info");
+      } catch {
+        try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+      }
+    } else {
+      ctx.ui.notify(
+        "Packages removed. Restart pi for changes to take effect.",
+        "warning",
+      );
+    }
+
     return;
   }
 
@@ -166,8 +183,10 @@ export async function removeCommand(
 
   // --- Run pi uninstall -----------------------------------------------------
   ctx.ui.setWorkingMessage?.(`Uninstalling ${name}...`);
+  let uninstallSucceeded = false;
   try {
     await piUninstall(source);
+    uninstallSucceeded = true;
   } catch {
     ctx.ui.notify(
       `Warning: package "${name}" removed from catalog but uninstall failed`,
@@ -175,4 +194,20 @@ export async function removeCommand(
     );
   }
   ctx.ui.setWorkingMessage?.();
+
+  // --- Reload extensions so removed tools disappear immediately --------------
+  if (uninstallSucceeded && typeof ctx.reload === "function") {
+    ctx.ui.notify("Reloading extensions...", "info");
+    try {
+      await ctx.reload();
+      ctx.ui.notify("Extensions reloaded.", "info");
+    } catch {
+      try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+    }
+  } else {
+    ctx.ui.notify(
+      "Package removed. Restart pi for changes to take effect.",
+      "warning",
+    );
+  }
 }

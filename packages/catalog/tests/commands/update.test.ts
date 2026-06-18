@@ -131,6 +131,76 @@ describe("updateCommand", () => {
     );
   });
 
+  // --- Reload behavior -------------------------------------------------------
+
+  it("calls ctx.reload after successful single-package update", async () => {
+    const catalog: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-pkg": { source: "npm:my-pkg@1.0.0" },
+      },
+    };
+    seedCatalog(tmpDir, catalog);
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const ctx = { ui: { notify: vi.fn() }, home: tmpDir, reload } as any;
+
+    await updateCommand({ positional: ["my-pkg"], flags: {} }, ctx);
+
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it("shows restart message when ctx.reload is absent on single update", async () => {
+    const catalog: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-pkg": { source: "npm:my-pkg@1.0.0" },
+      },
+    };
+    seedCatalog(tmpDir, catalog);
+    const { ctx, ui } = makeCtx();
+
+    await updateCommand({ positional: ["my-pkg"], flags: {} }, ctx);
+
+    expect(ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Restart pi"),
+      "warning",
+    );
+  });
+
+  it("does not call ctx.reload when single update fails", async () => {
+    const catalog: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-pkg": { source: "npm:my-pkg@1.0.0" },
+      },
+    };
+    seedCatalog(tmpDir, catalog);
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const ctx = { ui: { notify: vi.fn() }, home: tmpDir, reload } as any;
+
+    updateSpy.mockRejectedValue(new Error("update failed"));
+
+    await updateCommand({ positional: ["my-pkg"], flags: {} }, ctx);
+
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("calls ctx.reload after successful --all update", async () => {
+    const catalog: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        pkg1: { source: "npm:pkg1@1.0.0" },
+      },
+    };
+    seedCatalog(tmpDir, catalog);
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const ctx = { ui: { notify: vi.fn() }, home: tmpDir, reload } as any;
+
+    await updateCommand({ positional: [], flags: { all: true } }, ctx);
+
+    expect(reload).toHaveBeenCalled();
+  });
+
   // --- Update all -----------------------------------------------------------
 
   it("updates all packages when --all flag is set", async () => {

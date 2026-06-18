@@ -49,4 +49,24 @@ function registerCommands(pi: ExtensionAPI): void {
       postPrompt(`Use story_context to build context for ${key}`, ctx);
     },
   });
+
+  pi.registerCommand("confluence-page", {
+    description: "Fetch a Confluence page with context by URL or page ID",
+    handler: async (args: string, ctx: { isIdle?: () => boolean }) => {
+      const ref = args.trim();
+      if (!ref) return;
+      const isUrl = ref.startsWith("http://") || ref.startsWith("https://");
+      const param = isUrl ? `url: "${ref}"` : `pageId: "${ref}"`;
+      postPrompt(`Use confluence_page to fetch Confluence page with ${param}`, ctx);
+    },
+  });
+
+  pi.registerCommand("get-confluence-page", {
+    description: "Get a Confluence page by ID",
+    handler: async (args: string, ctx: { isIdle?: () => boolean }) => {
+      const pageId = args.trim();
+      if (!pageId) return;
+      postPrompt(`Use confluence_get_page to fetch page ${pageId}`, ctx);
+    },
+  });
 }

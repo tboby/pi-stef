@@ -724,6 +724,69 @@ describe("syncCommand", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Reload behavior
+  // -------------------------------------------------------------------------
+
+  it("calls ctx.reload after successful sync with actions", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [{ type: "install", key: "new-skill", source: "npm:new-skill" }],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const ctx = makeCtx();
+    (ctx as any).reload = reload;
+
+    await syncCommand({ positional: [], flags: {} }, ctx);
+
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it("shows restart message when ctx.reload is absent after sync with actions", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [{ type: "install", key: "new-skill", source: "npm:new-skill" }],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await syncCommand({ positional: [], flags: {} }, ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Restart pi"),
+      "warning",
+    );
+  });
+
+  it("does not call ctx.reload when sync has no actions", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    mockedScanInstalled.mockReturnValue({
+      "my-skill": {
+        source: "npm:my-skill",
+        name: "my-skill",
+        version: "1.0.0",
+      },
+    });
+
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const ctx = makeCtx();
+    (ctx as any).reload = reload;
+
+    await syncCommand({ positional: [], flags: {} }, ctx);
+
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
   // Disabled packages excluded from no-action lock
   // -------------------------------------------------------------------------
 

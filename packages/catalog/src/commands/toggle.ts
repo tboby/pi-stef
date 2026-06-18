@@ -130,8 +130,10 @@ export async function disableCommand(
 
   // Run pi uninstall after disabling
   ctx.ui.setWorkingMessage?.(`Uninstalling ${name}...`);
+  let uninstallSucceeded = false;
   try {
     await piUninstall(name);
+    uninstallSucceeded = true;
   } catch {
     ctx.ui.notify(
       `Warning: "${name}" disabled in catalog but uninstall failed`,
@@ -139,4 +141,20 @@ export async function disableCommand(
     );
   }
   ctx.ui.setWorkingMessage?.();
+
+  // Reload extensions so disabled tools disappear immediately
+  if (uninstallSucceeded && typeof ctx.reload === "function") {
+    ctx.ui.notify("Reloading extensions...", "info");
+    try {
+      await ctx.reload();
+      ctx.ui.notify("Extensions reloaded.", "info");
+    } catch {
+      try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+    }
+  } else {
+    ctx.ui.notify(
+      "Package disabled. Restart pi for changes to take effect.",
+      "warning",
+    );
+  }
 }

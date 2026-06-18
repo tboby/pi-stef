@@ -572,6 +572,61 @@ describe("pullCommand", () => {
       "info",
     );
   });
+
+  // -------------------------------------------------------------------------
+  // Reload behavior
+  // -------------------------------------------------------------------------
+
+  it("calls ctx.reload after successful pull with actions", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [{ type: "install", key: "new-pkg", source: "npm:new-pkg" }],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const ctx = makeCtx();
+    (ctx as any).reload = reload;
+
+    await pullCommand({ positional: [], flags: {} }, ctx);
+
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it("shows restart message when ctx.reload is absent after pull with actions", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [{ type: "install", key: "new-pkg", source: "npm:new-pkg" }],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const ctx = makeCtx();
+    await pullCommand({ positional: [], flags: {} }, ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Restart pi"),
+      "warning",
+    );
+  });
+
+  it("does not call ctx.reload when pull has no actions", async () => {
+    mockedReconcile.mockReturnValue({
+      installs: [],
+      uninstalls: [],
+      upgrades: [],
+      orphans: [],
+    });
+
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const ctx = makeCtx();
+    (ctx as any).reload = reload;
+
+    await pullCommand({ positional: [], flags: {} }, ctx);
+
+    expect(reload).not.toHaveBeenCalled();
+  });
 });
 
 // ===========================================================================

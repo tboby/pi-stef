@@ -352,6 +352,22 @@ export async function syncCommand(
   }
 
   ctx.ui.notify(`Synced: ${parts.join(" | ")}`, "info");
+
+  // Reload extensions so synced package changes take effect immediately
+  if (summary.actionCount > 0 && typeof ctx.reload === "function") {
+    ctx.ui.notify("Reloading extensions...", "info");
+    try {
+      await ctx.reload();
+      ctx.ui.notify("Extensions reloaded.", "info");
+    } catch {
+      try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+    }
+  } else if (summary.actionCount > 0) {
+    ctx.ui.notify(
+      "Sync complete. Restart pi for changes to take effect.",
+      "warning",
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -488,6 +504,22 @@ export async function pullCommand(
       parts.push(`${result.errors.length} error(s).`);
     }
     ctx.ui.notify(parts.join(" | "), "info");
+
+    // Reload extensions so pulled package changes take effect immediately
+    if (typeof ctx.reload === "function") {
+      ctx.ui.notify("Reloading extensions...", "info");
+      try {
+        await ctx.reload();
+        ctx.ui.notify("Extensions reloaded.", "info");
+      } catch {
+        try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+      }
+    } else {
+      ctx.ui.notify(
+        "Pull complete. Restart pi for changes to take effect.",
+        "warning",
+      );
+    }
   } else {
     ctx.ui.notify("Pulled: catalog is up to date.", "info");
   }

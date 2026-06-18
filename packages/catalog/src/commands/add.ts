@@ -142,6 +142,23 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
       parts.join("\n"),
       setupWarnings.length > 0 ? "warning" : "info",
     );
+
+    // Reload extensions so new packages are available immediately
+    if (added > 0 && typeof ctx.reload === "function") {
+      ctx.ui.notify("Reloading extensions...", "info");
+      try {
+        await ctx.reload();
+        ctx.ui.notify("Extensions reloaded — new tools are available.", "info");
+      } catch {
+        try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+      }
+    } else if (added > 0) {
+      ctx.ui.notify(
+        "Package installed. Restart pi for changes to take effect.",
+        "warning",
+      );
+    }
+
     return;
   }
 
@@ -199,8 +216,10 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
 
   // --- Run pi install -------------------------------------------------------
   ctx.ui.setWorkingMessage?.(`Installing ${name}...`);
+  let installSucceeded = false;
   try {
     await piInstall(source);
+    installSucceeded = true;
   } catch {
     ctx.ui.notify(
       `Warning: package "${name}" added to catalog but install failed`,
@@ -208,6 +227,23 @@ export async function addCommand(args: CommandArgs, ctx: AddCtx): Promise<void> 
     );
   }
   ctx.ui.setWorkingMessage?.();
+
+  // --- Reload extensions so the new package is available immediately ---------
+  if (installSucceeded && typeof ctx.reload === "function") {
+    ctx.ui.notify("Reloading extensions...", "info");
+    try {
+      await ctx.reload();
+      ctx.ui.notify("Extensions reloaded — new tools are available.", "info");
+    } catch {
+      // ctx.ui may be invalid after reload; best-effort notify
+      try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+    }
+  } else {
+    ctx.ui.notify(
+      "Package installed. Restart pi for changes to take effect.",
+      "warning",
+    );
+  }
 
   // --- Check setup requirements ---------------------------------------------
   const setup = checkSetupForSource(source, ctx.home);

@@ -256,6 +256,72 @@ describe("removeCommand", () => {
     uninstallSpy.mockRestore();
   });
 
+  // --- Reload behavior -------------------------------------------------------
+
+  it("calls ctx.reload after successful uninstall", async () => {
+    seedCatalog(tmpDir);
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const { ctx, ui } = makeCtx();
+    ui.confirm.mockResolvedValue(true);
+    (ctx as any).reload = reload;
+
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await removeCommand(
+      { positional: ["my-pkg"], flags: {} },
+      ctx,
+    );
+
+    expect(reload).toHaveBeenCalled();
+    uninstallSpy.mockRestore();
+  });
+
+  it("shows restart message when ctx.reload is absent", async () => {
+    seedCatalog(tmpDir);
+    const { ctx, ui } = makeCtx();
+    ui.confirm.mockResolvedValue(true);
+
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await removeCommand(
+      { positional: ["my-pkg"], flags: {} },
+      ctx,
+    );
+
+    expect(ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Restart pi"),
+      "warning",
+    );
+    uninstallSpy.mockRestore();
+  });
+
+  it("does not call ctx.reload when uninstall fails", async () => {
+    seedCatalog(tmpDir);
+    const reload = vi.fn().mockResolvedValue(undefined);
+    const { ctx, ui } = makeCtx();
+    ui.confirm.mockResolvedValue(true);
+    (ctx as any).reload = reload;
+
+    const execModule = await import("../../src/util/exec.js");
+    const uninstallSpy = vi
+      .spyOn(execModule, "piUninstall")
+      .mockRejectedValue(new Error("uninstall failed"));
+
+    await removeCommand(
+      { positional: ["my-pkg"], flags: {} },
+      ctx,
+    );
+
+    expect(reload).not.toHaveBeenCalled();
+    uninstallSpy.mockRestore();
+  });
+
   // =========================================================================
   // --scope @pi-stef batch mode
   // =========================================================================

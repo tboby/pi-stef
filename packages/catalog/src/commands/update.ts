@@ -50,13 +50,31 @@ export async function updateCommand(
     }
 
     ctx.ui.setWorkingMessage?.(`Updating ${name}...`);
+    let updateSucceeded = false;
     try {
       await piUpdate(entry.source);
       ctx.ui.notify(`Updated "${name}"`, "info");
+      updateSucceeded = true;
     } catch {
       ctx.ui.notify(`Warning: update of "${name}" failed`, "warning");
     }
     ctx.ui.setWorkingMessage?.();
+
+    // Reload extensions so updated tools are available immediately
+    if (updateSucceeded && typeof ctx.reload === "function") {
+      ctx.ui.notify("Reloading extensions...", "info");
+      try {
+        await ctx.reload();
+        ctx.ui.notify("Extensions reloaded.", "info");
+      } catch {
+        try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+      }
+    } else {
+      ctx.ui.notify(
+        "Package updated. Restart pi for changes to take effect.",
+        "warning",
+      );
+    }
 
     // Check setup requirements after update
     const setup = checkSetupForSource(entry.source, ctx.home);
@@ -110,4 +128,20 @@ export async function updateCommand(
     parts.join("\n"),
     failed > 0 || setupWarnings.length > 0 ? "warning" : "info",
   );
+
+  // Reload extensions so updated tools are available immediately
+  if (updated > 0 && typeof ctx.reload === "function") {
+    ctx.ui.notify("Reloading extensions...", "info");
+    try {
+      await ctx.reload();
+      ctx.ui.notify("Extensions reloaded.", "info");
+    } catch {
+      try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
+    }
+  } else if (updated > 0) {
+    ctx.ui.notify(
+      "Packages updated. Restart pi for changes to take effect.",
+      "warning",
+    );
+  }
 }
