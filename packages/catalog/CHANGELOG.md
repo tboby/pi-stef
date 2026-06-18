@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-06-18
+### Changed
+- test(catalog): update add test for @pi-stef/pair
+- feat(pair): add skills, templates, docs, and catalog registration
+
+
 ## [0.5.3] - 2026-06-18
 ### Changed
 - docs(atlassian,catalog): document Confluence slash commands and catalog hot-reload
