@@ -215,17 +215,53 @@ export function registerSfPair(pi: ExtensionAPI): void {
   });
 
   // Register slash commands
+  const send = typeof pi.sendUserMessage === "function" ? pi.sendUserMessage.bind(pi) : undefined;
+
+  const slashDescriptions: Record<string, string> = {
+    sf_pair_plan: "Create implementation plan with reviewer loop. Args: task description",
+    sf_pair_implement: "Execute plan in worktree with milestone reviews. Args: plan folder path or slug",
+    sf_pair_task: "Execute single task end-to-end. Args: task description",
+  };
+
   for (const name of PAIR_TOOL_NAMES) {
     const slashName = name.replace(/_/g, "-");
-    const descriptions: Record<string, string> = {
-      sf_pair_plan: "Create implementation plan with reviewer loop",
-      sf_pair_implement: "Execute plan in worktree with milestone reviews",
-      sf_pair_task: "Execute single task end-to-end",
-    };
+    const desc = slashDescriptions[name] ?? name;
+
     pi.registerCommand(slashName, {
-      description: descriptions[name] ?? name,
-      handler: async (_args, _ctx) => {
-        // Slash commands are handled by the agent loading the skill
+      description: desc,
+      handler: async (args, ctx) => {
+        const trimmed = args.trim();
+        let message: string;
+
+        if (name === "sf_pair_plan") {
+          message = trimmed.length === 0
+            ? "Invoke the sf_pair_plan tool. Ask me first what to plan."
+            : `Invoke the sf_pair_plan tool with prompt: ${trimmed}`;
+        } else if (name === "sf_pair_implement") {
+          message = trimmed.length === 0
+            ? "Invoke the sf_pair_implement tool. Ask me first for the plan folder path or slug."
+            : `Invoke the sf_pair_implement tool with path: ${trimmed}`;
+        } else {
+          // sf_pair_task
+          message = trimmed.length === 0
+            ? "Invoke the sf_pair_task tool. Ask me first what task to execute."
+            : `Invoke the sf_pair_task tool with prompt: ${trimmed}`;
+        }
+
+        if (!send) {
+          ctx.ui?.notify?.(
+            `pair: this pi runtime can't post slash-command output to the agent. Type "${slashName} ${trimmed}" instead.`,
+            "warning",
+          );
+          return;
+        }
+
+        const idle = typeof ctx.isIdle === "function" ? ctx.isIdle() : true;
+        if (idle) {
+          send(message);
+        } else {
+          send(message, { deliverAs: "followUp" });
+        }
       },
     });
   }
