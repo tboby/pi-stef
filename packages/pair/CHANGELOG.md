@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-19
+### Changed
+- fix(pair): use current session model for exploration, not hardcoded model
+- fix(pair): use General agent for plan exploration instead of Explore (Haiku)
+
+
 ## [0.1.2] - 2026-06-19
 ### Changed
 - fix(pair): fix slash command handlers to invoke tools via sendUserMessage
