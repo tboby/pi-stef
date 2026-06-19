@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-19
+### Changed
+- fix(pair): fix slash command handlers to invoke tools via sendUserMessage
+
+
 ## [0.1.1] - 2026-06-18
 ### Changed
 - feat(pair): add skills, templates, docs, and catalog registration
