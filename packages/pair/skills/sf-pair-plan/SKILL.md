@@ -17,7 +17,7 @@ Create a multi-milestone implementation plan with iterative reviewer approval.
 
 ### Phase 1: Analyze
 
-Explore the codebase and existing patterns. Use exploration agents to understand the project structure.
+Explore the codebase and existing patterns. Use `Agent({ agentType: "General" })` to understand the project structure — the default `Explore` agent uses Haiku which is too weak for planning analysis.
 
 ### Phase 2: Gather Requirements
 
