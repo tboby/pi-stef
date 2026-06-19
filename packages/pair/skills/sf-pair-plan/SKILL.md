@@ -80,15 +80,15 @@ Scan the response for `VERDICT: APPROVED` (case-insensitive, line must start wit
 
 Once the plan is approved by the reviewer, you MUST:
 
-1. **Check `.gitignore`**: Run `grep -q 'ai_plan' .gitignore || echo '/ai_plan/' >> .gitignore`
+1. **Check `.gitignore`**: Run `grep -qx '/ai_plan/' .gitignore || echo '/ai_plan/' >> .gitignore`
 2. **Create the plan folder**: `mkdir -p ai_plan/YYYY-MM-DD-<slug>/` (use today's date and a descriptive slug)
-3. **Read the templates**: Read each template from the `@pi-stef/pair` package's `templates/` directory
-4. **Write ALL 5 files**:
+3. **Read the templates**: Read the 3 templates from the `templates/` directory (relative to this skill: `../../templates/`). Note: `task-plan.md` is for the task skill only — ignore it here.
+4. **Write ALL 5 files** (use the same slug throughout):
    - `ai_plan/YYYY-MM-DD-<slug>/original-plan.md` — the raw approved plan from the review
    - `ai_plan/YYYY-MM-DD-<slug>/final-transcript.md` — conversation log of the planning session
-   - `ai_plan/YYYY-MM-DD-<slug>/milestone-plan.md` — filled from template with the plan details
-   - `ai_plan/YYYY-MM-DD-<slug>/story-tracker.md` — filled from template with all stories marked as pending
-   - `ai_plan/YYYY-MM-DD-<slug>/continuation-runbook.md` — filled from template with full context
+   - `ai_plan/YYYY-MM-DD-<slug>/milestone-plan.md` — filled from `milestone-plan.md` template
+   - `ai_plan/YYYY-MM-DD-<slug>/story-tracker.md` — filled from `story-tracker.md` template
+   - `ai_plan/YYYY-MM-DD-<slug>/continuation-runbook.md` — filled from `continuation-runbook.md` template
 
 5. **Verify all files exist**:
    ```
