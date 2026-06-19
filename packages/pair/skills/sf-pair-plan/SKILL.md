@@ -76,16 +76,33 @@ Scan the response for `VERDICT: APPROVED` (case-insensitive, line must start wit
 
 ### Phase 7: Generate Plan Files
 
-Once the plan is approved:
+**CRITICAL: The plan is NOT complete until ALL files are created in `ai_plan/`. Do NOT stop or ask the user how to proceed.**
 
-1. Ensure `ai_plan/` exists in `.gitignore`
-2. Create `ai_plan/YYYY-MM-DD-<slug>/`
-3. Write using templates from this package's `templates/` directory:
-   - `original-plan.md` — raw approved plan
-   - `final-transcript.md` — conversation log
-   - `milestone-plan.md` — from template
-   - `story-tracker.md` — from template
-   - `continuation-runbook.md` — from template
+Once the plan is approved by the reviewer, you MUST:
+
+1. **Check `.gitignore`**: Run `grep -q 'ai_plan' .gitignore || echo '/ai_plan/' >> .gitignore`
+2. **Create the plan folder**: `mkdir -p ai_plan/YYYY-MM-DD-<slug>/` (use today's date and a descriptive slug)
+3. **Read the templates**: Read each template from the `@pi-stef/pair` package's `templates/` directory
+4. **Write ALL 5 files**:
+   - `ai_plan/YYYY-MM-DD-<slug>/original-plan.md` — the raw approved plan from the review
+   - `ai_plan/YYYY-MM-DD-<slug>/final-transcript.md` — conversation log of the planning session
+   - `ai_plan/YYYY-MM-DD-<slug>/milestone-plan.md` — filled from template with the plan details
+   - `ai_plan/YYYY-MM-DD-<slug>/story-tracker.md` — filled from template with all stories marked as pending
+   - `ai_plan/YYYY-MM-DD-<slug>/continuation-runbook.md` — filled from template with full context
+
+5. **Verify all files exist**:
+   ```
+   ls -la ai_plan/YYYY-MM-DD-<slug>/
+   ```
+   If any file is missing, create it immediately.
+
+6. **Present the plan folder to the user**: Show the file list and confirm the plan is ready for implementation.
+
+**DO NOT:**
+- Say "Plan complete" without creating the ai_plan/ folder
+- Ask the user how to proceed with implementation
+- Save the plan to any other location (docs/plans/, etc.)
+- Skip any of the 5 required files
 
 ### Phase 8: Telegram Notification
 
