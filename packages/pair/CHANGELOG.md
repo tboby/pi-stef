@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [0.1.4] - 2026-06-19
 ### Changed
 - fix(pair): use general-purpose agent type which inherits session model
+- fix(pair): require user approval on design before planning
 
 
 ## [0.1.3] - 2026-06-19
