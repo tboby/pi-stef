@@ -107,6 +107,42 @@ export function discoverSkills(cwd: string): Map<string, SkillMeta> {
     join(home, ".agents", "skills"),
   ];
 
+  // Add workspace package skills (monorepo pattern)
+  const packagesDir = join(cwd, "packages");
+  if (existsSync(packagesDir)) {
+    try {
+      const packages = readdirSync(packagesDir, { withFileTypes: true });
+      for (const pkg of packages) {
+        if (pkg.isDirectory()) {
+          const pkgSkillsDir = join(packagesDir, pkg.name, "skills");
+          if (existsSync(pkgSkillsDir)) {
+            skillPaths.push(pkgSkillsDir);
+          }
+        }
+      }
+    } catch {
+      // Skip if can't read packages directory
+    }
+  }
+
+  // Add installed package skills (node_modules pattern)
+  const nodeModulesDir = join(cwd, "node_modules", "@pi-stef");
+  if (existsSync(nodeModulesDir)) {
+    try {
+      const packages = readdirSync(nodeModulesDir, { withFileTypes: true });
+      for (const pkg of packages) {
+        if (pkg.isDirectory()) {
+          const pkgSkillsDir = join(nodeModulesDir, pkg.name, "skills");
+          if (existsSync(pkgSkillsDir)) {
+            skillPaths.push(pkgSkillsDir);
+          }
+        }
+      }
+    } catch {
+      // Skip if can't read node_modules directory
+    }
+  }
+
   const gitPackagesDir = join(home, ".pi", "agent", "git");
   if (existsSync(gitPackagesDir)) {
     findSkillsDirs(gitPackagesDir, skillPaths);
