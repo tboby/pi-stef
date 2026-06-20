@@ -112,6 +112,24 @@ packages:
 | `type` | — | `skill` or `pi-native` |
 | `profile` | — | Profile name this package belongs to |
 | `enabled` | — | `true` (default) or `false` |
+| `companions` | — | Array of companion source strings to auto-install |
+
+### Companions
+
+A package can declare required companion packages in its own `package.json`:
+
+```json
+{
+  "pi": {
+    "companions": ["git:github.com/obra/superpowers"]
+  }
+}
+```
+
+When `ct add` installs such a package, it also installs each companion that
+isn't already installed. Companions resolve transitively (a companion may
+declare its own companions) up to a depth of 3, with de-duplication so each
+source installs at most once.
 
 ### Examples
 
