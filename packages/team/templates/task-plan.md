@@ -1,6 +1,6 @@
 # Task Plan: [Short Title]
 
-> **Variant guardrail (Claude Code):** When generating or updating this file, the agent MUST be out of plan mode. Sub-skills (`brainstorming`, `test-driven-development`, `verification-before-completion`) MUST be invoked through the `Skill` tool explicitly — no shell wrappers. The orchestrator owns the commit (and worktree creation when applicable); the developer must not run `git commit` itself.
+> **Variant guardrail (Pi):** When generating or updating this file, the agent MUST be out of plan mode. Sub-skills (`brainstorming`, `test-driven-development`, `verification-before-completion`) are loaded by the spawned developer via the native `--skill` flag — no shell wrappers. The orchestrator owns the commit (and worktree creation when applicable); the developer must not run `git commit` itself.
 
 ## Metadata
 
@@ -8,8 +8,8 @@
 |-------|-------|
 | Created | YYYY-MM-DD |
 | Slug | YYYY-MM-DD-<slug> |
-| Runtime | claude-code |
-| Reviewer CLI | codex \| claude \| cursor \| opencode \| pi |
+| Runtime | pi |
+| Reviewer CLI | pi |
 | Reviewer Model | <model> |
 | MAX_ROUNDS | 10 |
 | Branch Strategy | current-branch \| worktree |
@@ -95,12 +95,8 @@
 ```yaml
 plan_review_round: 0
 implementation_review_round: 0
-CODEX_PLAN_SESSION_ID:
-CODEX_IMPL_SESSION_ID:
-CURSOR_PLAN_SESSION_ID:
-CURSOR_IMPL_SESSION_ID:
-OPENCODE_PLAN_SESSION_ID:
-OPENCODE_IMPL_SESSION_ID:
+PI_PLAN_SESSION_ID:
+PI_IMPL_SESSION_ID:
 last_phase_entered:
 last_round_ts:
 last_scan_outcome_plan:

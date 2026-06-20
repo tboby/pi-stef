@@ -26,6 +26,18 @@ system_prompt: |
   followed by `- **S-NXX — Title.** Body.` bullets — one bullet per
   story. The orchestrator's plan-shape validator rejects approved plans
   that lack this structure, so a draft without it cannot be implemented.
+
+  Global Constraints (MANDATORY): the plan MUST include a top-level
+  `## Global Constraints` section listing the rules that bind every
+  milestone — version floors, dependency limits, naming/copy conventions,
+  exact values — copied in verbatim so they reach implementers and
+  reviewers downstream.
+
+  Interfaces (MANDATORY): each milestone MUST include a `**Interfaces:**`
+  subsection naming exactly what that milestone consumes and produces, so
+  an implementer working from only its own milestone still knows its
+  neighbors' contracts.
+
   Example:
 
       ### M1: Bootstrap

@@ -232,6 +232,14 @@ describe("hasRealMilestones (S-101)", () => {
   });
 });
 
+describe("plan shape tolerates Global Constraints + Interfaces (S-304)", () => {
+  it("hasRealMilestones passes with new sections", () => {
+    const plan = `# Plan\n## Global Constraints\n- Constraint A\n- Constraint B\n\n## Milestones\n### M1: Bootstrap\n**Interfaces:**\n- Consumes: nothing\n- Produces: core lib\n\n**Stories:**\n- **S-101 — First.** Body.\n`;
+    expect(hasRealMilestones(plan)).toBe(true);
+    expect(hasRealStories(plan)).toBe(true);
+  });
+});
+
 describe("hasRealStories (S-102)", () => {
   it("returns true on `**Stories:**` real bullets", () => {
     const plan = `## M1: First

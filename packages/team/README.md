@@ -266,7 +266,7 @@ Reviewers and the researcher always run with strict isolation: `--no-prompt-temp
 
 Roles:
 - **researcher** — read-only analyzer. `sf_team_plan` runs it first to inspect the brief + repo state and emit a structured findings JSON (clarifying questions, files to touch, risks). Skill-free; no `bash`/`edit`/`write`.
-- **planner** — drafts the milestone plan. Receives researcher findings + Q&A answers as context. Skills: `brainstorming`, `writing-plans`.
+- **planner** — drafts the milestone plan. Receives researcher findings + Q&A answers as context. Skills: none (runs `--no-skills`; the plan-format contract is injected via prompt).
 - **developer** — implements one milestone at a time. Skills: `tdd`, `verification-before-completion`. Bound by the strict TDD contract documented in [TDD policy](#tdd-policy).
 - **reviewer** — strict isolation, read-only tools. Verdict format `## Summary` / `## Findings` (P0–P3) / `## Verdict`.
 

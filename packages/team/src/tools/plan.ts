@@ -1046,6 +1046,8 @@ const PLANNER_FORMAT_REMINDER = [
   "  - Return the full markdown plan body in your final assistant response. Do NOT write `task-plan.md`, `milestone-plan.md`, `execution-strategy.json`, or any other plan files yourself.",
   "  - Do NOT return a summary-only response such as `Plan written to ...`; the orchestrator uses your final assistant response as the canonical plan text.",
   "  - Each milestone MUST have an `### M<N>: <Title>` heading, a `**Description:**` paragraph, an `**Acceptance Criteria:**` checklist, and a literal `**Stories:**` subsection with `- **S-N01 — Title.** Body.` bullets.",
+	"  - The plan MUST include a top-level `## Global Constraints` section listing the rules that bind every milestone — version floors, dependency limits, naming/copy conventions, exact values — copied in verbatim so they reach implementers and reviewers downstream.",
+	"  - Each milestone MUST include a `**Interfaces:**` subsection naming exactly what that milestone consumes and produces, so an implementer working from only its own milestone still knows its neighbors' contracts.",
   "  - Include a `## Execution Strategy` section with one fenced JSON object matching `execution-strategy.json`: `version`, bounded `maxParallelMilestones`, bounded `maxParallelStoriesPerMilestone`, `milestoneWaves`, and per-milestone `stories` waves.",
   "  - `milestoneWaves` MUST be an array of objects with `id` and `milestones`, never an array-of-arrays. Per-milestone `stories.<M>.storyWaves` MUST be an array of objects with `id`, `stories`, and `writeSets` when parallelism is claimed.",
   "  - For every story wave that schedules more than one story or has `maxParallel > 1`, include a concrete `writeSets` array for EVERY scheduled story. Use exact repo-relative file paths only.",
@@ -1405,7 +1407,7 @@ export function extractMilestones(plan: string): { id: string; title: string }[]
  * `S-N01` placeholder per milestone when no story bullets are detected
  * (e.g. an LLM produced a tracker-less plan).
  *
- * Format expected (matches `superpowers:writing-plans`):
+ * Format expected (aligned with the obra superpowers writing-plans skill):
  *
  *   ### M1: Title
  *   ...

@@ -10,8 +10,11 @@
 ### Requirements
 [Gathered requirements from user questions]
 
-### Constraints
-[Technical, business, or timeline constraints]
+## Global Constraints
+- [Binding rule that applies to every milestone — e.g. "TypeScript strict mode, no `any`"]
+- [Version floor / dependency limit]
+- [Naming or copy convention]
+- [Exact value that must be used]
 
 ### Success Criteria
 [How we know this is complete]
@@ -35,6 +38,10 @@
 **Acceptance Criteria:**
 - [ ] [Criterion 1]
 - [ ] [Criterion 2]
+
+**Interfaces:**
+- Consumes: [what this milestone reads/depends on]
+- Produces: [what this milestone exposes to later milestones]
 
 **Stories:** S-101, S-102, S-103...
 
