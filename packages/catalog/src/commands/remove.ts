@@ -14,6 +14,7 @@ import type { CommandArgs, CommandCtx } from "./types.js";
 import { removePackage } from "../catalog/crud.js";
 import { isPiStefSource } from "../catalog/packages.js";
 import { readCatalog, writeCatalog, readLock, writeLock } from "../config/io.js";
+import { recordRemoval } from "../catalog/removal-tombstones.js";
 import { piUninstall } from "../util/exec.js";
 
 // ---------------------------------------------------------------------------
@@ -93,6 +94,11 @@ export async function removeCommand(
     writeCatalog(catalog, ctx.home);
     writeLock(lock, ctx.home);
 
+    // Record removal tombstones so ct sync drops these from the remote
+    for (const name of piStefNames) {
+      recordRemoval(name, ctx.home);
+    }
+
     // Uninstall all
     let uninstalled = 0;
     let failed = 0;
@@ -171,6 +177,7 @@ export async function removeCommand(
   // --- Remove package -------------------------------------------------------
   const updated = removePackage(catalog, name);
   writeCatalog(updated, ctx.home);
+  recordRemoval(name, ctx.home);
 
   // --- Remove from lock file ------------------------------------------------
   const lock = readLock(ctx.home);

@@ -19,6 +19,7 @@ import { pullCatalog } from "../sync/pull.js";
 import { pushCatalog } from "../sync/push.js";
 import { readCachedGistId } from "../sync/cache.js";
 import { scanInstalled } from "../catalog/install.js";
+import { applyRemovalTombstones, clearTombstones } from "../catalog/removal-tombstones.js";
 import { reconcile, executeActions } from "../catalog/reconcile.js";
 import { extractVersionFromSource } from "../catalog/source.js";
 import { createHash } from "node:crypto";
@@ -148,6 +149,11 @@ export async function syncCommand(
         hasLocalOnlyPackages = true;
       }
     }
+    // Apply local removal tombstones. When ct remove removes a package, it
+    // writes a record to the removal-log so that ct sync can detect the
+    // removal and drop the package from the pulled remote catalog (and push
+    // the removal upstream). Without this, the remote would re-install it.
+    catalog = applyRemovalTombstones(catalog, ctx.home);
   }
 
   // Detect local lock changes (e.g., from `pi update` bumping versions).
@@ -296,6 +302,7 @@ export async function syncCommand(
       );
       summary.pushed = true;
       summary.gistUrl = pushResult.gistUrl;
+      clearTombstones(ctx.home);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       ctx.ui.notify(`Push failed: ${message}`, "error");
@@ -403,6 +410,7 @@ export async function pushCommand(
   try {
     const result = await pushCatalog(catalog, lock, profile, ctx.home);
     ctx.ui.notify(`Pushed to gist: ${result.gistUrl}`, "info");
+    clearTombstones(ctx.home);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     ctx.ui.notify(`Push failed: ${message}`, "error");
