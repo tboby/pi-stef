@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-06-20
+### Changed
+- fix(catalog): fall back to os.homedir() when ctx.home is undefined in installCompanions
+
+
 ## [0.6.2] - 2026-06-20
 ### Changed
 - fix(catalog): surface companion resolution failures instead of silently skipping
