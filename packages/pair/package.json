@@ -6,6 +6,12 @@
   "pi": {
     "extensions": [
       "./extensions"
+    ],
+    "skills": [
+      "./skills"
+    ],
+    "companions": [
+      "git:github.com/obra/superpowers"
     ]
   },
   "peerDependencies": {
