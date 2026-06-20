@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-06-20
+### Changed
+- feat(team,pair): M3+M4 — pi-native migration, Global Constraints + Interfaces
+- fix(pair): sf_pair_finalize uses ctx.cwd for git context, SKILL.md cd-before-finalize
+- docs(pair): rewrite skills + docs for v6 migration, per-milestone loop, global agents
+- feat(pair): create worktree deterministically in sf_pair_implement
+- feat(pair): sf_pair_finalize preserves branch, removes worktree dir
+- refactor(pair): replace writeReviewerAgent with global write-once ensureAgentFiles
+- feat(pair): write-once global agent definitions for reviewer and explorer
+- feat(pair,team): declare obra/superpowers companion + pair native skill discovery
+
 ### Changed
 - pair no longer depends on superpowers-adapter; obra/superpowers v6 is loaded natively.
 - Reviewer and explorer agent definitions now live globally at `~/.pi/agent/agents/` as write-once, user-editable templates (model resolved at dispatch).
