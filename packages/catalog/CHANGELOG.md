@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.6.0] - 2026-06-20
+### Changed
+- docs: M6 — add pair to sidebar, README table, dev tree; changelog entries
+- chore: remove @pi-stef/superpowers-adapter and all references (M5)
+- fix(catalog): address M1 review findings — use npmNodeModulesDir, fix schema comment, cleanup imports
+- docs(catalog): document pi.companions auto-install feature
+- feat(catalog): auto-install pi.companions on ct add (BFS, depth-guarded)
+- feat(catalog): resolveInstalledDir maps npm source to installed dir
+- feat(catalog): resolveCompanions reads pi.companions from installed dir
+- feat(catalog): add readCompanionsFromManifest helper for pi.companions
+- feat(catalog): add optional companions field to catalog package schema
+
 ### Added
 - `pi.companions` auto-install on `ct add` with BFS traversal (depth cap 3, dedup, cycle-safe). A package declaring `pi.companions` in its `package.json` gets companions installed alongside it.
 
