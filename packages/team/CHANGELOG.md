@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.4.0] - 2026-06-20
+### Changed
+- fix(team): normalize indentation in PLANNER_FORMAT_REMINDER
+- docs: M6 — add pair to sidebar, README table, dev tree; changelog entries
+- feat(team,pair): M3+M4 — pi-native migration, Global Constraints + Interfaces
+- feat(pair,team): declare obra/superpowers companion + pair native skill discovery
+
 ### Changed
 - Declares obra/superpowers as a `pi.companions` dependency.
 - Planner contract now emits `## Global Constraints` and `**Interfaces:**` plan sections (obra v6).
