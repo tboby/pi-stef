@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { catalogDir } from "../config/paths";
 import type { CatalogYaml } from "../config/schema";
@@ -40,7 +40,9 @@ function tombstonePath(home?: string): string {
 export function recordRemoval(name: string, home?: string): void {
   const existing = readTombstones(home);
   existing.push(name);
-  writeFileSync(tombstonePath(home), JSON.stringify(existing), "utf8");
+  const filePath = tombstonePath(home);
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, JSON.stringify(existing), "utf8");
 }
 
 /** Read all tombstone records. */
