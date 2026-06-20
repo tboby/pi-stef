@@ -9,6 +9,7 @@ import {
 import { ensureAgentFiles } from "./agents";
 
 import { finalizeWorktree } from "./worktree/finalize";
+import { createWorktree } from "./worktree/create";
 
 export const PAIR_TOOL_NAMES = [
   "sf_pair_plan",
@@ -166,6 +167,26 @@ export function registerSfPair(pi: ExtensionAPI): void {
 
       const agentWarnings = (await ensureAgentFiles(homedir(), repoRoot)).warnings;
 
+      // Derive a slug from the plan path (basename without leading date prefix).
+      const rawPath = (params as any).path as string;
+      const slug = rawPath
+        .replace(/^ai_plan\//, "")
+        .replace(/^\d{4}-\d{2}-\d{2}-/, "")
+        .replace(/[^a-zA-Z0-9._-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "") || "pair";
+
+      let worktree: { worktreePath: string; branchName: string; baseSha: string };
+      try {
+        worktree = await createWorktree({ slug });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Failed to create worktree: ${msg}` }],
+          details: { configured: true, reviewerModel: model, path: rawPath },
+        };
+      }
+
       const warnText = agentWarnings.length > 0
         ? `\n\n⚠️ Agent warning:\n${agentWarnings.map((w) => `- ${w}`).join("\n")}`
         : "";
@@ -174,10 +195,16 @@ export function registerSfPair(pi: ExtensionAPI): void {
         content: [
           {
             type: "text" as const,
-            text: `Reviewer configured with model: ${model}\nPlan path: ${(params as any).path}\nAgent files ensured at ~/.pi/agent/agents/{reviewer,explorer}.md\n\nNow load the skill named "sf-pair-implement" and follow its instructions exactly.${warnText}`,
+            text: `Reviewer configured with model: ${model}\nPlan path: ${rawPath}\nWorktree created at ${worktree.worktreePath} on branch ${worktree.branchName} (base ${worktree.baseSha}).${warnText}\n\nSwitch to the worktree directory, then load the skill named "sf-pair-implement" and follow its instructions exactly. When all milestones are committed to ${worktree.branchName}, call sf_pair_finalize with worktree_path "${worktree.worktreePath}".`,
           },
         ],
-        details: { configured: true, reviewerModel: model, path: (params as any).path },
+        details: {
+          configured: true,
+          reviewerModel: model,
+          path: rawPath,
+          worktreePath: worktree.worktreePath,
+          branchName: worktree.branchName,
+        },
       };
     },
   });
