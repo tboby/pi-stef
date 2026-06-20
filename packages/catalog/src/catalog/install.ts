@@ -186,3 +186,20 @@ export function scanInstalled(home?: string, cwd?: string): InstalledMap {
 
   return result;
 }
+
+/**
+ * Resolve the installed package directory for a source string, or
+ * `undefined` when it cannot be determined.
+ *
+ * npm sources resolve to the pi-managed node_modules path (via parseSource
+ * → npmName, which correctly handles scoped names AND version pins).
+ * git/local sources return `undefined` (no deterministic reverse mapping);
+ * callers treat `undefined` as "no companions to read" and skip silently.
+ */
+export function resolveInstalledDir(source: string, home: string): string | undefined {
+  const parsed = parseSource(source);
+  if (parsed.type === "npm" && parsed.npmName) {
+    return path.join(home, ".pi", "agent", "npm", "node_modules", parsed.npmName);
+  }
+  return undefined;
+}
