@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { homedir } from "node:os";
 
 import type { CommandCtx } from "../commands/types.js";
 import { readCatalog } from "../config/io.js";
@@ -84,7 +85,7 @@ export function resolveCompanions(
  * are warnings — they never fail the caller.
  *
  * Used by both `ct add` and `ct update` after the primary install/update
- * succeeds. Skipped silently when `ctx.home` is unavailable.
+ * succeeds. Falls back to `os.homedir()` when `ctx.home` is not set.
  *
  * @param source The primary package source string that was installed/updated.
  * @param ctx The command context (provides home dir + UI hooks).
@@ -93,16 +94,11 @@ export async function installCompanions(
   source: string,
   ctx: CommandCtx,
 ): Promise<void> {
-  if (!ctx.home) {
-    ctx.ui.notify?.("Cannot resolve companions: catalog home directory is not available.", "warning");
-    return;
-  }
-  const rootDir = resolveInstalledDir(source, ctx.home);
+  const home = ctx.home ?? homedir();
+  const rootDir = resolveInstalledDir(source, home);
   if (!rootDir) {
-    ctx.ui.notify?.(
-      `Cannot resolve companions for "${source}": unable to determine installed directory (only npm sources can resolve companions).`,
-      "warning",
-    );
+    // git/local sources can't be reverse-mapped to an installed directory —
+    // this is expected for non-npm packages. Silent skip, not a warning.
     return;
   }
 
@@ -124,7 +120,7 @@ export async function installCompanions(
       } catch {
         ctx.ui.notify(`Warning: companion "${c}" install failed`, "warning");
       }
-      const cdir = resolveInstalledDir(c, ctx.home);
+      const cdir = resolveInstalledDir(c, home);
       if (cdir) queue.push({ dir: cdir, depth: depth + 1 });
     }
   }
