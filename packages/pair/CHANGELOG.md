@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+### Changed
+- pair no longer depends on superpowers-adapter; obra/superpowers v6 is loaded natively.
+- Reviewer and explorer agent definitions now live globally at `~/.pi/agent/agents/` as write-once, user-editable templates (model resolved at dispatch).
+- `sf_pair_implement` now creates the worktree deterministically and runs a per-milestone TDD→review→commit→tracker loop.
+### Added
+- `sf_pair_finalize` tool: removes the worktree directory while preserving the `pair/<slug>` branch for a PR.
+- `explorer` agent definition.
+- `pi.skills` and `pi.companions` manifest fields.
+### Removed
+- `rollupAndCleanup` (merge-into-base + branch delete) — replaced by `sf_pair_finalize`.
 
 ## [0.1.6] - 2026-06-19
 ### Changed

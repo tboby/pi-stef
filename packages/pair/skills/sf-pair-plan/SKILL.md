@@ -11,17 +11,17 @@ Create a multi-milestone implementation plan with iterative reviewer approval.
 
 - pi-subagents extension installed
 - Reviewer model configured (via config, env, or prompt)
-- Obra Superpowers skills available to pi: `brainstorming`, `writing-plans` (install from https://github.com/obra/superpowers)
+- Obra Superpowers skills available to pi: `brainstorming`, `writing-plans` (install via `pi install git:github.com/obra/superpowers`)
 
 ## Process
 
 ### Phase 1: Analyze
 
-Explore the codebase and existing patterns. Use `Agent({ agentType: "general-purpose" })` to understand the project structure.
+Explore the codebase and existing patterns. Use `Agent({ subagent_type: "general-purpose" })` to understand the project structure.
 
 If an explorer model was configured (via prompt, config, or env), use it:
 ```
-Agent({ agentType: "general-purpose", model: "<explorer_model>" })
+Agent({ subagent_type: "explorer", model: "<explorer_model>" })
 ```
 
 If no explorer model is configured, omit the `model` parameter to inherit the current session model. Do NOT use the default `Explore` agent (it uses Haiku).
@@ -32,13 +32,13 @@ Ask questions one at a time using `AskUserQuestion` until the scope is clear. Co
 
 ### Phase 3: Resolve Reviewer Model
 
-The tool has already resolved the reviewer model and written `.pi/agents/reviewer.md`. Verify it exists:
+The tool has already resolved the reviewer model. Verify the reviewer agent definition exists globally:
 
 ```
-test -f .pi/agents/reviewer.md
+test -f ~/.pi/agent/agents/reviewer.md
 ```
 
-If it doesn't exist, stop and ask the user for a reviewer model.
+If it doesn't exist, run the `sf_pair_plan` tool again (it writes the agent files on first use). The reviewer model MUST be passed at dispatch time.
 
 ### Phase 4: Design
 
@@ -61,6 +61,7 @@ Write the complete plan to `/tmp/pair-plan-{REVIEW_ID}.md` where REVIEW_ID is a 
 ```
 Agent({
   subagent_type: "reviewer",
+  model: "<reviewer_model>",
   prompt: "Review the implementation plan at /tmp/pair-plan-{REVIEW_ID}.md. Return exactly the required ## Summary, ## Findings (P0-P3), and ## Verdict structure.",
   description: "Review plan round N"
 })

@@ -5,8 +5,12 @@ A simplified plan/review/implement workflow for Pi using pi-subagents for review
 ## Installation
 
 ```bash
+pi install git:github.com/obra/superpowers   # required companion (declared via pi.companions)
 pi install npm:@pi-stef/pair
 ```
+
+pair declares obra/superpowers as a companion, so installing pair via the catalog
+also installs it. pair's own skills are discovered natively via `pi.skills`.
 
 ## Workflows
 
@@ -14,6 +18,7 @@ pi install npm:@pi-stef/pair
 |----------|------|-------------|
 | Plan | `sf_pair_plan` | Create multi-milestone plan with reviewer loop |
 | Implement | `sf_pair_implement` | Execute plan in worktree with milestone reviews |
+| Finalize | `sf_pair_finalize` | Remove worktree dir, preserve branch for PR |
 | Task | `sf_pair_task` | Execute single task end-to-end |
 
 ## Quickstart
@@ -76,6 +81,18 @@ Execute a single task end-to-end.
 | `prompt` | Yes | The task to execute |
 | `reviewer_model` | No | Override reviewer model |
 
+### sf_pair_finalize
+
+Remove the worktree directory after a run while PRESERVING the `pair/<slug>` branch.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| worktree_path | string | Absolute path of the pair worktree directory to remove |
+
+Use this after `sf_pair_implement` has committed all milestones to the worktree
+branch. The branch survives so you can push it and open a PR from your main
+checkout.
+
 ## Configuration
 
 Config file location: `.pi/sf/pair/config.json`
@@ -109,22 +126,21 @@ Config file location: `.pi/sf/pair/config.json`
 
 ### Skill-Driven Design
 
-Three tools delegate to SKILL.md files that contain workflow logic. The extension provides:
+Four tools delegate to SKILL.md files that contain workflow logic. The extension provides:
 - Config loading and model resolution
-- Reviewer agent file generation via pi-subagents
+- Global write-once agent templates (user-editable, model resolved at dispatch)
 - Standalone worktree helpers
 
 ### Reviewer Spawning
 
-Reviewers are spawned as pi-subagents using a custom agent type defined in `.pi/agents/reviewer.md`. The agent file is generated at runtime with the resolved model.
+Reviewer and explorer agents are spawned as pi-subagents using global agent definitions at `~/.pi/agent/agents/{reviewer,explorer}.md`. The files are write-once (never clobbered so users can edit them) and omit `model:` — the model is resolved by pair and passed at dispatch time.
 
 ### Worktree Lifecycle
 
-The implement skill:
+The implement skill runs a per-milestone loop:
 1. Creates a git worktree with branch `pair/<slug>`
-2. Implements all milestones without stopping
-3. Rolls up commits to base branch
-4. Deletes the worktree
+2. For each milestone: TDD each story → reviewer loop → commit to worktree branch → update tracker
+3. After all milestones: `sf_pair_finalize` removes the worktree directory while preserving the `pair/<slug>` branch for a PR
 
 ## Key Differences from Team
 

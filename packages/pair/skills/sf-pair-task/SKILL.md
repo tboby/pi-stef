@@ -11,7 +11,7 @@ Execute a single user task end-to-end: clarify, plan, review, implement, verify,
 
 - pi-subagents extension installed
 - Reviewer model configured
-- Obra Superpowers skills available to pi: `brainstorming`, `test-driven-development`, `verification-before-completion`, `finishing-a-development-branch` (install from https://github.com/obra/superpowers)
+- Obra Superpowers skills available to pi: `brainstorming`, `test-driven-development`, `verification-before-completion`, `finishing-a-development-branch` (install via `pi install git:github.com/obra/superpowers`)
 
 ## Process
 
@@ -19,7 +19,7 @@ Execute a single user task end-to-end: clarify, plan, review, implement, verify,
 
 1. Verify repo: `git rev-parse --is-inside-work-tree`
 2. Ensure `ai_plan/` exists in `.gitignore`
-3. Verify `.pi/agents/reviewer.md` exists
+3. Verify the reviewer agent definition exists globally: `test -f ~/.pi/agent/agents/reviewer.md`
 
 ### Phase 2: Parse Prompt And Clarify
 
@@ -41,6 +41,7 @@ Execute a single user task end-to-end: clarify, plan, review, implement, verify,
    ```
    Agent({
      subagent_type: "reviewer",
+     model: "<reviewer_model>",
      prompt: "Review the task plan at /tmp/pair-task-plan-{REVIEW_ID}.md",
      description: "Review task plan"
    })
@@ -68,6 +69,7 @@ Execute a single user task end-to-end: clarify, plan, review, implement, verify,
    ```
    Agent({
      subagent_type: "reviewer",
+     model: "<reviewer_model>",
      prompt: "Review the implementation. [include diff and verification]",
      description: "Review implementation"
    })
