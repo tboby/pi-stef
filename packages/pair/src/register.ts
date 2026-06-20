@@ -8,10 +8,13 @@ import {
 } from "./config/load";
 import { ensureAgentFiles } from "./agents";
 
+import { finalizeWorktree } from "./worktree/finalize";
+
 export const PAIR_TOOL_NAMES = [
   "sf_pair_plan",
   "sf_pair_implement",
   "sf_pair_task",
+  "sf_pair_finalize",
 ] as const;
 
 /**
@@ -237,6 +240,45 @@ export function registerSfPair(pi: ExtensionAPI): void {
     },
   });
 
+  // Register finalize tool
+  const finalizeSchema = Type.Object(
+    {
+      worktree_path: Type.String({
+        description: "Absolute path of the pair worktree directory to remove (the pair/<slug> branch is preserved).",
+      }),
+    },
+    { additionalProperties: false },
+  );
+
+  pi.registerTool({
+    name: "sf_pair_finalize",
+    label: "sf_pair_finalize",
+    description:
+      "Finalize a pair implement run: remove the worktree directory while preserving the pair/<slug> branch for a PR. Call after all milestones are committed to the worktree branch.",
+    parameters: finalizeSchema as any,
+    execute: async (_id, params, _signal, _onUpdate, _ctx) => {
+      const worktreePath = (params as any).worktree_path;
+      try {
+        await finalizeWorktree(worktreePath);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Finalize failed: ${msg}` }],
+          details: { finalized: false, worktreePath },
+        };
+      }
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Worktree removed at ${worktreePath}. The pair/<slug> branch is preserved. Push it and open a PR from the main checkout.`,
+          },
+        ],
+        details: { finalized: true, worktreePath },
+      };
+    },
+  });
+
   // Register slash commands
   const send = typeof pi.sendUserMessage === "function" ? pi.sendUserMessage.bind(pi) : undefined;
 
@@ -244,6 +286,7 @@ export function registerSfPair(pi: ExtensionAPI): void {
     sf_pair_plan: "Create implementation plan with reviewer loop. Args: task description",
     sf_pair_implement: "Execute plan in worktree with milestone reviews. Args: plan folder path or slug",
     sf_pair_task: "Execute single task end-to-end. Args: task description",
+    sf_pair_finalize: "Remove worktree dir, preserve branch for PR. Args: worktree_path",
   };
 
   for (const name of PAIR_TOOL_NAMES) {
@@ -264,6 +307,10 @@ export function registerSfPair(pi: ExtensionAPI): void {
           message = trimmed.length === 0
             ? "Invoke the sf_pair_implement tool. Ask me first for the plan folder path or slug."
             : `Invoke the sf_pair_implement tool with path: ${trimmed}`;
+        } else if (name === "sf_pair_finalize") {
+          message = trimmed.length === 0
+            ? "Invoke the sf_pair_finalize tool. Ask me first for the worktree path (or provide it now)."
+            : `Invoke the sf_pair_finalize tool with worktree_path: ${trimmed}`;
         } else {
           // sf_pair_task
           message = trimmed.length === 0
