@@ -38,7 +38,6 @@
     "@pi-stef/web": "^0.3.0",
     "@pi-stef/figma": "^0.3.0",
     "@pi-stef/atlassian": "^0.3.0",
-    "@pi-stef/superpowers-adapter": "^0.3.0",
     "@pi-stef/paths": "^0.3.0"
   },
   "peerDependencies": {

@@ -29,7 +29,6 @@
     "@pi-stef/figma": "workspace:^0.3.0",
     "@pi-stef/pair": "workspace:^0.1.0",
     "@pi-stef/paths": "workspace:^0.3.0",
-    "@pi-stef/superpowers-adapter": "workspace:^0.3.0",
     "@pi-stef/team": "workspace:^0.3.0",
     "@pi-stef/web": "workspace:^0.3.0"
   }

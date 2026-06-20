@@ -96,7 +96,7 @@ describe("addCommand — companions", () => {
     await addCommand({ positional: ["npm:@pi-stef/pair"], flags: { type: "pi-native" } }, ctx);
 
     // piInstall called for primary + companion
-    const calls = installSpy.mock.calls.map((c) => c[0]);
+    const calls = installSpy.mock.calls.map((c: any[]) => c[0] as string);
     expect(calls).toContain("npm:@pi-stef/pair");
     expect(calls).toContain("git:github.com/obra/superpowers");
   });
@@ -127,10 +127,10 @@ describe("addCommand — companions", () => {
     const { ctx } = makeCtx();
     await addCommand({ positional: ["npm:@pi-stef/pair"], flags: { type: "pi-native" } }, ctx);
 
-    const calls = installSpy.mock.calls.map((c) => c[0]);
+    const calls = installSpy.mock.calls.map((c: any[]) => c[0] as string);
     expect(calls).toContain("npm:@pi-stef/pair");
     // companion already in catalog => not installed
-    expect(calls.filter((s) => s === "git:github.com/obra/superpowers")).toHaveLength(0);
+    expect(calls.filter((s: string) => s === "git:github.com/obra/superpowers")).toHaveLength(0);
   });
 
   it("installs each distinct companion once even with a cycle", async () => {
@@ -155,9 +155,9 @@ describe("addCommand — companions", () => {
     const { ctx } = makeCtx();
     await addCommand({ positional: ["npm:pkg-a"], flags: { type: "pi-native" } }, ctx);
 
-    const calls = installSpy.mock.calls.map((c) => c[0]);
-    expect(calls.filter((s) => s === "npm:pkg-a")).toHaveLength(1); // primary only
-    expect(calls.filter((s) => s === "git:b")).toHaveLength(1); // companion once
+    const calls = installSpy.mock.calls.map((c: any[]) => c[0] as string);
+    expect(calls.filter((s: string) => s === "npm:pkg-a")).toHaveLength(1); // primary only
+    expect(calls.filter((s: string) => s === "git:b")).toHaveLength(1); // companion once
   });
 
   it("respects the depth cap (does not recurse beyond MAX_COMPANION_DEPTH)", async () => {
@@ -188,9 +188,9 @@ describe("addCommand — companions", () => {
     const { ctx } = makeCtx();
     await addCommand({ positional: ["npm:pkg-a"], flags: { type: "pi-native" } }, ctx);
 
-    const calls = installSpy.mock.calls.map((c) => c[0]);
+    const calls = installSpy.mock.calls.map((c: any[]) => c[0] as string);
     // MAX_COMPANION_DEPTH=3, so after root (a) → b (d=0) → c (d=1) → d (d=2) → "continue at d=3" means d's companion e is NOT installed
-    expect(calls.filter((s) => s === "npm:pkg-e")).toHaveLength(0);
+    expect(calls.filter((s: string) => s === "npm:pkg-e")).toHaveLength(0);
     // b, c, d should be installed
     expect(calls).toContain("npm:pkg-b");
     expect(calls).toContain("npm:pkg-c");

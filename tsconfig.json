@@ -2,7 +2,6 @@
   "files": [],
   "references": [
     { "path": "packages/paths" },
-    { "path": "packages/superpowers-adapter" },
     { "path": "packages/agent-workflows" },
     { "path": "packages/atlassian" },
     { "path": "packages/azure-foundry" },

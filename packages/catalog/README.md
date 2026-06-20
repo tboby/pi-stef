@@ -92,8 +92,8 @@ meta:
   activeProfile: default
 
 packages:
-  superpowers-adapter:
-    source: "git:github.com/sfiorini/pi-stef#packages/superpowers-adapter"
+  pair:
+    source: "git:github.com/sfiorini/pi-stef#packages/pair"
     type: skill
   team:
     source: "git:github.com/sfiorini/pi-stef#packages/team"
@@ -170,8 +170,8 @@ meta:
   activeProfile: work
 
 packages:
-  superpowers-adapter:
-    source: "git:github.com/sfiorini/pi-stef#packages/superpowers-adapter"
+  pair:
+    source: "git:github.com/sfiorini/pi-stef#packages/pair"
 
 profiles:
   work:

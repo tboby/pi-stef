@@ -70,7 +70,6 @@ pi install npm:@pi-stef/team
 pi install npm:@pi-stef/web
 pi install npm:@pi-stef/figma
 pi install npm:@pi-stef/atlassian
-pi install npm:@pi-stef/superpowers-adapter
 ```
 
 Each package works independently. Check each package's documentation for its specific setup requirements.

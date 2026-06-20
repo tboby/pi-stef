@@ -53,8 +53,8 @@ meta:
   activeProfile: default
 
 packages:
-  superpowers-adapter:
-    source: "npm:@pi-stef/superpowers-adapter"
+  pair:
+    source: "npm:@pi-stef/pair"
     type: skill
   team:
     source: "npm:@pi-stef/team"

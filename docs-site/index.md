@@ -38,10 +38,6 @@ features:
     title: Atlassian Integration
     details: Jira and Confluence Cloud tools for story context, issue tracking, and documentation access.
     link: /packages/atlassian
-  - icon: ⚡
-    title: Superpowers Bridge
-    details: Connects the superpowers skill system to pi's extension API, enabling TodoWrite and Skill tools.
-    link: /packages/superpowers-adapter
   - icon: 🖥️
     title: Cursor Provider
     details: Use Cursor's AI models (Claude, GPT, Gemini, Grok) as native Pi providers with OAuth login and protobuf protocol

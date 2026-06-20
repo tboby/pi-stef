@@ -13,7 +13,6 @@
 pi-stef/
 ├── packages/
 │   ├── catalog/           # Declarative package manager extension
-│   ├── superpowers-adapter/  # Bridges superpowers skill system to pi
 │   ├── team/              # Team of role-agents for plan/review/implement
 │   ├── agent-workflows/   # Workflow engine primitives (internal)
 │   ├── atlassian/         # Jira and Confluence integration

@@ -22,6 +22,7 @@ export default defineConfig({
           { text: "Getting Started", link: "/getting-started" },
           { text: "Catalog Guide", link: "/catalog-guide" },
           { text: "Profiles & Sharing", link: "/profiles" },
+          { text: "Migrating from superpowers-adapter", link: "/migrating-from-superpowers-adapter" },
         ],
       },
       {
@@ -32,7 +33,6 @@ export default defineConfig({
           { text: "catalog", link: "/packages/catalog" },
           { text: "cursor", link: "/packages/cursor" },
           { text: "team", link: "/packages/team" },
-          { text: "Superpowers Bridge", link: "/packages/superpowers-adapter" },
           { text: "atlassian", link: "/packages/atlassian" },
           { text: "figma", link: "/packages/figma" },
           { text: "web", link: "/packages/web" },
