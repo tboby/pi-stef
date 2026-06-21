@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-21
+### Changed
+- feat(pair): use directive-first result message in sf_pair_implement
+- feat(pair): buildImplementReadyMessage — directive-first implement tool result
+
+
 ## [0.2.0] - 2026-06-20
 ### Changed
 - feat(team,pair): M3+M4 — pi-native migration, Global Constraints + Interfaces
