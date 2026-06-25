@@ -91,4 +91,5 @@ export {
   switchProfile,
   deleteProfile,
   resolveEffectivePackages,
+  resolveEffectiveLocalExtensions,
 } from "./profiles/manager.js";

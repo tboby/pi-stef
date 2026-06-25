@@ -157,3 +157,39 @@ export function resolveEffectivePackages(
 
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// resolveEffectiveLocalExtensions
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the effective local extension list for a given profile.
+ *
+ * - For the default profile: returns the base `local_extensions`.
+ * - For a named profile: returns the profile's `local_extensions` if set,
+ *   otherwise falls back to the base `local_extensions`.
+ * - Returns `undefined` when no `local_extensions` are configured anywhere
+ *   (signals "don't touch local extensions").
+ * - Returns an empty array when the profile explicitly opts into zero
+ *   extensions (`local_extensions: []`).
+ */
+export function resolveEffectiveLocalExtensions(
+  catalog: CatalogYaml,
+  profile?: string,
+): string[] | undefined {
+  const profileName = profile ?? catalog.meta.activeProfile ?? DEFAULT_PROFILE;
+
+  // Default profile: use base local_extensions
+  if (profileName === DEFAULT_PROFILE) {
+    return catalog.local_extensions;
+  }
+
+  // Named profile: use profile's local_extensions if set
+  const profilePkgs = catalog.profiles?.[profileName];
+  if (profilePkgs && profilePkgs.local_extensions !== undefined) {
+    return profilePkgs.local_extensions;
+  }
+
+  // Profile doesn't specify → fall back to base
+  return catalog.local_extensions;
+}
