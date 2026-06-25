@@ -114,6 +114,53 @@ packages:
     expect(() => CatalogYamlSchema.parse(doc)).toThrow();
   });
 
+  it("accepts local_extensions at the top level", () => {
+    const doc: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-skill": {
+          source: "https://github.com/example/my-skill",
+        },
+      },
+      local_extensions: ["research-archive.ts", "subagent/"],
+    };
+    const parsed = CatalogYamlSchema.parse(doc);
+    expect(parsed.local_extensions).toEqual(["research-archive.ts", "subagent/"]);
+  });
+
+  it("accepts a catalog without local_extensions", () => {
+    const doc: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {
+        "my-skill": {
+          source: "https://github.com/example/my-skill",
+        },
+      },
+    };
+    const parsed = CatalogYamlSchema.parse(doc);
+    expect(parsed.local_extensions).toBeUndefined();
+  });
+
+  it("accepts local_extensions in a profile", () => {
+    const doc: CatalogYaml = {
+      meta: { pi_version: "1.0.0" },
+      packages: {},
+      profiles: {
+        minimal: {
+          packages: {},
+          local_extensions: [],
+        },
+        work: {
+          packages: {},
+          local_extensions: ["subagent/", "jira-tools.ts"],
+        },
+      },
+    };
+    const parsed = CatalogYamlSchema.parse(doc);
+    expect(parsed.profiles!["minimal"].local_extensions).toEqual([]);
+    expect(parsed.profiles!["work"].local_extensions).toEqual(["subagent/", "jira-tools.ts"]);
+  });
+
   it("accepts enabled: true on a package entry", () => {
     const doc: CatalogYaml = {
       meta: { pi_version: "1.0.0" },

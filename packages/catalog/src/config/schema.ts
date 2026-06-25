@@ -38,12 +38,16 @@ export const CatalogMetaSchema = z.object({
 export const ProfileSchema = z.object({
   /** Packages specific to this profile (override base packages). */
   packages: z.record(z.string(), CatalogPackageSchema),
+  /** Local extension filenames for this profile. When omitted, inherits from base local_extensions. */
+  local_extensions: z.array(z.string()).optional(),
 });
 
 /** Full cat.yaml document schema. */
 export const CatalogYamlSchema = z.object({
   meta: CatalogMetaSchema,
   packages: z.record(z.string(), CatalogPackageSchema),
+  /** Local extension filenames for the default profile. Each entry is a relative path under ~/.pi/agent/extensions/. */
+  local_extensions: z.array(z.string()).optional(),
   /** Named profiles with package overrides. */
   profiles: z.record(z.string(), ProfileSchema).optional(),
 });
