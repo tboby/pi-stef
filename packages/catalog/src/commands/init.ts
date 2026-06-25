@@ -14,6 +14,7 @@ import type { CatalogYaml } from "../config/schema.js";
 import type { CommandArgs, CommandCtx } from "./types.js";
 import { writeCatalog } from "../config/io.js";
 import { readGist } from "../sync/gist.js";
+import { discoverLocalExtensions } from "../extensions/discovery.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,14 +50,14 @@ export async function initCommand(
   }
 
   // Default: scan installed packages
-  initFromScan(ctx);
+  await initFromScan(ctx);
 }
 
 // ---------------------------------------------------------------------------
 // initFromScan
 // ---------------------------------------------------------------------------
 
-function initFromScan(ctx: InitContext): void {
+async function initFromScan(ctx: InitContext): Promise<void> {
   let installed: Record<string, { source: string }>;
   try {
     installed = scanInstalled(ctx.home);
@@ -74,15 +75,32 @@ function initFromScan(ctx: InitContext): void {
     };
   }
 
+  // Capture enabled local extensions
+  let local_extensions: string[] | undefined;
+  try {
+    const extEntries = await discoverLocalExtensions();
+    const enabled = extEntries.filter((e) => e.state === "enabled");
+    if (enabled.length > 0) {
+      local_extensions = enabled.map((e) => e.path);
+    }
+  } catch {
+    // Non-fatal — skip local extensions if discovery fails
+  }
+
   const catalog: CatalogYaml = {
     meta: { pi_version: "0.0.0" },
     packages,
   };
 
+  if (local_extensions) {
+    catalog.local_extensions = local_extensions;
+  }
+
   writeCatalog(catalog, ctx.home);
 
+  const extCount = local_extensions?.length ?? 0;
   ctx.ui.notify(
-    `Initialized catalog with ${names.length} package${names.length === 1 ? "" : "s"}.`,
+    `Initialized catalog with ${names.length} package${names.length === 1 ? "" : "s"}${extCount > 0 ? ` and ${extCount} local extension${extCount === 1 ? "" : "s"}` : ""}.`,
     "info",
   );
 }
