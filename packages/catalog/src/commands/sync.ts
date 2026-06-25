@@ -22,6 +22,12 @@ import { scanInstalled } from "../catalog/install.js";
 import { applyRemovalTombstones, clearTombstones } from "../catalog/removal-tombstones.js";
 import { reconcile, executeActions } from "../catalog/reconcile.js";
 import { extractVersionFromSource } from "../catalog/source.js";
+import { resolveEffectiveLocalExtensions } from "../profiles/manager.js";
+import {
+  discoverLocalExtensions,
+  reconcileLocalExtensions,
+  executeLocalExtensionActions,
+} from "../extensions/discovery.js";
 import { createHash } from "node:crypto";
 
 // ---------------------------------------------------------------------------
@@ -207,6 +213,21 @@ export async function syncCommand(
     plan.uninstalls.length +
     plan.upgrades.length;
 
+  // --- Local extension reconcile -------------------------------------------
+  const effectiveLocalExtensions = resolveEffectiveLocalExtensions(catalog, profile);
+  let localExtPlan: {
+    enables: { type: "enable" | "disable"; path: string; activePath: string; disabledPath: string }[];
+    disables: { type: "enable" | "disable"; path: string; activePath: string; disabledPath: string }[];
+    warnings: string[];
+  } = { enables: [], disables: [], warnings: [] };
+  let hasLocalExtActions = false;
+
+  if (effectiveLocalExtensions !== undefined) {
+    const currentExensions = await discoverLocalExtensions();
+    localExtPlan = reconcileLocalExtensions(effectiveLocalExtensions, currentExensions);
+    hasLocalExtActions = localExtPlan.enables.length > 0 || localExtPlan.disables.length > 0;
+  }
+
   // --- 3. Dry-run: show plan and stop --------------------------------------
   if (dryRun) {
     const parts: string[] = ["Dry run — no changes made."];
@@ -222,7 +243,16 @@ export async function syncCommand(
     if (plan.orphans.length > 0) {
       parts.push(`Orphans: ${plan.orphans.map((o) => o.key).join(", ")}`);
     }
-    if (summary.actionCount === 0 && plan.orphans.length === 0) {
+    if (localExtPlan.enables.length > 0) {
+      parts.push(`Would enable extensions: ${localExtPlan.enables.map((a) => a.path).join(", ")}`);
+    }
+    if (localExtPlan.disables.length > 0) {
+      parts.push(`Would disable extensions: ${localExtPlan.disables.map((a) => a.path).join(", ")}`);
+    }
+    if (localExtPlan.warnings.length > 0) {
+      parts.push(`Extension warnings: ${localExtPlan.warnings.join("; ")}`);
+    }
+    if (summary.actionCount === 0 && plan.orphans.length === 0 && !hasLocalExtActions) {
       parts.push("No changes needed.");
     }
     ctx.ui.notify(parts.join("\n"), "info");
@@ -277,12 +307,38 @@ export async function syncCommand(
     }
   }
 
+  // --- Local extension execution -----------------------------------------
+  if (hasLocalExtActions) {
+    ctx.ui.setWorkingMessage?.("Syncing local extensions...");
+
+    for (const warning of localExtPlan.warnings) {
+      ctx.ui.notify(`Warning: ${warning}`, "warning");
+    }
+
+    const extResult = await executeLocalExtensionActions([
+      ...localExtPlan.enables,
+      ...localExtPlan.disables,
+    ]);
+
+    if (!extResult.success) {
+      for (const error of extResult.errors) {
+        ctx.ui.notify(`Extension error: ${error}`, "warning");
+        summary.errors.push(error);
+      }
+    }
+
+    ctx.ui.setWorkingMessage?.();
+  }
+
   // --- 5. Push if changed --------------------------------------------------
   if (noPush) {
     // --no-push: skip push and report
-    if (summary.actionCount > 0 && summary.errors.length === 0) {
+    if (summary.actionCount > 0 || hasLocalExtActions) {
+      const parts: string[] = [];
+      if (summary.actionCount > 0) parts.push(`${summary.actionCount} package action(s)`);
+      if (hasLocalExtActions) parts.push(`${localExtPlan.enables.length} enable(s), ${localExtPlan.disables.length} disable(s)`);
       ctx.ui.notify(
-        `Synced locally (${summary.actionCount} action(s)). Push skipped (--no-push).`,
+        `Synced locally (${parts.join(", ")}). Push skipped (--no-push).`,
         "info",
       );
     }
@@ -292,7 +348,9 @@ export async function syncCommand(
   const hasGist = readCachedGistId(ctx.home) !== undefined;
   const localHasPackages = Object.keys(catalog.packages).length > 0;
 
-  if (force || summary.actionCount > 0 || hasLocalOnlyPackages || hasLocalLockChanges || rebuiltLockDiffers || (!hasGist && localHasPackages)) {
+  const pushNeeded = force || summary.actionCount > 0 || hasLocalOnlyPackages || hasLocalLockChanges || rebuiltLockDiffers || hasLocalExtActions || (!hasGist && localHasPackages);
+
+  if (pushNeeded) {
     ctx.ui.setWorkingMessage?.("Pushing to gist...");
     try {
       const updatedCatalog = readCatalog(ctx.home);
@@ -325,7 +383,7 @@ export async function syncCommand(
     }
   }
 
-  if (summary.actionCount === 0 && summary.errors.length === 0 && !force && !hasLocalOnlyPackages && !hasLocalLockChanges && !rebuiltLockDiffers) {
+  if (summary.actionCount === 0 && !hasLocalExtActions && summary.errors.length === 0 && !force && !hasLocalOnlyPackages && !hasLocalLockChanges && !rebuiltLockDiffers) {
     ctx.ui.notify("Catalog already up to date.", "info");
     return;
   }
@@ -356,14 +414,21 @@ export async function syncCommand(
   if (summary.pushed) {
     parts.push(`Pushed to gist: ${summary.gistUrl}`);
   }
+  if (hasLocalExtActions) {
+    parts.push(`${localExtPlan.enables.length} ext enable(s), ${localExtPlan.disables.length} ext disable(s)`);
+  }
+  if (localExtPlan.warnings.length > 0) {
+    parts.push(`${localExtPlan.warnings.length} ext warning(s)`);
+  }
   if (summary.errors.length > 0) {
     parts.push(`${summary.errors.length} error(s) encountered.`);
   }
 
   ctx.ui.notify(`Synced: ${parts.join(" | ")}`, "info");
 
-  // Reload extensions so synced package changes take effect immediately
-  if (summary.actionCount > 0 && typeof ctx.reload === "function") {
+  // Reload extensions so changes take effect immediately
+  const needsReload = summary.actionCount > 0 || hasLocalExtActions;
+  if (needsReload && typeof ctx.reload === "function") {
     ctx.ui.notify("Reloading extensions...", "info");
     try {
       await ctx.reload();
@@ -371,7 +436,7 @@ export async function syncCommand(
     } catch {
       try { ctx.ui.notify("Extension reload failed — restart pi to pick up changes.", "warning"); } catch { /* runner invalidated */ }
     }
-  } else if (summary.actionCount > 0) {
+  } else if (needsReload) {
     ctx.ui.notify(
       "Sync complete. Restart pi for changes to take effect.",
       "warning",
