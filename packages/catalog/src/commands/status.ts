@@ -11,6 +11,8 @@ import { readCatalog, readLock } from "../config/io.js";
 import { scanInstalled } from "../catalog/install.js";
 import { readCachedGistId } from "../sync/cache.js";
 import { checkSetupForSource } from "../catalog/setup.js";
+import { resolveEffectiveLocalExtensions } from "../profiles/manager.js";
+import { discoverLocalExtensions } from "../extensions/discovery.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -87,6 +89,21 @@ export async function statusCommand(
     }
   }
 
+  // --- Local extensions ---
+  const effectiveLocalExts = resolveEffectiveLocalExtensions(catalog, profile);
+  let localExtLine = "";
+  if (effectiveLocalExts !== undefined) {
+    let enabledLocalCount = 0;
+    try {
+      const currentExts = await discoverLocalExtensions();
+      enabledLocalCount = currentExts.filter((e) => e.state === "enabled").length;
+    } catch {
+      // Non-fatal
+    }
+    const desiredCount = effectiveLocalExts.length;
+    localExtLine = `, Local extensions: ${desiredCount} desired (${enabledLocalCount} active)`;
+  }
+
   // --- Last sync time ---
   let lastSync: string | undefined;
   for (const lockPkg of Object.values(lock.packages)) {
@@ -108,7 +125,7 @@ export async function statusCommand(
 
   // Installed/missing/orphan
   lines.push(
-    `Installed: ${installedCount}, Missing: ${missingCount}, Orphans: ${orphanCount}`,
+    `Installed: ${installedCount}, Missing: ${missingCount}, Orphans: ${orphanCount}${localExtLine}`,
   );
 
   // Gist URL
