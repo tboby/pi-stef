@@ -2,18 +2,14 @@
  * `ct init` command implementation.
  *
  * Scans currently installed pi packages and generates `cat.yaml`.
- * With `--from-gist <id>`, imports catalog content from a public GitHub Gist.
  */
 
-import yaml from "js-yaml";
-
+import fs from "node:fs";
 import { scanInstalled } from "../catalog/install.js";
-import { migrateRatingToEnabledRaw } from "../catalog/migrate.js";
-import { CatalogYamlSchema } from "../config/schema.js";
 import type { CatalogYaml } from "../config/schema.js";
 import type { CommandArgs, CommandCtx } from "./types.js";
-import { writeCatalog } from "../config/io.js";
-import { readGist } from "../sync/gist.js";
+import { catalogFile } from "../config/paths.js";
+import { readCatalog, writeCatalog } from "../config/io.js";
 import { discoverLocalExtensions } from "../extensions/discovery.js";
 
 // ---------------------------------------------------------------------------
@@ -28,36 +24,41 @@ export type InitContext = CommandCtx;
 // ---------------------------------------------------------------------------
 
 /**
- * Initialize a new catalog.
- *
- * - Without flags: scans installed packages and generates a catalog with
- *   every discovered package enabled.
- * - With `--from-gist=<id>`: fetches the gist, reads its `cat.yaml` file,
- *   validates it, and writes it as the local catalog.
+ * Initialize a new catalog by scanning installed packages.
  */
 export async function initCommand(
   args: CommandArgs,
   ctx: InitContext,
 ): Promise<void> {
   const { flags } = args;
-
-  // --from-gist mode
-  const gistId = typeof flags["from-gist"] === "string" ? flags["from-gist"] : undefined;
-
-  if (gistId) {
-    await initFromGist(gistId, ctx);
-    return;
-  }
-
-  // Default: scan installed packages
-  await initFromScan(ctx);
+  const force = "force" in flags || "f" in flags;
+  await initFromScan(ctx, force);
 }
 
 // ---------------------------------------------------------------------------
 // initFromScan
 // ---------------------------------------------------------------------------
 
-async function initFromScan(ctx: InitContext): Promise<void> {
+async function initFromScan(ctx: InitContext, force = false): Promise<void> {
+  // Refuse if cat.yaml already exists with meaningful content (unless --force)
+  if (!force) {
+    const catPath = catalogFile(ctx.home);
+    if (fs.existsSync(catPath)) {
+      const existing = readCatalog(ctx.home);
+      const hasData =
+        existing.profiles !== undefined ||
+        existing.local_extensions !== undefined ||
+        Object.keys(existing.packages).length > 0;
+      if (hasData) {
+        ctx.ui.notify(
+          "cat.yaml already exists with packages, profiles, or local extensions. Use `ct init --force` to overwrite.",
+          "warning",
+        );
+        return;
+      }
+    }
+  }
+
   let installed: Record<string, { source: string }>;
   try {
     installed = scanInstalled(ctx.home);
@@ -105,42 +106,4 @@ async function initFromScan(ctx: InitContext): Promise<void> {
   );
 }
 
-// ---------------------------------------------------------------------------
-// initFromGist
-// ---------------------------------------------------------------------------
 
-async function initFromGist(gistId: string, ctx: InitContext): Promise<void> {
-  let gistContent: string;
-
-  try {
-    const gist = await readGist(gistId);
-    const catFile = gist.files["cat.yaml"];
-
-    if (!catFile?.content) {
-      ctx.ui.notify(
-        `Gist "${gistId}" does not contain a cat.yaml file.`,
-        "error",
-      );
-      return;
-    }
-
-    gistContent = catFile.content;
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    ctx.ui.notify(`Failed to fetch gist: ${message}`, "error");
-    return;
-  }
-
-  // Validate and write
-  const parsed = yaml.load(gistContent);
-  migrateRatingToEnabledRaw(parsed);
-  const catalog = CatalogYamlSchema.parse(parsed);
-
-  writeCatalog(catalog, ctx.home);
-
-  const count = Object.keys(catalog.packages).length;
-  ctx.ui.notify(
-    `Imported catalog from gist with ${count} package${count === 1 ? "" : "s"}.`,
-    "info",
-  );
-}
