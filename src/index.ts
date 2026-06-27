@@ -1,0 +1,75 @@
+// catalog
+export { scanInstalled, type InstalledPackage, type InstalledMap } from "./catalog/install.js";
+export {
+  reconcile,
+  executeActions,
+  type CatalogEntry,
+  type InstallAction,
+  type UninstallAction,
+  type UpgradeAction,
+  type OrphanReport,
+  type ReconcilePlan,
+  type ReconcileOptions,
+  type ActionError,
+  type ExecuteResult,
+  type ExecuteOptions,
+} from "./catalog/reconcile.js";
+export {
+  extractNpmName,
+  extractNpmVersion,
+  cleanGitName,
+  parseSource,
+  sourceToKey,
+  extractVersionFromSource,
+  type ParsedSource,
+} from "./catalog/source.js";
+
+// config
+export {
+  catalogDir,
+  catalogFile,
+  lockFile,
+  ensureCatalogDir,
+  npmNodeModulesDir,
+} from "./config/paths.js";
+export {
+  PackageType,
+  CatalogPackageSchema,
+  CatalogMetaSchema,
+  CatalogYamlSchema,
+  ProfileSchema,
+  SyncState,
+  LockPackageSchema,
+  LockFileSchema,
+  type CatalogYaml,
+  type CatalogMeta,
+  type CatalogPackage,
+  type LockFile,
+  type LockPackage,
+} from "./config/schema.js";
+
+// util
+export {
+  execCommand,
+  piInstall,
+  piUninstall,
+  ExecError,
+  type ExecOptions,
+  type ExecResult,
+  type PiExecOptions,
+} from "./util/exec.js";
+
+// update
+export { checkSelfUpdate } from "./update/self-update.js";
+export { checkPiUpdate } from "./update/pi-update.js";
+export type { UpdateCheckResult, UpdateCacheEntry } from "./update/types.js";
+
+// profiles
+export {
+  DEFAULT_PROFILE,
+  createProfile,
+  switchProfile,
+  deleteProfile,
+  resolveEffectivePackages,
+  resolveEffectiveLocalExtensions,
+} from "./profiles/manager.js";

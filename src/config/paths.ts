@@ -1,0 +1,48 @@
+import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
+// Inlined from @pi-stef/paths (constants.ts + global.ts) so this package is self-contained.
+const PI_DIR = ".pi";
+const SF_NAMESPACE = "sf";
+function sfBase(home: string): string { return path.join(home, PI_DIR, SF_NAMESPACE); }
+function globalDir(pkg: string, home?: string): string { return path.join(sfBase(home ?? os.homedir()), pkg); }
+
+/**
+ * ~/.pi/sf/catalog/
+ */
+export function catalogDir(home?: string): string {
+  return globalDir("catalog", home);
+}
+
+/**
+ * ~/.pi/sf/catalog/cat.yaml
+ */
+export function catalogFile(home?: string): string {
+  return path.join(catalogDir(home), "cat.yaml");
+}
+
+/**
+ * ~/.pi/sf/catalog/catalog.lock.json
+ */
+export function lockFile(home?: string): string {
+  return path.join(catalogDir(home), "catalog.lock.json");
+}
+
+/**
+ * Creates the catalog directory if it does not already exist.
+ */
+export function ensureCatalogDir(home?: string): void {
+  const dir = catalogDir(home);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+/**
+ * ~/.pi/agent/npm/node_modules
+ *
+ * Centralised so the npm node_modules path is not hardcoded in consumers.
+ */
+export function npmNodeModulesDir(home?: string): string {
+  return path.join(home ?? os.homedir(), ".pi", "agent", "npm", "node_modules");
+}

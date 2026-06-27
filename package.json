@@ -1,35 +1,20 @@
 {
-  "name": "pi-stef",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Custom package collection for the pi coding agent.",
+  "name": "@pi-stef/catalog",
+  "version": "0.6.5",
+  "description": "Pi extension for managing skill/package catalogs.",
   "type": "module",
-  "packageManager": "pnpm@10.31.0",
-  "scripts": {
-    "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest",
-    "typecheck": "tsc -b",
-    "release": "node scripts/release.mjs",
-    "docs:dev": "vitepress dev docs-site",
-    "docs:build": "vitepress build docs-site",
-    "docs:preview": "vitepress preview docs-site"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "typescript": "^6.0.3",
-    "vitepress": "^1.6.3",
-    "vitest": "^4.0.0"
-  },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/tboby/pi-stef.git" },
+  "files": ["src/", "extensions/"],
+  "exports": { ".": "./src/index.ts", "./package.json": "./package.json" },
+  "keywords": ["pi-package", "pi-extension", "catalog"],
   "dependencies": {
-    "@pi-stef/agent-workflows": "workspace:^0.3.0",
-    "@pi-stef/atlassian": "workspace:^0.3.0",
-    "@pi-stef/azure-foundry": "workspace:^0.1.0",
-    "@pi-stef/catalog": "workspace:^0.3.0",
-    "@pi-stef/cursor": "workspace:^0.1.0",
-    "@pi-stef/figma": "workspace:^0.3.0",
-    "@pi-stef/pair": "workspace:^0.1.0",
-    "@pi-stef/paths": "workspace:^0.3.0",
-    "@pi-stef/team": "workspace:^0.3.0",
-    "@pi-stef/web": "workspace:^0.3.0"
-  }
+    "js-yaml": "^4.1.0",
+    "zod": "^3.25.62",
+    "@sinclair/typebox": "*"
+  },
+  "peerDependencies": { "@earendil-works/pi-coding-agent": "*" },
+  "devDependencies": { "@types/js-yaml": "^4.0.9", "@types/node": "^22.0.0", "typescript": "^6.0.3", "vitest": "^4.0.0" },
+  "pi": { "extensions": ["./extensions"] },
+  "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit -p tsconfig.json" }
 }

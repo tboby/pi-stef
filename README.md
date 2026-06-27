@@ -1,117 +1,212 @@
-# pi-stef
+# @pi-stef/catalog
 
-Custom package collection for the [pi](https://pi.dev) coding agent.
+Declarative package manager for the [pi](https://pi.dev) coding agent. Manage your skills and extensions from a single `cat.yaml` file in a local git repository.
 
-> 📖 **[Full Documentation](https://sfiorini.github.io/pi-stef/)** | [Development Guide](docs/development.md)
+## Installation
+
+```bash
+pi install npm:@pi-stef/catalog
+```
 
 ## Quick Start
 
 ```bash
-# 1. Install the catalog manager first
-pi install npm:@pi-stef/catalog
-
-# 2. Authenticate with GitHub
-/ct login
-
-# 3. Initialize your catalog from installed packages
+# 1. Initialize catalog from installed packages
 /ct init
 
-# 4. Sync — keeps your packages up to date across machines
-/ct sync
+# 2. Add packages
+/ct add npm:@pi-stef/team
+
+# 3. Verify status
+/ct status
 ```
 
-## Packages
-
-| Package | Type | Description | Install |
-|---------|------|-------------|---------|
-| **[catalog](packages/catalog/README.md)** | extension | Declarative package manager — sync, add, remove, toggle packages via `cat.yaml` | `pi install npm:@pi-stef/catalog` |
-| [azure-foundry](packages/azure-foundry/README.md) | extension | Azure Foundry and Azure OpenAI deployments as native Pi providers | `pi install npm:@pi-stef/azure-foundry` |
-| [cursor](packages/cursor/README.md) | extension | Cursor AI editor as a native Pi stream provider | `pi install npm:@pi-stef/cursor` |
-| [pair](https://sfiorini.github.io/pi-stef/packages/pair) | extension | Plan/review/implement workflows using pi-subagents | `pi install npm:@pi-stef/pair` |
-| [team](packages/team/README.md) | extension | Steerable team of role-agents for plan/review/implement workflows | `pi install npm:@pi-stef/team` |
-| [agent-workflows](packages/agent-workflows/README.md) | library | Reusable workflow engine primitives (internal dependency, not user-installed) | — |
-| paths | library | Shared path conventions for all sf packages | — |
-| [atlassian](packages/atlassian/README.md) | extension | Jira and Confluence integration tools | `pi install npm:@pi-stef/atlassian` |
-| [figma](packages/figma/README.md) | extension | Figma REST API tools and design context | `pi install npm:@pi-stef/figma` |
-| [web](packages/web/README.md) | extension | Web search, URL fetch, and browser sessions | `pi install npm:@pi-stef/web` |
-
-## Package Management
-
-Use the [catalog](packages/catalog/README.md) extension (`ct`) for declarative package management and cross-machine sync.
+The catalog directory (`~/.pi/sf/catalog/`) is a plain local directory. To version-control it, initialise a git repo:
 
 ```bash
-/ct add <source>              # Add a package (name auto-derived)
-/ct remove <name>             # Remove a package
-/ct enable <name>             # Enable a package
-/ct disable <name>            # Disable a package
-/ct sync                      # Sync with remote gist
-/ct status                    # Show catalog status
+git -C ~/.pi/sf/catalog init
+git -C ~/.pi/sf/catalog add cat.yaml catalog.lock.json
+git -C ~/.pi/sf/catalog commit -m "initial catalog"
 ```
 
-See the [catalog README](packages/catalog/README.md) for the full command reference, `cat.yaml` format, and profile documentation.
+## Hot-Reload
 
-## Install All
+Commands that install, update, or remove packages (`add`, `update`, `remove`, `disable`) automatically reload extensions after a successful operation. This means new or updated tools are available immediately without restarting pi.
 
-Use `ct sync` to install all catalog packages:
+If the reload fails or is not available (e.g., when invoked via an LLM tool), you'll see a message asking you to restart pi for changes to take effect.
+
+## Command Reference
+
+All commands are invoked as `/ct <subcommand>` inside pi, or via the shorthand `/ct-<subcommand>`.
+
+| Subcommand | Alias | Description | Flags |
+|---|---|---|---|
+| `init` | — | Initialize catalog from installed packages | — |
+| `add` | `a` | Add a package to the catalog and install it | `--type=<t>`, `-s <t>`, `--scope=@pi-stef` |
+| `remove` | `rm` | Remove a package from the catalog | `--yes`, `--scope=@pi-stef` |
+| `toggle` | — | Toggle a package's enabled state (enabled ↔ disabled) | — |
+| `enable` | — | Enable a disabled package | — |
+| `disable` | — | Disable a package and uninstall it | — |
+| `update` | `up` | Update packages to latest versions | `--all` |
+| `status` | — | Show catalog status with package listing | — |
+| `verify` | — | Verify catalog integrity | — |
+| `profiles` | — | List all profiles with active indicator | — |
+| `profile` | — | Show or switch active profile | — |
+| `reset` | — | Uninstall all @pi-stef packages and delete config | `--yes` |
+
+### Adding Packages
 
 ```bash
-/ct sync
+# Add from a git source (name auto-derived)
+/ct add git:github.com/user/repo#packages/my-skill
+
+# Add an npm package
+/ct add npm:lodash
+
+# Add all @pi-stef packages at once
+/ct add --scope=@pi-stef
 ```
 
-## Profiles & Sharing
-
-### Pull your catalog from a gist
-
-If you've already set up catalog sync (`/ct login` + `/ct sync`), your packages sync automatically via GitHub Gist. Use profiles to maintain different package sets for different machines:
+### Removing Packages
 
 ```bash
-/ct profile work --create    # Create a "work" profile
-/ct profile work             # Switch to it
-/ct add npm:@pi-stef/atlassian  # Add work-specific packages
-/ct sync --profile work      # Sync this profile to its own gist
+/ct remove my-skill
+/ct remove --scope=@pi-stef
 ```
 
-### Import someone else's catalog
-
-To start from another person's catalog (e.g., a shared team setup):
+### Enabling and Disabling
 
 ```bash
-/ct init --from-gist=<gist-id>
+/ct enable my-skill      # Enable a disabled package
+/ct disable my-skill     # Disable a package (uninstalls it)
+/ct toggle my-skill      # Toggle enabled ↔ disabled
 ```
 
-This replaces your entire local catalog with the contents of that gist, including any profiles it defines. After importing, run `/ct sync` to install all packages.
+## `cat.yaml` Format
 
-**How to find a gist ID:** The gist URL is `https://gist.github.com/<user>/<gist-id>`. The `<gist-id>` is the last part of the URL.
+The catalog is stored in `cat.yaml`. Example:
 
-### Limitations
+```yaml
+meta:
+  pi_version: "0.70.0"
+  activeProfile: default
 
-- `/ct init --from-gist` replaces your entire catalog — it does not merge or selectively import.
-- There is no command to import a single profile from another user's gist. You can manually copy profile entries from their `cat.yaml` into yours.
-- Each profile syncs to its own gist (described as `catalog-<profile-name>`). The gist cache stores only one ID at a time.
-
-## Individual Install
-
-```bash
-pi install npm:@pi-stef/<package-name>
+packages:
+  pair:
+    source: "git:github.com/sfiorini/pi-stef#packages/pair"
+    type: skill
+  team:
+    source: "git:github.com/sfiorini/pi-stef#packages/team"
+    type: skill
+  atlassian:
+    source: "git:github.com/sfiorini/pi-stef#packages/atlassian"
+    type: skill
+    enabled: false
 ```
 
-## Prerequisites
+### Package Fields
 
-- [pi](https://pi.dev) (>= 0.70)
-- Node.js (>= 20)
-- pnpm (>= 9)
-- [GitHub CLI](https://cli.github.com/) (`gh`) — required for `/ct login` and catalog sync
+| Field | Required | Description |
+|---|---|---|
+| `source` | ✓ | Package source URL (`npm:…` or `git:…`) |
+| `type` | — | `skill` or `pi-native` |
+| `profile` | — | Profile name this package belongs to |
+| `enabled` | — | `true` (default) or `false` |
+| `companions` | — | Array of companion source strings to auto-install |
+
+### Companions
+
+A package can declare required companion packages in its own `package.json`:
+
+```json
+{
+  "pi": {
+    "companions": ["git:github.com/obra/superpowers"]
+  }
+}
+```
+
+When `ct add` installs such a package, it also installs each companion that
+isn't already installed. Companions resolve transitively (a companion may
+declare its own companions) up to a depth of 3, with de-duplication so each
+source installs at most once.
+
+### Examples
+
+**NPM source:**
+```yaml
+packages:
+  lodash:
+    source: "npm:lodash"
+```
+
+**Git source:**
+```yaml
+packages:
+  my-extension:
+    source: "git:github.com/user/repo#packages/my-extension"
+    type: pi-native
+```
+
+## Setup Detection
+
+Packages can include a `.pi-setup.json` file declaring requirements (environment variables, config files, CLI tools). After install or update, the catalog checks these requirements and warns if anything is missing.
+
+```json
+{
+  "env": ["API_TOKEN"],
+  "files": ["config.json"],
+  "cli": ["docker"]
+}
+```
+
+## Profiles
+
+Profiles let you maintain different package sets for different machines or contexts (e.g., work vs. personal).
+
+```yaml
+meta:
+  pi_version: "0.70.0"
+  activeProfile: work
+
+packages:
+  pair:
+    source: "git:github.com/sfiorini/pi-stef#packages/pair"
+
+profiles:
+  work:
+    packages:
+      atlassian:
+        source: "git:github.com/sfiorini/pi-stef#packages/atlassian"
+  personal:
+    packages:
+      figma:
+        source: "git:github.com/sfiorini/pi-stef#packages/figma"
+```
+
+**Profile commands:**
+- `/ct profiles` — list all profiles (shows active with a marker)
+- `/ct profile <name>` — switch active profile
+
+The `default` profile always exists and uses the base `packages` section. Profile packages override base packages with the same key.
+
+## Configuration
+
+### File Locations
+
+| File | Path | Purpose |
+|---|---|---|
+| Catalog | `~/.pi/sf/catalog/cat.yaml` | Declarative package manifest |
+| Lock file | `~/.pi/sf/catalog/catalog.lock.json` | Installed versions and hashes |
 
 ## Development
 
-See the [Development Guide](docs/development.md) for prerequisites, repository structure, testing, and release process.
-
 ```bash
 pnpm install          # Install dependencies
-pnpm test             # Run tests
-pnpm typecheck        # Type check
+pnpm -F @pi-stef/catalog test    # Run tests
+pnpm -F @pi-stef/catalog typecheck  # Type check
 ```
 
 ## License
 
-[MIT](LICENSE)
+MIT
